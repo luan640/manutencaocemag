@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Lista de Preventivas</h2>
+    <div class="table-responsive">
+        <table id="preventivasTable" class="table table-bordered table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Máquina</th>
+                    <th>Nome do Plano</th>
+                    <th>Descrição</th>
+                    <th>Periodicidade (dias)</th>
+                    <th>Abertura Automática</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- DataTables irá preencher este corpo automaticamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{% static 'js/datatable-preventivas.js' %}"></script>
+
+{% endblock %}

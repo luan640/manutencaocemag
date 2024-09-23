@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    
+    <div class="col-12 col-md-8 col-lg-6">
+        <h1>Editar operador</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                {{ form.matricula.label_tag }}
+                {{ form.matricula }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.nome.label_tag }}
+                {{ form.nome }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.salario.label_tag }}
+                {{ form.salario }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.area.label_tag }}
+                {{ form.area }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.status.label_tag }}
+                {{ form.status }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

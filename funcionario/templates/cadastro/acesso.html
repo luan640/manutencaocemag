@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container mt-5 d-flex justify-content-center">
+    <div class="card p-4" style="width: 30rem;">
+      <h2 class="text-center mb-4">Cadastrar Novo Usuário</h2>
+      
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          {{ form.matricula.label_tag }}
+          {{ form.matricula }}
+        </div>
+        
+        <div class="mb-3">
+          {{ form.nome.label_tag }}
+          {{ form.nome }}
+        </div>
+        
+        <div class="mb-3">
+          {{ form.tipo_acesso.label_tag }}
+          {{ form.tipo_acesso }}
+        </div>
+
+        <div class="mb-3">
+          {{ form.area.label_tag }}
+          {{ form.area }}
+          <!-- <small class="form-text text-muted">Este campo será preenchido apenas se o tipo do usuário for administrador</small> -->
+        </div>
+        
+        <div class="mb-3">
+          {{ form.password.label_tag }}
+          {{ form.password }}
+        </div>
+        
+        <div class="mb-3">
+          {{ form.confirm_password.label_tag }}
+          {{ form.confirm_password }}
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

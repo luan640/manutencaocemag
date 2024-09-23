@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Criar Plano Preventiva para Máquina: {{ maquina.codigo }} - {{ maquina.descricao }}</h2>
+    <form id="planoPreventivaForm" method="post">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Detalhes do Plano</h4>
+            </div>
+            <div class="card-body">
+                {{ plano_form.as_p }}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Tarefas Preventivas</h4>
+                <button type="button" class="btn btn-sm btn-success" id="add-tarefa">Adicionar Tarefa</button>
+            </div>
+            <div class="card-body" id="tarefas-container">
+                <!-- Tarefas serão adicionadas aqui via JavaScript -->
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar Plano</button>
+        <a href="{% url 'list_preventivas' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let tarefaIndex = 0;
+
+    // Função para adicionar uma nova tarefa
+    const addTarefaButton = document.getElementById('add-tarefa');
+    const container = document.getElementById('tarefas-container');
+
+    addTarefaButton.addEventListener('click', function() {
+
+        const newForm = `
+            <div class="tarefa-form mb-3">
+                <div class="form-group">
+                    <label for="tarefa-descricao-${tarefaIndex}">Descrição da Tarefa</label>
+                    <textarea id="tarefa-descricao-${tarefaIndex}" name="tarefas[${tarefaIndex}][descricao]" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="tarefa-responsabilidade-${tarefaIndex}">Responsabilidade</label>
+                    <select id="tarefa-responsabilidade-${tarefaIndex}" name="tarefas[${tarefaIndex}][responsabilidade]" class="form-control">
+                        <option value="eletrica">Elétrica</option>
+                        <option value="mecanica">Mecânica</option>
+                        <option value="predial">Predial</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-tarefa">Remover</button>
+                <hr>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', newForm);
+        tarefaIndex++;  // Incrementa o índice para a próxima tarefa
+    });
+
+    // Função para remover uma tarefa
+    container.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-tarefa')) {
+            e.target.closest('.tarefa-form').remove();
+        }
+    });
+});
+</script>
+
+{% endblock %}

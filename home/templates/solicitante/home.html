@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Card 1: Ir para solicitação de OS para produção -->
+        <div class="col-md-4 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Solicitação de OS para Produção</h5>
+                    <p class="card-text">Acesse as solicitações de ordens de serviço para a área de produção.</p>
+                    <a href="{% url 'criar_solicitacao' %}" class="btn btn-primary">Ir</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Ir para solicitação de OS predial -->
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Solicitação de OS Predial</h5>
+                    <p class="card-text">Acesse as solicitações de ordens de serviço para a área predial.</p>
+                    <a href="{% url 'criar_solicitacao_predial' %}" class="btn btn-primary">Ir</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Ir para painel de solicitações predial -->
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Painel de Solicitações Predial</h5>
+                    <p class="card-text">Veja todas as solicitações de ordens de serviço predial.</p>
+                    <a href="{% url 'home_predial' %}" class="btn btn-primary">Ir</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Ir para painel de solicitações da produção -->
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Painel de Solicitações Produção</h5>
+                    <p class="card-text">Veja todas as solicitações de ordens de serviço da produção.</p>
+                    <a href="{% url 'home_producao' %}" class="btn btn-primary">Ir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

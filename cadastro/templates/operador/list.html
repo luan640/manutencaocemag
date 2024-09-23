@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Operadores</h2>
+    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
+    <a class="badge btn btn-primary mb-3" href="{% url 'add_operador' %}">Adicionar operador</a>
+
+    <div class="table-responsive">
+        <table id="tableOperadores" class="table table-bordered table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Matrícula</th>
+                    <th>Salário</th>
+                    <th>Status</th>
+                    <th>Área</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for operador in operadores %}
+                <tr data-id="{{ operador.id }}">
+                    <td>{{ operador.nome }}</td>
+                    <td>{{ operador.matricula }}</td>
+                    <td>{{ operador.salario }}</td>
+                    <td>{{ operador.status }}</td>
+                    <td>{{ operador.area }}</td>
+                    <td>
+                        <a class="badge btn btn-warning" href="{% url 'edit_operador' operador.pk %}">Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{% static 'js/datatable-list-operador.js' %}"></script>
+{% endblock %}

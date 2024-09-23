@@ -1,0 +1,12 @@
+<h1>Criar Execução para Solicitação #{{ solicitacao.pk }}</h1>
+
+<p>Setor: {{solicitacao.setor}}</p>
+<p>Descrição: {{solicitacao.descricao}}</p>
+<p>Solicitante: {{solicitacao.solicitante}}</p>
+<p>Máquina/Local: {{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Salvar</button>
+</form>

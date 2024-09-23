@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Lista de Máquinas</h2>
+    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
+    <div class="text-end">
+        <a href="{% url 'criar_maquina' %}" class="badge btn btn-primary mb-3">+ Adicionar</a>
+    </div>
+    <div class="table-responsive">
+        <table id="maquinasCadastradas" class="table table-bordered table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descrição</th>
+                    <th>Apelido</th>
+                    <th>Setor</th>
+                    <th>Foto</th>
+                    <th>Área</th>
+                    <th>Tombamento</th>
+                    <th>Criticidade</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- DataTables irá preencher este corpo automaticamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{% static 'js/datatable-list-maquina.js' %}"></script>
+
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block links %}
+
+<style>
+    #execucaoTable {
+        font-size: 12px; /* Ajusta o tamanho da fonte */
+    }
+    #execucaoTable th, #execucaoTable td {
+        padding: 4px 8px; /* Ajusta o padding das células */
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Histórico de Execuções</h2>
+    <div class="table-responsive">
+        <table id="execucaoTable" class="table table-bordered table-striped table-sm">
+            <thead>
+                <tr>
+                    <th>OS</th>
+                    <th>Data início</th>
+                    <th>Data fim</th>
+                    <th>Solicitante</th>
+                    <th>Ao chegar maq. parada?</th>
+                    <th>Exec. feita com maq. parada?</th>
+                    <th>Após exec. maq. ficou parada?</th>
+                    <th>Descricao da exec.</th>
+                    <th>Última atualização</th>
+                    <th>Setor</th>
+                    <th>Máquina</th>
+                    <th>Status</th>
+                    <th>Área</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{% static 'js/datatable-historico-execucao.js' %}"></script>
+
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-12 col-md-8 col-lg-6">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <input type="hidden" value="predial" name="tipo_solicitacao" id="tipo_solicitacao">
+
+            <div class="mb-3">
+                <label for="id_setor">Setor:</label>
+                <select name="setor" class="form-select" required="" id="id_setor">
+                    <option value="" selected="">---------</option>
+                    {% for setor in setores %}
+                        <option value="{{setor.id}}">{{setor.nome}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        
+            <div class="mb-3">
+                <label for="id_maquina">Máquina/Local</label>
+                <select name="maquina" class="form-select" required id="id_maquina">
+                    <option value="" selected="">---------</option>
+                    {% for maquina in maquinas %}
+                    <option value="{{maquina.id}}">{{maquina.codigo}} - {{maquina.descricao}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        
+            <div class="mb-3">
+                <label for="id_tarefa">Tarefa</label>
+                <select name="tarefa" class="form-select" required="" id="id_tarefa">
+                    <option value="" selected="">---------</option>
+                    {% for tarefa in tipo_tarefas %}
+                    <option value="{{tarefa.id}}">{{tarefa.nome}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_descricao_tarefa" class="form-label">Observação</label>
+                <textarea class="form-control" id="id_descricao_tarefa" name="descricao_tarefa" required=""></textarea>
+            </div>
+        
+            <div class="mb-3">
+                <label for="id_data_inicio" class="form-label">Data de Início</label>
+                <input type="datetime-local" class="form-control" id="id_data_inicio" name="data_inicio" value="" required="">
+            </div>
+
+            <div class="mb-3">
+                <label for="id_data_fim" class="form-label">Data de Fim</label>
+                <input type="datetime-local" class="form-control" id="id_data_fim" name="data_fim" value="" required="">
+            </div>
+
+            <div class="mb-3">
+                <label for="id_operador" class="form-label">Operador</label>
+                <select multiple="" class="form-control" id="id_operador" name="operador" required="">
+                    {% for operador in operadores %}
+                        <option value="{{operador.id}}">{{operador.matricula}} - {{operador.nome}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_imagens" class="form-label">Upload de Fotos:</label>
+                <input type="file" class="form-control" id="id_imagens" name="imagens" multiple>
+            </div>
+        
+            <div class="mb-3">
+                <label for="id_video" class="form-label">Upload de Vídeo:</label>
+                <input type="file" class="form-control" id="id_video" name="video">
+            </div>
+
+            <div class="mb-3">
+                <label for="id_status" class="form-label">Status</label>
+                <select class="form-control" id="id_status" name="status" required="">
+                    <option value=""></option>
+                    <option value="em_execucao">Em execuçao</option>
+                    <option value="aguardando_material">Aguardando material</option>
+                    <option value="finalizada">Finalizada</option>
+                </select>
+            </div>
+        
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    $(document).ready(function() {
+        
+        $('#id_maquina').select2({
+            placeholder: 'Selecione uma máquina ou local',
+            allowClear: true,
+            dropdownCssClass: 'form-control', 
+            containerCssClass: 'form-control',
+            width: '100%'
+        });
+
+        $('#id_setor').select2({
+            placeholder: 'Selecione uma máquina ou local',
+            allowClear: true,
+            dropdownCssClass: 'form-control', 
+            containerCssClass: 'form-control',
+            width: '100%'
+        });
+    
+    });
+</script>
+
+{% endblock %}

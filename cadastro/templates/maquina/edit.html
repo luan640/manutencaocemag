@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    
+    <div class="col-12 col-md-8 col-lg-6">
+        <h1>Editar</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                {{ form.codigo.label_tag }}
+                {{ form.codigo }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.descricao.label_tag }}
+                {{ form.descricao }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.apelido.label_tag }}
+                {{ form.apelido }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.setor.label_tag }}
+                {{ form.setor }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.tombamento.label_tag }}
+                {{ form.tombamento }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.area.label_tag }}
+                {{ form.area }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.criticidade.label_tag }}
+                {{ form.criticidade }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.foto.label_tag }}
+                {{ form.foto }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

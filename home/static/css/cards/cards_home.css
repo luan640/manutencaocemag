@@ -1,0 +1,43 @@
+.custom-card {
+    border-radius: 10px !important;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px 0 rgb(218 218 253 / 65%), 0 2px 6px 0 rgb(206 206 238 / 54%);
+    border-left-width: 5px;
+    border-left-style: solid;
+}
+
+.custom-border-info {
+    border-left-color: #0dcaf0 !important;
+}
+
+.custom-border-success {
+    border-left-color: #15ca20 !important;
+}
+
+.custom-border-warning {
+    border-left-color: #ffc107 !important;
+}
+
+.custom-bg-gradient-scooter {
+    background: linear-gradient(45deg, #17ead9, #6078ea) !important;
+}
+
+.custom-bg-gradient-ohhappiness {
+    background: linear-gradient(45deg, #00b09b, #96c93d) !important;
+}
+
+.custom-bg-gradient-blooker {
+    background: linear-gradient(45deg, #ffdf40, #ff8359) !important;
+}
+
+.custom-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ededed;
+    font-size: 27px;
+    border-radius: 50%;
+    color: #fff !important;
+}

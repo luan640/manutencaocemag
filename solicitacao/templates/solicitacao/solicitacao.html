@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-12 col-md-8 col-lg-6">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                {{ form.setor.label_tag }}
+                {{ form.setor }}
+            </div>
+
+            <div id="solda-eq-em-falha" style="display: none;">
+                <div class="mb-3">
+                    {{ form.equipamento_em_falha.label_tag }}
+                    {{ form.equipamento_em_falha }}
+                </div>
+            </div>
+
+            <div id="maquina-geral" class="mb-3">
+                {{ form.maquina.label_tag }}
+                {{ form.maquina }}
+            </div>
+            
+            <div id="ferramentas">
+                <div class="mb-3">
+                    {{ form.tipo_ferramenta.label_tag }}
+                    {{ form.tipo_ferramenta }}
+                </div>
+                <div class="mb-3">
+                    {{ form.codigo_ferramenta.label_tag }}
+                    {{ form.codigo_ferramenta }}
+                </div>
+            </div>
+
+            <div id="maq-solda-setor" class="mb-3" style="display: none;">
+                {{ form.setor_maq_solda.label_tag }}
+                {{ form.setor_maq_solda }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.descricao.label_tag }}
+                {{ form.descricao }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.impacto_producao.label_tag }}
+                {{ form.impacto_producao }}
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.maq_parada.label_tag }}
+                {{ form.maq_parada }}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_imagens" class="form-label">Upload de Fotos:</label>
+                {{ form2.as_p }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.video.label_tag }}
+                {{ form.video }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Criar Solicitação</button>
+        </form>
+    </div>
+</div>
+{% block scripts %}
+
+<script>
+    // function ajax(url, callback) {
+    //     var xhr = new XMLHttpRequest();
+    //     xhr.open('GET', url, true);
+    //     xhr.onreadystatechange = function() {
+    //         if (xhr.readyState == 4 && xhr.status == 200) {
+    //             callback(JSON.parse(xhr.responseText));
+    //         }
+    //     };
+    //     xhr.onerror = function() {
+    //         console.error('Erro na requisição AJAX.');
+    //     };
+    //     xhr.send();
+    // }
+
+    // $(selectElement).on('change', function() {
+    //     var value = $(this).val();
+    //     if (value) {
+    //         ajax(ajaxUrl + encodeURIComponent(value), function(data) {
+    //             var updateElement = document.getElementById(updateElementId);
+    //             if (data[dataField]) {
+    //                 updateElement.value = data[dataField];
+    //             } else {
+    //                 updateElement.value = '';
+    //             }
+    //         });
+    //     } else {
+    //         document.getElementById(updateElementId).value = '';
+    //     }
+    // });
+
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa select2 no campo setor
+        $('#id_setor').select2({
+            placeholder: "Selecione o setor",
+            allowClear: true,
+            width: '100%'
+        });
+
+        // Inicializa select2 no campo equipamento em falha (se necessário)
+        $('#id_equipamento_em_falha').select2({
+            placeholder: "Selecione o equipamento em falha",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('#id_maquina').select2({
+            placeholder: "Selecione o equipamento em falha",
+            allowClear: true,
+            width: '100%'
+        });
+        
+        // Captura elementos
+        var soldaEqEmFalha = document.getElementById('solda-eq-em-falha');
+        var setor = document.getElementById('id_setor');
+        var soldaMaqLocal = document.getElementById('maq-solda-setor');
+        var eqEmFalha = document.getElementById('id_equipamento_em_falha');
+        var ferramentaSolda = document.getElementById('ferramentas');
+        var maquinaGeral = document.getElementById('maquina-geral');
+
+        // Verifica se os elementos existem antes de continuar
+        if (!setor || !eqEmFalha) {
+            return; // Para a execução se os elementos não existirem
+        }
+
+        // Função para mostrar/ocultar campos com base no setor selecionado
+        function toggleFieldsSolda() {
+            var selectTextSetor = setor.options[setor.selectedIndex].textContent;
+
+            if (selectTextSetor === 'Solda') {
+                soldaEqEmFalha.style.display = 'block';
+
+                if (eqEmFalha.value === 'maquina_de_solda') {
+                    soldaMaqLocal.style.display = 'block';
+                    maquinaGeral.style.display = 'block';
+                    ferramentaSolda.style.display = 'none';
+                    document.getElementById('id_tipo_ferramenta').value = '';
+                    document.getElementById('id_codigo_ferramenta').value = '';
+                } else if (eqEmFalha.value === 'ferramentas') {
+                    ferramentaSolda.style.display = 'block';
+                    maquinaGeral.style.display = 'none';
+                    soldaMaqLocal.style.display = 'none';
+                    document.getElementById('id_setor_maq_solda').value = '';
+                } else if (eqEmFalha.value === 'robo_kuka' || eqEmFalha.value === 'outros') {
+                    maquinaGeral.style.display = 'none';
+                    soldaMaqLocal.style.display = 'none';
+                    document.getElementById('id_setor_maq_solda').value = '';
+                    ferramentaSolda.style.display = 'none';
+                    document.getElementById('id_tipo_ferramenta').value = '';
+                    document.getElementById('id_codigo_ferramenta').value = '';
+                } else {
+                    soldaMaqLocal.style.display = 'none';
+                    document.getElementById('id_tipo_ferramenta').value = '';
+                    document.getElementById('id_codigo_ferramenta').value = '';
+                    document.getElementById('id_setor_maq_solda').value = '';
+                    ferramentaSolda.style.display = 'none';
+                    maquinaGeral.style.display = 'block';
+                }
+            } else {
+                soldaEqEmFalha.style.display = 'none';
+                document.getElementById('id_equipamento_em_falha').value = '';
+                document.getElementById('id_setor_maq_solda').value = '';
+                ferramentaSolda.style.display = 'none';
+                maquinaGeral.style.display = 'block';
+            }
+        }
+
+        // Chama a função ao carregar a página
+        toggleFieldsSolda();
+
+        function ajax(url, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    callback(JSON.parse(xhr.responseText));
+                }
+            };
+            xhr.onerror = function() {
+                console.error('Erro na requisição AJAX.');
+            };
+            xhr.send();
+        }
+
+        function updateSelectElement(selectElementId, options, labelCallback) {
+            var selectElement = document.getElementById(selectElementId);
+
+            if (!selectElement) return;
+
+            // Limpa as opções atuais do select
+            selectElement.innerHTML = '';
+
+            // Adiciona a opção padrão
+            var defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = 'Selecione...';
+            selectElement.appendChild(defaultOption);
+
+            // Adiciona novas opções baseadas nos dados retornados
+            options.forEach(function(optionData) {
+                var option = document.createElement('option');
+                option.value = optionData.pk;  // O campo `pk` é o ID único do objeto
+                option.text = labelCallback(optionData);  // Usa o callback para definir o texto exibido
+                selectElement.appendChild(option);
+            });
+        }
+
+        // Evento para capturar mudança no campo setor e buscar as máquinas
+        $('#id_setor').on('change.select2', function() {
+            
+            toggleFieldsSolda();
+
+            var setorSelect = document.getElementById('id_setor');
+
+            var setorSelecionado = setorSelect.value;
+            if (setorSelecionado) {
+                // Faz a requisição AJAX para buscar máquinas pelo setor
+                ajax('{% url "get_maquina_by_setor" %}?setor=' + encodeURIComponent(setorSelecionado), function(data) {
+                    if (data.maquinas) {
+                        updateSelectElement('id_maquina', JSON.parse(data.maquinas), function(optionData) {
+                            return optionData.fields.codigo + ' - ' + optionData.fields.descricao;
+                        });
+                    } else {
+                        console.error('Nenhuma máquina encontrada.');
+                    }
+                });
+            }
+        });
+
+        $('#id_equipamento_em_falha').on('change.select2', function() {
+            
+            toggleFieldsSolda();
+
+            var setorSelect = document.getElementById('id_setor');
+            var tipoSelect = document.getElementById('id_equipamento_em_falha');
+
+            var setorSelecionado = setorSelect.value;
+            var tipoSelecionado = tipoSelect.value;
+
+            if (setorSelecionado) {
+                // Faz a requisição AJAX para buscar máquinas pelo setor
+                var url = '{% url "get_maquina_by_eq_em_falha" %}?setor=' + encodeURIComponent(setorSelecionado) + '&tipo=' + encodeURIComponent(tipoSelecionado);
+
+                ajax(url, function(data) {
+                    if (data.maquinas) {
+                        updateSelectElement('id_maquina', JSON.parse(data.maquinas), function(optionData) {
+                            return optionData.fields.codigo + ' - ' + optionData.fields.descricao;
+                        });
+                    } else {
+                        console.error('Nenhuma máquina encontrada.');
+                    }
+                });
+            }
+        });
+
+        $('#id_equipamento_em_falha').on('change.select2', function() {
+            toggleFieldsSolda();
+        });
+
+    });
+</script>
+
+
+
+
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
+
+{% endblock %}
+
+{% block content %}
+
+<div class="container mb-3">
+
+    <div class="container mb-3">
+    <!-- Botão para mostrar/ocultar filtros -->
+        <h2 class="fs-5">
+            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseFiltros" role="button" aria-expanded="false" aria-controls="collapseFiltros">
+                Filtros
+            </a>
+        </h2>
+
+        <!-- Collapse para o Formulário de Filtros -->
+        <div class="collapse" id="collapseFiltros">
+            <form method="GET" class="row g-3" id="filter-form">
+                <div class="col-md-3">
+                    <label for="solicitante" class="form-label">Solicitante</label>
+                    <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
+                </div>
+                <div class="col-md-3">
+                    <label for="setor" class="form-label">Setor</label>
+                    <select class="form-select" id="setor" name="setor">
+                        <option value="">Todos</option>
+                        {% for setor in setores %}
+                        <option value="{{ setor.id }}" {% if setor_id == setor.id|stringformat:"s" %}selected{% endif %}>{{ setor.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ultimo_status" class="form-label">Status</label>
+                    <select class="form-select" id="ultimo_status" name="ultimo_status">
+                        <option value="">Todos</option>
+                        <option value="em_espera">Em espera</option>
+                        {% for status in status_choices %}
+                        <option value="{{ status.0 }}" >{{ status.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="data_abertura" class="form-label">Data de Abertura</label>
+                    <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="{% url 'home_predial' %}" class="btn btn-secondary">Limpar Filtros</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container my-4">
+        <div class="row row-cols-1 row-cols-md-3">
+            <div class="col">
+                <div class="card custom-card custom-border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Aguardando atendimento</p>
+                                <h4 class="my-1 text-info">{{ quantidade_em_aberto }}</h4>
+                            </div>
+                            <div class="custom-icon custom-bg-gradient-scooter ms-auto">
+                                <i class="fa fa-hourglass-half"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Em andamento</p>
+                                <h4 class="my-1 text-success">{{ quantidade_em_execucao }}</h4>
+                            </div>
+                            <div class="custom-icon custom-bg-gradient-ohhappiness ms-auto">
+                                <i class="fa fa-spinner"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Finalizada</p>
+                                <h4 class="my-1 text-warning">{{ quantidade_finalizada }}</h4>
+                            </div>
+                            <div class="custom-icon custom-bg-gradient-blooker ms-auto">
+                                <i class="fa fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row my-4">
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header">Solicitações</div>
+                <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                    <div class="row" id="solicitacoes-container">
+                        {% include 'cards/cards-predial.html' %}
+                    </div>
+                    {% if page_obj.has_next %}
+                    <div class="row justify-content-center my-4">
+                        <div class="col-auto">
+                            <button id="loadMore" class="btn btn-primary" data-next-page="{{ page_obj.next_page_number }}">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var filterForm = document.getElementById('filter-form');
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(filterForm);
+            var params = new URLSearchParams(formData).toString();
+    
+            fetch("?" + params, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('solicitacoes-container').innerHTML = data.html;
+                var loadMoreButton = document.getElementById('loadMore');
+                if (data.nextPage) {
+                    loadMoreButton.dataset.nextPage = data.nextPage;
+                    loadMoreButton.style.display = 'block';
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+            });
+        });
+    
+        var loadMoreButton = document.getElementById('loadMore');
+        loadMoreButton.addEventListener('click', function() {
+            var nextPage = loadMoreButton.dataset.nextPage;
+            var formData = new FormData(filterForm);
+            formData.append('page', nextPage);
+            var params = new URLSearchParams(formData).toString();
+    
+            fetch("?" + params, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('solicitacoes-container').insertAdjacentHTML('beforeend', data.html);
+                if (data.nextPage) {
+                    loadMoreButton.dataset.nextPage = data.nextPage;
+                    loadMoreButton.style.display = 'block';
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Predial</title>
+    <input type="hidden" value="{{request.user.area}}" id="user-area">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Dashboard de Execuções</h2>
+
+        <!-- Gráfico de Ordens Abertas e Finalizadas por Mês -->
+        <div>
+            <h3>Ordens Abertas e Finalizadas por Mês</h3>
+            <canvas id="graficoOrdensPorMes"></canvas>
+        </div>
+
+        <!-- Gráfico de Setor que Mais Solicita -->
+        <div>
+            <h3>Ordens por setor</h3>
+            <canvas id="graficoSetorMaisSolicita"></canvas>
+        </div>
+
+        <div>
+            <h2>Horas de Serviço por Máquina</h2>
+            <canvas id="graficoHorasServico"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+
+        var area = document.getElementById('user-area').value;
+
+        // Gráfico de Ordens por Mês
+        document.addEventListener('DOMContentLoaded', function () {
+
+            fetch("{% url 'ordens_por_mes' 'area' %}".replace("area",area))
+                .then(response => response.json())
+                .then(data => {
+                    var ctx = document.getElementById('graficoOrdensPorMes').getContext('2d');
+                    var graficoOrdensPorMes = new Chart(ctx, {
+                        type: 'bar', // Tipo do gráfico
+                        data: {
+                            labels: data.labels, // Labels dos meses retornados
+                            datasets: [
+                                {
+                                    label: 'Abertas',
+                                    data: data.valores, // Quantidade de solicitações por mês
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Finalizadas',
+                                    data: data.ordens_finalizadas, // Quantidade de solicitações por mês
+                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar os dados:', error));
+        });
+
+        // Gráfico de Setor que Mais Solicita
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch("{% url 'setor_mais_solicita' 'area' %}".replace("area",area))
+                .then(response => response.json())
+                .then(data => {
+                    var ctx2 = document.getElementById('graficoSetorMaisSolicita').getContext('2d');
+                    var graficoSetorMaisSolicita = new Chart(ctx2, {
+                        type: 'pie', // Tipo do gráfico
+                        data: {
+                            labels: data.labels, // Labels dos setores
+                            datasets: [{
+                                label: 'Solicitações por Setor',
+                                data: data.valores, // Quantidade de solicitações por setor
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(255, 206, 86, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)',
+                                    'rgba(153, 102, 255, 0.2)',
+                                    'rgba(255, 159, 64, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true
+                        }
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar os dados:', error));
+        });
+        
+        // Horas por máquina
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch("{% url 'horas_servico_por_maquina' 'area' %}".replace("area",area))
+                .then(response => response.json())
+                .then(data => {
+                    var ctx = document.getElementById('graficoHorasServico').getContext('2d');
+                    
+                    // Extraindo os códigos e as horas para plotar no gráfico
+                    var labels = data.horas_por_maquina.map(maquina => maquina.maquina_descricao);
+                    var valores = data.horas_por_maquina.map(maquina => maquina.total_horas);
+
+                    var graficoHorasServico = new Chart(ctx, {
+                        type: 'bar', // Tipo de gráfico: barra
+                        data: {
+                            labels: labels, // Máquinas (códigos)
+                            datasets: [{
+                                label: 'Horas de Serviço',
+                                data: valores, // Horas de serviço por máquina
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Horas de Serviço'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Máquina'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar os dados:', error));
+        });
+    
+    </script>
+</body>
+
+</html>

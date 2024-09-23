@@ -16,6 +16,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+YOUR_VERIFY_TOKEN = 'my_secret_token'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -26,8 +27,20 @@ SECRET_KEY = 'django-insecure-@^_!t)2xi@t)vao52c@@n7wonbizv13l1_m+s@&i^w6gdofh4h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+CSRF_COOKIE_SECURE = False  # Defina como True em produção
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'  # Pode ser 'Strict', 'Lax' ou 'None'
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://6770-177-19-132-134.ngrok-free.app'
+]
+
+ALLOWED_HOSTS = [
+    '127.0.0.1', 
+    '6770-177-19-132-134.ngrok-free.app' 
+]
+
+AUTH_USER_MODEL = 'funcionario.Funcionario'
 
 # Application definition
 
@@ -41,7 +54,13 @@ INSTALLED_APPS = [
 
     'cadastro',
     'execucao',
-    'solicitacao'
+    'solicitacao',
+    'funcionario',
+    'home',
+    'wpp',
+    'preventiva',
+    'dashboard'
+
 ]
 
 MIDDLEWARE = [
@@ -59,7 +78,7 @@ ROOT_URLCONF = 'manutencao_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -108,9 +127,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'  # Ajuste para o horário de Brasília
 
 USE_I18N = True
 
@@ -121,6 +140,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static/'),
+    os.path.join(BASE_DIR, 'home/static'),
+    os.path.join(BASE_DIR, 'cadastro/static'),
+    os.path.join(BASE_DIR, 'execucao/static'),
+    os.path.join(BASE_DIR, 'preventiva/static'),
+
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
