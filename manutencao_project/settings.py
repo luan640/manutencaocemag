@@ -133,7 +133,7 @@ TIME_ZONE = 'America/Sao_Paulo'  # Ajuste para o horário de Brasília
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

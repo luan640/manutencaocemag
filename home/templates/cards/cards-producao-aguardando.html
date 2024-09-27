@@ -66,6 +66,7 @@
                 <span class="badge bg-secondary">Sem Vídeos</span>
                 {% endif %}
             </div>
+            {% if not request.user.tipo_acesso == 'solicitante' %}
             <div class="dropdown">
                 <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
                     aria-expanded="false" style="background: none; border: none; padding: 0;">
@@ -78,6 +79,7 @@
                     {% endif %}
                 </ul>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
