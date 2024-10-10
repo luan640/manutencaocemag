@@ -1,38 +1,85 @@
-from django.http import JsonResponse, HttpResponse
-import json
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.http import HttpResponse
+from rest_framework import status
 
-@csrf_exempt
-def whatsapp_webhook(request):
-    if request.method == 'POST':
-        # Captura os dados do POST request
-        try:
-            payload = json.loads(request.body)
-            print("Webhook received:", payload)
-            
-            # Processamento dos dados do webhook
-            if 'messages' in payload:
-                for message in payload['messages']:
-                    from_number = message['from']
-                    text = message.get('text', {}).get('body', '')
-                    print(f"Mensagem de {from_number}: {text}")
-                    
-                    # Exemplo: lógica para responder ou processar a mensagem
-                    # Você pode adicionar sua lógica aqui, como enviar uma resposta automática
-                    # ou atualizar uma base de dados.
+from wpp.utils import tratar_numero_wa, OrdemServiceWpp
 
-            return JsonResponse({'status': 'Message received'})
+# class WhatsAppWebhookView(APIView):
 
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+#     def get(self, request, *args, **kwargs):
+#         VERIFY_TOKEN = 'meu_token_seguro'
+#         mode = request.query_params.get('hub.mode')
+#         token = request.query_params.get('hub.verify_token')
+#         challenge = request.query_params.get('hub.challenge')
 
-    elif request.method == 'GET':
-        # Verificação do Webhook para configuração inicial
-        verify_token = request.GET.get('hub.verify_token')
-        if verify_token == settings.YOUR_VERIFY_TOKEN:
-            return HttpResponse(request.GET.get('hub.challenge'))
+#         if mode and token == VERIFY_TOKEN:
+#             return HttpResponse(challenge, status=200)
+#         else:
+#             return HttpResponse('Erro de verificação', status=403)
+
+#     def post(self, request, *args, **kwargs):
+#         data = request.data
+#         print('Mensagem recebida:', data)
+
+#         # Verifique se a chave "contacts" está presente
+#         if 'contacts' in data['entry'][0]['changes'][0]['value']:
+#             # Extraia o wa_id da mensagem recebida
+#             recipient_number = data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
+#             recipient_number_tratado = tratar_numero_wa(recipient_number)  # Tratamento do número
+#             print(f"WA ID tratado: {recipient_number_tratado}")
+
+#             received_message = data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
+
+#             # Gere uma resposta do ChatGPT para a mensagem recebida
+#             # response_message = get_chatgpt_response(received_message)
+
+#             # Envie a resposta de volta via API do WhatsApp
+#             # status_code, response_data = send_whatsapp_message(recipient_number_tratado)#, response_message)
+#             # print(f"Status: {status_code}, Response: {response_data}")
+
+#         # Verifique se a chave "statuses" está presente
+#         elif 'statuses' in data['entry'][0]['changes'][0]['value']:
+#             # Trata as atualizações de status, como "delivered", "read", etc.
+#             status_update = data['entry'][0]['changes'][0]['value']['statuses'][0]
+#             print(f"Status update: {status_update}")
+
+#         return Response(status=status.HTTP_200_OK)
+
+class WhatsAppWebhookView(APIView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.ordem_service = OrdemServiceWpp()
+
+    def get(self, request, *args, **kwargs):
+        VERIFY_TOKEN = 'meu_token_seguro'
+        mode = request.query_params.get('hub.mode')
+        token = request.query_params.get('hub.verify_token')
+        challenge = request.query_params.get('hub.challenge')
+
+        if mode and token == VERIFY_TOKEN:
+            return HttpResponse(challenge, status=200)
         else:
-            return HttpResponse('Invalid verification token', status=403)
-    
-    return HttpResponse('Invalid request method', status=405)
+            return HttpResponse('Erro de verificação', status=403)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        print('Mensagem recebida:', data)
+
+        if 'contacts' in data['entry'][0]['changes'][0]['value']:
+            recipient_number = data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
+            recipient_number_tratado = self.ordem_service.tratar_numero_wa(recipient_number)
+
+            # Verifique se a mensagem contém uma resposta interativa
+            if 'messages' in data['entry'][0]['changes'][0]['value']:
+                message = data['entry'][0]['changes'][0]['value']['messages'][0]
+
+                # Se for uma resposta interativa
+                if message['type'] == 'interactive' and 'button' in message['interactive']:
+                    resposta = message['interactive']['button']['reply']['title']
+                    self.ordem_service.processar_resposta(recipient_number_tratado, resposta)
+                else:
+                    # Caso a mensagem não seja interativa, pode ser tratada de outra forma
+                    print(f"Mensagem não interativa recebida: {message}")
+
+        return Response(status=status.HTTP_200_OK)

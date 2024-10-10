@@ -57,6 +57,8 @@ class Solicitacao(models.Model):
     tarefa = models.ForeignKey(TipoTarefas, on_delete=models.CASCADE, null=True, blank=True)
     comentario_manutencao = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, blank=True)
+    satisfacao_registrada = models.BooleanField(default=False)
+
 
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'

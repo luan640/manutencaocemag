@@ -37,7 +37,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 ALLOWED_HOSTS = [
     '127.0.0.1', 
-    '6770-177-19-132-134.ngrok-free.app' 
+    'b7e0-177-19-132-134.ngrok-free.app',
+    '35.247.236.183',
+    'localhost',
+    '127.0.0.1'
 ]
 
 AUTH_USER_MODEL = 'funcionario.Funcionario'

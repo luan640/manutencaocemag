@@ -50,6 +50,7 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
     area = models.CharField(max_length=50, choices=AREA_CHOICES, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    telefone = models.CharField(max_length=11, blank=True, null=True)
 
     USERNAME_FIELD = 'matricula'
     REQUIRED_FIELDS = ['nome']
@@ -61,5 +62,12 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
 
     def is_administrador(self):
         return self.tipo_acesso == self.ADMINISTRADOR
+    
+    def save(self, *args, **kwargs):
+        # Adicionar "55" no início do telefone, se não estiver presente
+        if self.telefone and not self.telefone.startswith('55'):
+            self.telefone = '55' + self.telefone
+        super(Funcionario, self).save(*args, **kwargs)
+
     
 

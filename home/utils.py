@@ -1,7 +1,8 @@
 from cadastro.models import Operador
 from execucao.models import Execucao, MaquinaParada
-from collections import defaultdict
+from funcionario.models import Funcionario
 
+from collections import defaultdict
 
 def ultima_execucao(id_solicitacao):
 
@@ -27,3 +28,9 @@ def maquinas_paradas():
         maquinas_com_ordens[maquina].append(maquina_parada.ordem)
 
     return maquinas_com_ordens
+
+def buscar_telefone(matricula):
+
+    funcionario = Funcionario.objects.get(matricula=matricula)
+
+    return funcionario.telefone

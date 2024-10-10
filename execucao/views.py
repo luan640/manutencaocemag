@@ -8,8 +8,12 @@ from django.core.paginator import Paginator
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
 from cadastro.models import Maquina, Setor
+from wpp.utils import OrdemServiceWpp
+from home.utils import buscar_telefone
 
 import datetime
+
+ordem_service = OrdemServiceWpp()
 
 @login_required
 @csrf_exempt
@@ -63,9 +67,33 @@ def criar_execucao(request, solicitacao_id):
         execucao.operador.set(operadores)
         execucao.save()
 
-        return redirect('home_producao')
+    if status == 'finalizada':
+        # Obtendo o telefone do solicitante
+        telefone = buscar_telefone(solicitacao.solicitante.matricula)
 
-    return redirect('home_producao')
+        if telefone:  # Verifica se o telefone foi encontrado
+            kwargs = {
+                'ordem': solicitacao.pk,
+                'data_abertura': solicitacao.data_abertura,
+                'data_fechamento': execucao.data_fim,
+                'maquina': solicitacao.maquina.codigo,
+                'motivo': solicitacao.descricao
+            }
+
+            # Cria uma instância de OrdemServiceWpp
+            ordem_service = OrdemServiceWpp()
+
+            # Chamando o método mensagem_finalizar_ordem
+            status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+
+            # criar uma pagina para o usuario confirmar a finalização da ordem, deverá ser dois botões de sim ou não.
+
+
+        else:
+            print("Telefone não encontrado para o solicitante.")
+        
+        # Sempre retorna ou redireciona após o processamento
+        return redirect('home_producao')
 
 def editar_solicitacao(request, solicitacao_id):
 
