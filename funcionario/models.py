@@ -7,7 +7,7 @@ class FuncionarioManager(BaseUserManager):
             raise ValueError('A matrícula do funcionário deve ser fornecida')
         if not nome:
             raise ValueError('O nome do funcionário deve ser fornecido')
-        if tipo_acesso not in ['solicitante', 'administrador','operador']:
+        if tipo_acesso not in ['solicitante', 'administrador', 'operador']:
             raise ValueError('Tipo de acesso inválido')
         if area not in [None, 'producao', 'predial']:
             raise ValueError('Área inválida')
@@ -50,7 +50,23 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
     area = models.CharField(max_length=50, choices=AREA_CHOICES, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    telefone = models.CharField(max_length=11, blank=True, null=True)
+    telefone = models.CharField(max_length=13, blank=True, null=True)
+
+    # Sobrescrever os campos groups e user_permissions para evitar conflitos
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='funcionario_set',  # Nome único para evitar conflito com 'auth.User.groups'
+        blank=True,
+        help_text='Os grupos aos quais o funcionário pertence.',
+        verbose_name='grupos',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='funcionario_user_set',  # Nome único para evitar conflito com 'auth.User.user_permissions'
+        blank=True,
+        help_text='Permissões específicas para este funcionário.',
+        verbose_name='permissões de funcionário',
+    )
 
     USERNAME_FIELD = 'matricula'
     REQUIRED_FIELDS = ['nome']
@@ -68,6 +84,3 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
         if self.telefone and not self.telefone.startswith('55'):
             self.telefone = '55' + self.telefone
         super(Funcionario, self).save(*args, **kwargs)
-
-    
-

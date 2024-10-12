@@ -21,6 +21,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
     {% block links %}
@@ -125,7 +127,7 @@
                             </div>
                         {% endif %}
                         
-                        {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                        {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
                             <!-- Apenas administradores, operadores e staff -->
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
                                 data-bs-target="#collapseProgresso" aria-expanded="false" aria-controls="collapseProgresso">

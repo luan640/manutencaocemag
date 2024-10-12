@@ -139,22 +139,30 @@ def editar_plano_preventiva(request, pk):
 
     if request.method == 'POST':
         plano_form = PlanoPreventivaForm(request.POST, instance=plano)
-        tarefa_formset = TarefaPreventivaFormSet(request.POST, queryset=TarefaPreventiva.objects.filter(plano=plano))
 
-        if plano_form.is_valid() and tarefa_formset.is_valid():
+        if plano_form.is_valid():
             plano = plano_form.save()
 
-            # Salva as tarefas existentes
-            for tarefa in tarefa_formset.save(commit=False):
-                tarefa.plano = plano
-                tarefa.save()
+            # Processar exclusão das tarefas existentes
+            tarefas_para_excluir = request.POST.getlist('tarefas_excluir')
+            if tarefas_para_excluir:
+                TarefaPreventiva.objects.filter(id__in=tarefas_para_excluir, plano=plano).delete()
 
-            tarefa_formset.save_m2m()
+            # Atualizar tarefas existentes
+            tarefas_existentes = TarefaPreventiva.objects.filter(plano=plano)
+            for tarefa in tarefas_existentes:
+                descricao = request.POST.get(f'tarefa_{tarefa.id}_descricao')
+                responsabilidade = request.POST.get(f'tarefa_{tarefa.id}_responsabilidade')
+                
+                if descricao and responsabilidade:
+                    tarefa.descricao = descricao
+                    tarefa.responsabilidade = responsabilidade
+                    tarefa.save()
 
-            # Adiciona novas tarefas enviadas fora do FormSet padrão
+            # Adicionar novas tarefas
             tarefas_novas = []
             for key in request.POST:
-                if key.startswith('tarefas'):
+                if key.startswith('tarefas_novas'):
                     parts = key.split('[')
                     index = int(parts[1].split(']')[0])
                     field = parts[2].split(']')[0]
@@ -164,7 +172,6 @@ def editar_plano_preventiva(request, pk):
 
                     tarefas_novas[index][field] = request.POST[key]
 
-            # Salva as novas tarefas
             for tarefa in tarefas_novas:
                 descricao = tarefa.get('descricao')
                 responsabilidade = tarefa.get('responsabilidade')
@@ -176,16 +183,18 @@ def editar_plano_preventiva(request, pk):
                         responsabilidade=responsabilidade
                     )
 
-            return redirect('list_preventivas')
+            # Retorna uma resposta JSON indicando sucesso
+            return JsonResponse({'success': True, 'redirect_url': '/preventiva'})
         else:
-            print('Erros no plano_form:', plano_form.errors)
-            print('Erros no tarefa_formset:', tarefa_formset.errors)
+            # Retorna uma resposta JSON com os erros do formulário
+            errors = plano_form.errors
+            return JsonResponse({'success': False, 'errors': errors}, status=400)
 
     else:
         plano_form = PlanoPreventivaForm(instance=plano)
-        tarefa_formset = TarefaPreventivaFormSet(queryset=TarefaPreventiva.objects.filter(plano=plano))
+        tarefas = TarefaPreventiva.objects.filter(plano=plano)
 
     return render(request, 'plano/edit.html', {
         'plano_form': plano_form,
-        'tarefa_formset': tarefa_formset,
+        'tarefas': tarefas,
     })

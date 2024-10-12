@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="mt-5">
     <h2>Editar plano preventiva</h2>
     <form id="planoPreventivaForm" method="post">
         {% csrf_token %}
@@ -20,10 +20,23 @@
                 <button type="button" class="btn btn-sm btn-success" id="add-tarefa">Adicionar Tarefa</button>
             </div>
             <div class="card-body" id="tarefas-container" style="max-height: 300px; overflow-y: auto;">
-                {{ tarefa_formset.management_form }}
-                {% for form in tarefa_formset %}
+                {% for tarefa in tarefas %}
                     <div class="tarefa-form">
-                        {{ form.as_p }}
+                        <input type="hidden" name="tarefas_existentes" value="{{ tarefa.id }}">
+                        <div class="form-group">
+                            <label for="tarefa_{{ tarefa.id }}_descricao">Descrição da Tarefa</label>
+                            <textarea name="tarefa_{{ tarefa.id }}_descricao" class="form-control" rows="2">{{ tarefa.descricao }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="tarefa_{{ tarefa.id }}_responsabilidade">Responsabilidade</label>
+                            <select name="tarefa_{{ tarefa.id }}_responsabilidade" class="form-control">
+                                <option value="eletrica" {% if tarefa.responsabilidade == 'eletrica' %}selected{% endif %}>Elétrica</option>
+                                <option value="mecanica" {% if tarefa.responsabilidade == 'mecanica' %}selected{% endif %}>Mecânica</option>
+                                <option value="predial" {% if tarefa.responsabilidade == 'predial' %}selected{% endif %}>Predial</option>
+                            </select>
+                        </div>
+                        <br>
+                        <button type="button" class="btn btn-sm btn-danger remove-tarefa" data-id="{{ tarefa.id }}">Remover</button>
                         <hr>
                     </div>
                 {% endfor %}
@@ -36,78 +49,92 @@
     </form>
 </div>
 
-{% endblock %}
-
-
-{% block scripts %}
 <script>
-// Função para adicionar uma nova tarefa
-document.addEventListener('DOMContentLoaded', function() {
-    let tarefaIndex = 0;
+    document.addEventListener('DOMContentLoaded', function() {
+        // Função para marcar uma tarefa para remoção
+        document.querySelectorAll('.remove-tarefa').forEach(button => {
+            button.addEventListener('click', function() {
+                const tarefaId = this.getAttribute('data-id');
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'tarefas_excluir';
+                input.value = tarefaId;
+                document.getElementById('planoPreventivaForm').appendChild(input);
+                this.closest('.tarefa-form').remove();
+            });
+        });
+    });
+</script>
 
+<script>
     // Função para adicionar uma nova tarefa
-    document.getElementById('add-tarefa').addEventListener('click', function() {
-        const container = document.getElementById('tarefas-container');
-        
-        const newForm = `
-            <div class="tarefa-form mb-3">
-                <div class="form-group">
-                    <label for="tarefa-descricao-${tarefaIndex}">Descrição da Tarefa</label>
-                    <textarea id="tarefa-descricao-${tarefaIndex}" name="tarefas[${tarefaIndex}][descricao]" class="form-control" rows="2"></textarea>
+    document.addEventListener('DOMContentLoaded', function() {
+        let tarefaIndex = 0;
+
+        // Função para adicionar uma nova tarefa
+        document.getElementById('add-tarefa').addEventListener('click', function() {
+            const container = document.getElementById('tarefas-container');
+            
+            const newForm = `
+                <div class="tarefa-form mb-3">
+                    <div class="form-group">
+                        <label for="tarefa-descricao-${tarefaIndex}">Descrição da Tarefa</label>
+                        <textarea id="tarefa-descricao-${tarefaIndex}" name="tarefas[${tarefaIndex}][descricao]" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="tarefa-responsabilidade-${tarefaIndex}">Responsabilidade</label>
+                        <select id="tarefa-responsabilidade-${tarefaIndex}" name="tarefas[${tarefaIndex}][responsabilidade]" class="form-control">
+                            <option value="eletrica">Elétrica</option>
+                            <option value="mecanica">Mecânica</option>
+                            <option value="predial">Predial</option>
+                        </select>
+                    </div>
+                    <br>
+                    <button type="button" class="btn btn-sm btn-danger remove-tarefa">Remover</button>
+                    <hr>
                 </div>
-                <div class="form-group">
-                    <label for="tarefa-responsabilidade-${tarefaIndex}">Responsabilidade</label>
-                    <select id="tarefa-responsabilidade-${tarefaIndex}" name="tarefas[${tarefaIndex}][responsabilidade]" class="form-control">
-                        <option value="eletrica">Elétrica</option>
-                        <option value="mecanica">Mecânica</option>
-                        <option value="predial">Predial</option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-sm btn-danger remove-tarefa">Remover</button>
-                <hr>
-            </div>
-        `;
+            `;
 
-        container.insertAdjacentHTML('beforeend', newForm);
-        tarefaIndex++;
-    });
+            container.insertAdjacentHTML('beforeend', newForm);
+            tarefaIndex++;
+        });
 
-    // Função para remover uma tarefa
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-tarefa')) {
-            e.target.closest('.tarefa-form').remove();
-        }
-    });
-
-    // Envio do formulário
-    document.getElementById('planoPreventivaForm').addEventListener('submit', function(e) {
-        e.preventDefault();  // Impede o envio padrão
-
-        const formData = new FormData(this);
-        
-        // Envie os dados usando fetch ou XMLHttpRequest
-        fetch(this.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        // Função para remover uma tarefa
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remove-tarefa')) {
+                e.target.closest('.tarefa-form').remove();
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Lide com a resposta do servidor aqui
-            console.log(data);
-            if (data.success) {
-                window.location.href = data.redirect_url;
-            } else {
-                // Lide com erros
-                alert('Erro ao salvar o plano.');
-            }
-        })
-        .catch(error => console.error('Erro:', error));
-    });
-});
+        });
 
+        // Envio do formulário
+        document.getElementById('planoPreventivaForm').addEventListener('submit', function(e) {
+            e.preventDefault();  // Impede o envio padrão
+
+            const formData = new FormData(this);
+            
+            // Envie os dados usando fetch ou XMLHttpRequest
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Lide com a resposta do servidor aqui
+
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Lide com erros
+                    alert('Erro ao salvar o plano.');
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        });
+
+    });
 </script>
 
 {% endblock %}

@@ -1,9 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from django.urls import reverse
+from django.template.loader import render_to_string
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
@@ -50,7 +52,9 @@ def criar_execucao(request, solicitacao_id):
         if not apos_exec_maq_parada:
             solicitacao.maq_parada = False
             
-            solicitacao.save()
+        solicitacao.status_andamento = status
+
+        solicitacao.save()
 
         execucao = Execucao.objects.create(
             ordem=solicitacao,
@@ -67,34 +71,39 @@ def criar_execucao(request, solicitacao_id):
         execucao.operador.set(operadores)
         execucao.save()
 
-    if status == 'finalizada':
-        # Obtendo o telefone do solicitante
-        telefone = buscar_telefone(solicitacao.solicitante.matricula)
+        if status == 'finalizada':
+            # Obtendo o telefone do solicitante
+            telefone = buscar_telefone(solicitacao.solicitante.matricula)
 
-        if telefone:  # Verifica se o telefone foi encontrado
-            kwargs = {
-                'ordem': solicitacao.pk,
-                'data_abertura': solicitacao.data_abertura,
-                'data_fechamento': execucao.data_fim,
-                'maquina': solicitacao.maquina.codigo,
-                'motivo': solicitacao.descricao
-            }
+            link_satisfacao = request.build_absolute_uri(reverse('pagina_satisfacao', args=[solicitacao.pk]))
 
-            # Cria uma instância de OrdemServiceWpp
-            ordem_service = OrdemServiceWpp()
+            if telefone:  # Verifica se o telefone foi encontrado
+                kwargs = {
+                    'ordem': solicitacao.pk,
+                    'data_abertura': solicitacao.data_abertura,
+                    'data_fechamento': execucao.data_fim,
+                    'maquina': solicitacao.maquina.codigo,
+                    'motivo': solicitacao.descricao,
+                    'descricao': solicitacao.maquina.descricao,
+                    'link': link_satisfacao
+                }
 
-            # Chamando o método mensagem_finalizar_ordem
-            status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+                # Cria uma instância de OrdemServiceWpp
+                ordem_service = OrdemServiceWpp()
 
-            # criar uma pagina para o usuario confirmar a finalização da ordem, deverá ser dois botões de sim ou não.
+                # Chamando o método mensagem_finalizar_ordem
+                status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+
+                # criar uma pagina para o usuario confirmar a finalização da ordem, deverá ser dois botões de sim ou não.
 
 
-        else:
-            print("Telefone não encontrado para o solicitante.")
-        
+            else:
+                print("Telefone não encontrado para o solicitante.")
+            
         # Sempre retorna ou redireciona após o processamento
         return redirect('home_producao')
 
+@csrf_exempt
 def editar_solicitacao(request, solicitacao_id):
 
     solicitacao = get_object_or_404(Solicitacao, id=solicitacao_id)
@@ -109,6 +118,7 @@ def editar_solicitacao(request, solicitacao_id):
         status = 'em_espera'
         status_inicial = request.POST.get('status_inicial')
 
+        # Criar uma nova execução
         execucao = Execucao.objects.create(
             ordem=solicitacao,
             n_execucao=0,
@@ -120,16 +130,21 @@ def editar_solicitacao(request, solicitacao_id):
             apos_exec_maq_parada=True if request.POST.get('flagMaqParada') else False,
         )
 
+        # Atualizar a solicitação
         solicitacao.comentario_manutencao = comentario_pcm
         solicitacao.data_abertura = data_abertura
         solicitacao.status = status_inicial
-        
+        solicitacao.status_andamento = status
+
         if request.POST.get('flagMaqParada'):
             solicitacao.maq_parada = True
 
         solicitacao.save()
 
-        return redirect('home_producao')
+        # Retorna uma resposta de sucesso em JSON
+        return JsonResponse({
+            'success': True,
+        })
 
     return redirect('home_producao')
 

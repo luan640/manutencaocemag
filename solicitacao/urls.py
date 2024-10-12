@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 
 from . import views
 from execucao.views import criar_execucao, criar_execucao_predial, editar_solicitacao
-from solicitacao.views import tarefa_rotina
+from solicitacao.views import tarefa_rotina, pagina_satisfacao, processar_satisfacao
 
 urlpatterns = [
     path('criar-solicitacao/', views.criar_solicitacao, name='criar_solicitacao'),
@@ -23,6 +23,10 @@ urlpatterns = [
 
     path('solicitacao-sucesso/<str:area>/', views.solicitacao_sucesso, name='solicitacao_sucesso'),
 
-    path('editar-ordem-inicial/<int:solicitacao_id>/', editar_solicitacao, name='editar_solicitacao')
+    path('editar-ordem-inicial/<int:solicitacao_id>/', editar_solicitacao, name='editar_solicitacao'),
+
+    path('satisfacao/<int:ordem_id>/', views.pagina_satisfacao, name='pagina_satisfacao'),
+    path('satisfacao/<int:ordem_id>/responder/', views.processar_satisfacao, name='processar_satisfacao'),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

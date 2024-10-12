@@ -39,6 +39,13 @@ class Solicitacao(models.Model):
     
     STATUS_CHOICES = (('aprovar','Aprovar'),('rejeitar','Rejeitar'))
 
+    STATUS_ANDAMENTO_CHOICES = (
+                      ('aguardando_atendimento', 'Aguardando atendimento'),
+                      ('em_espera','Em espera'),
+                      ('em_execucao','Em execuçao'),
+                      ('aguardando_material','Aguardando material'),
+                      ('finalizada','Finalizada'))
+    
     setor = models.ForeignKey(Setor, on_delete=models.CASCADE)
     maquina = models.ForeignKey(Maquina, on_delete=models.CASCADE)
     data_abertura = models.DateTimeField(auto_now_add=True, blank=True)
@@ -58,7 +65,7 @@ class Solicitacao(models.Model):
     comentario_manutencao = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, blank=True)
     satisfacao_registrada = models.BooleanField(default=False)
-
+    status_andamento = models.CharField(max_length=30, choices=STATUS_ANDAMENTO_CHOICES, default='aguardando_atendimento')
 
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'

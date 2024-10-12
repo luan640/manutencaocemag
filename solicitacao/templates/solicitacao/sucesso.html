@@ -2,6 +2,22 @@
 
 {% block content %}
 <div class="container mt-5">
+    {% if mensagem %}
+    <!-- Mensagem de sucesso para resposta de satisfação -->
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">{{mensagem}}</h4>
+        <p>Sua ordem ja foi finalizada.</p>
+        <hr>
+        {% if area == 'predial' %}
+        <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao_predial' %}">enviar outra solicitação</a>?</p>
+        <p class="mb-0">Voltar para <a href="{% url 'home_predial' %}">página inicial</a></p>
+        {% else %}
+        <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao' %}">enviar outra solicitação</a>?</p>
+        <p class="mb-0">Voltar para <a href="{% url 'home_producao' %}">página inicial</a></p>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Mensagem de sucesso para abertura de solicitação -->
     <div class="alert alert-success" role="alert">
         <h4 class="alert-heading">Solicitação enviada com sucesso!</h4>
         <p>Sua solicitação foi enviada com sucesso.</p>
@@ -13,7 +29,8 @@
         <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao' %}">enviar outra solicitação</a>?</p>
         <p class="mb-0">Voltar para <a href="{% url 'home_producao' %}">página inicial</a></p>
         {% endif %}
-
     </div>
+    {% endif %}
+
 </div>
 {% endblock %}

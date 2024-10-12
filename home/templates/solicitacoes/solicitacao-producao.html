@@ -8,8 +8,7 @@
 
 {% block content %}
 
-<div class="container mb-3">
-
+<div class="mb-3">
     <div class="mb-3">
         <!-- Botão para mostrar/ocultar filtros -->
         <h2 class="fs-5">
@@ -75,45 +74,12 @@
     <div>
         <div class="row row-cols-1 row-cols-md-4">
             <div class="col">
-                <div class="card custom-card custom-border-info">
+                <div class="card custom-card custom-border-primary">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div>
-                                <p class="mb-0 text-secondary">Aguardando</p>
-                                <h4 class="my-1 text-info">{{ aguardando_primeiro_atendimento_card }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-scooter ms-auto">
-                                <i class="fa fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card custom-card custom-border-info">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Em espera</p>
-                                <h4 class="my-1 text-info">{{ quantidade_em_aberto }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-scooter ms-auto">
-                                <i class="fa fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card custom-card custom-border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Em andamento</p>
-                                <h4 class="my-1 text-success">{{ quantidade_em_execucao }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-ohhappiness ms-auto">
-                                <i class="fa fa-spinner"></i>
+                                <p class="mb-0 text-secondary">Primeiro atendimento</p>
+                                <h4 class="my-1 text-primary">{{ aguardando_primeiro_atendimento_card }}</h4>
                             </div>
                         </div>
                     </div>
@@ -124,11 +90,44 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div>
-                                <p class="mb-0 text-secondary">Finalizada</p>
-                                <h4 class="my-1 text-warning">{{ quantidade_finalizada }}</h4>
+                                <p class="mb-0 text-secondary">Em espera</p>
+                                <h4 class="my-1 text-warning">{{ quantidade_em_aberto }}</h4>
                             </div>
-                            <div class="custom-icon custom-bg-gradient-blooker ms-auto">
-                                <i class="fa fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Em andamento</p>
+                                <h4 class="my-1 text-info">{{ quantidade_em_execucao }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-secondary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Aguardando material</p>
+                                <h4 class="my-1 text-secondary">{{ aguardando_material }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Finalizada</p>
+                                <h4 class="my-1 text-success">{{ quantidade_finalizada }}</h4>
                             </div>
                         </div>
                     </div>
@@ -139,6 +138,7 @@
     
     <div class="row my-4">
         <!-- Aguardando primeiro atendimento -->
+        {% if request.user.tipo_acesso == 'administrador' %}
         <div class="col-sm-6 mb-3">
             <div class="card">
                 <div class="card-header" id="headingAguardandoPrimeiroAtendimento">
@@ -151,7 +151,7 @@
                 <div id="collapseAguardandoPrimeiroAtendimento" class="collapse show" aria-labelledby="headingAguardandoPrimeiroAtendimento">
                     <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="aguardando-primeiro-atendimento-container">
-                            {% include 'cards/cards-producao-aguardando.html' %}
+                            <p>Carregando ordens...</p>
                         </div>
                     </div>
                 </div>
@@ -170,21 +170,35 @@
                 <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
                     <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="solicitacoes-container">
-                            {% include 'cards/cards-producao.html' %}
+                            <!-- Conteúdo será carregado via AJAX -->
+                            <p>Carregando ordens...</p>
                         </div>
-                        {% if page_obj.has_next %}
-                        <div class="row justify-content-center my-4">
-                            <div class="col-auto">
-                                <button id="loadMore" class="btn btn-primary" data-next-page="{{ page_obj.next_page_number }}">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% else %}
+        <!-- Solicitações -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header" id="headingSolicitacoes">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
+                            Solicitações
+                        </button>
+                    </h5>
+                </div>
+                <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
+                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                        <div class="row" id="solicitacoes-container">
+                            <!-- Conteúdo será carregado via AJAX -->
+                            <p>Carregando ordens...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     <!-- Máquinas paradas -->
     <div class="row my-4">
@@ -197,70 +211,240 @@
                 </div>
                 <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                     <div class="row" id="maquinas-paradas-container">
-                        {% include 'cards/cards-maq-paradas.html' %}
+                        <!-- Conteúdo será carregado via AJAX -->
+                        <p>Carregando ordens...</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var filterForm = document.getElementById('filter-form');
-    
-    filterForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var formData = new FormData(filterForm);
-        var params = new URLSearchParams(formData).toString();
+    document.addEventListener("DOMContentLoaded", function() {
 
-        fetch("?" + params, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('solicitacoes-container').innerHTML = data.html;
-            document.getElementById('maquinas-paradas-container').innerHTML = data.html_maquinas_paradas;
-            document.getElementById('aguardando-primeiro-atendimento-container').innerHTML = data.html_aguardando_primeiro_atendimento;
+        // Função para carregar seções usando fetch e atualizar os containers
+        function loadSection(url, containerId, ...callbacks) {  // Aceita múltiplos callbacks usando o operador rest
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById(containerId).innerHTML = html;
 
-            var loadMoreButton = document.getElementById('loadMore');
-            if (data.nextPage) {
-                loadMoreButton.dataset.nextPage = data.nextPage;
-                loadMoreButton.style.display = 'block';
-            } else {
-                loadMoreButton.style.display = 'none';
-            }
+                    // Executa todos os callbacks (se houver) após o carregamento da seção
+                    callbacks.forEach(callback => {
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar seção:", error);
+                });
+        }
+
+        // Função para adicionar event listeners aos formulários de iniciar ordem
+        function attachExecutarOrdemEventListeners() {
+            const forms = document.querySelectorAll('.formExecucaoProducao');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Impede o envio tradicional do formulário
+                    
+                    // Mostrar o modal de carregamento
+                    // const modalLoading = new bootstrap.Modal(document.getElementById('modalLoading'));
+                    // modalLoading.show();
+
+                    // Obter a URL de envio
+                    const url = form.getAttribute('action');
+                    const modalId = form.dataset.modalId;
+
+                    // Criar um objeto FormData para capturar os dados do formulário
+                    const formData = new FormData(form);
+
+                    // Enviar a requisição AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Erro ao executar a ordem.');
+                        }
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Atualizar as seções necessárias
+                            loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
+                            
+                            // Ocultar o modal de carregamento e mostrar uma mensagem de sucesso
+                            // modalLoading.hide();
+                            
+                            // Mostrar o popup de sucesso
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Execução feita com sucesso!',
+                                confirmButtonText: 'OK'
+                            });
+                        
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Ocorreu um erro ao executar a ordem. Tente novamente.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                });
+            });
+        }
+
+        // Função para adicionar event listeners aos formulários de finalizar ordem
+        function attachExecutar1OrdemEventListeners() {
+            const forms = document.querySelectorAll('.form1ExecucaoProducao');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Impede o envio tradicional do formulário
+                    
+                    // Mostrar o modal de carregamento
+                    // const modalLoading = new bootstrap.Modal(document.getElementById('modalLoading'));
+                    // modalLoading.show();
+                    
+                    // Obter a URL de envio
+                    const url = form.getAttribute('action');
+                    const modalId = form.dataset.modalId;
+
+                    // Criar um objeto FormData para capturar os dados do formulário
+                    const formData = new FormData(form);
+
+                    // Enviar a requisição AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Erro ao finalizar a ordem.');
+                        }
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            console.log(data);
+                            // Atualizar a seção das ordens em processo
+                            loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
+                            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners),
+
+                            // Ocultar o modal de carregamento e mostrar uma mensagem de sucesso
+                            // modalLoading.hide();
+
+                            // Mostrar o popup de sucesso
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Ordem finalizada com sucesso!',
+                                confirmButtonText: 'OK'
+                            });
+
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Ocorreu um erro ao finalizar a ordem. Tente novamente.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Ocorreu um erro ao finalizar a ordem. Tente novamente.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                });
+            });
+        }
+
+        Promise.all([
+            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners),
+            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
+            loadSection("maquinas-paradas/", "maquinas-paradas-container")
+        ]).then(() => {
+            console.log("Todas as seções foram carregadas com sucesso.");
+        }).catch(error => {
+            console.error("Erro ao carregar as seções:", error);
+        });
+
+    });
+</script>
+<!-- <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var filterForm = document.getElementById('filter-form');
+        
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(filterForm);
+            var params = new URLSearchParams(formData).toString();
+
+            fetch("?" + params, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('solicitacoes-container').innerHTML = data.html;
+                document.getElementById('maquinas-paradas-container').innerHTML = data.html_maquinas_paradas;
+                document.getElementById('aguardando-primeiro-atendimento-container').innerHTML = data.html_aguardando_primeiro_atendimento;
+
+                var loadMoreButton = document.getElementById('loadMore');
+                if (data.nextPage) {
+                    loadMoreButton.dataset.nextPage = data.nextPage;
+                    loadMoreButton.style.display = 'block';
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+            });
+        });
+
+        var loadMoreButton = document.getElementById('loadMore');
+        loadMoreButton.addEventListener('click', function() {
+            var nextPage = loadMoreButton.dataset.nextPage;
+            var formData = new FormData(filterForm);
+            formData.append('page', nextPage);
+            var params = new URLSearchParams(formData).toString();
+
+            fetch("?" + params, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('solicitacoes-container').insertAdjacentHTML('beforeend', data.html);
+                if (data.nextPage) {
+                    loadMoreButton.dataset.nextPage = data.nextPage;
+                    loadMoreButton.style.display = 'block';
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+            });
         });
     });
-
-    var loadMoreButton = document.getElementById('loadMore');
-    loadMoreButton.addEventListener('click', function() {
-        var nextPage = loadMoreButton.dataset.nextPage;
-        var formData = new FormData(filterForm);
-        formData.append('page', nextPage);
-        var params = new URLSearchParams(formData).toString();
-
-        fetch("?" + params, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('solicitacoes-container').insertAdjacentHTML('beforeend', data.html);
-            if (data.nextPage) {
-                loadMoreButton.dataset.nextPage = data.nextPage;
-                loadMoreButton.style.display = 'block';
-            } else {
-                loadMoreButton.style.display = 'none';
-            }
-        });
-    });
-});
 </script>
 
 <script>
@@ -293,5 +477,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 </script>
+
+<script>
+    document.querySelectorAll('[id^="id_status_"]').forEach(selectElement => {
+        selectElement.addEventListener('change', function() {
+            const isFinalizada = this.value === 'finalizada';
+            const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
+
+            const checkbox1 = document.querySelector(`#executarModal${modalId} #id_che_maq_parada`);
+            const checkbox2 = document.querySelector(`#executarModal${modalId} #id_exec_maq_parada`);
+            const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
+
+            if (isFinalizada) {
+                checkbox1.disabled = true;
+                checkbox2.disabled = true;
+                checkbox3.disabled = true;
+            } else {
+                checkbox1.disabled = false;
+                checkbox2.disabled = false;
+                checkbox3.disabled = false;
+            }
+        });
+    });
+</script> -->
 
 {% endblock %}

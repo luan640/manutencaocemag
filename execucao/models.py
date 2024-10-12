@@ -8,6 +8,7 @@ class InfoSolicitacao(models.Model):
     TIPO_CHOICES = (('corretiva','Corretiva'),
                     ('preditiva','Preditiva'),
                     ('preventiva',' Preventiva'),
+                    ('preventiva_programada',' Preventiva programada'),
                     ('apoio','Apoio'),
                     ('projetos','Projetos'),
                     ('sesmt','SESMT'),

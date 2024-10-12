@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="mt-3">
+        <form method="post" action="{% url 'processar_satisfacao' ordem_id %}">
+            {% csrf_token %}
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">A execução da ordem foi eficaz?</h4>
+                <p>Caso a reposta seja "Não", será aberta uma nova ordem de serviço para a mesma máquina de forma automática.</p>
+                <hr>
+                <button type="submit" name="resposta" value="sim" class="btn btn-success">
+                    Sim
+                </button>
+                <button type="submit" name="resposta" value="nao" class="btn btn-danger">
+                    Não
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+

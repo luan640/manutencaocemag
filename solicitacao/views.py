@@ -191,6 +191,7 @@ def tarefa_rotina(request):
 
 def get_maquina_by_setor(request):
     setor = request.GET.get('setor')
+    print(setor)
 
     # Filtrar as máquinas pelo setor
     maquinas = Maquina.objects.filter(setor=setor)
@@ -220,3 +221,73 @@ def get_maquina_by_eq_em_falha(request):
     
     # Retornar erro caso não haja máquinas encontradas
     return JsonResponse({'error': 'Setor não encontrado'}, status=404)
+
+def pagina_satisfacao(request, ordem_id):
+    # Buscar a ordem pelo ID
+    ordem = get_object_or_404(Solicitacao, pk=ordem_id)
+
+    # Verificar se a satisfação já foi registrada
+    if ordem.satisfacao_registrada:
+        # Se já foi registrada, mostrar mensagem de "Ordem já foi finalizada"
+        return render(request, 'solicitacao/sucesso.html', {'mensagem': 'Ordem já finalizada.',})
+    
+    # Passando o ID da ordem para o template se ainda não foi registrada
+    context = {'ordem_id': ordem_id}
+    return render(request, 'solicitacao/satisfacao.html', context)
+
+def processar_satisfacao(request, ordem_id):
+    # Buscar a ordem pelo ID
+    ordem = get_object_or_404(Solicitacao, pk=ordem_id)
+
+    # Verificar se a satisfação já foi registrada
+    if ordem.satisfacao_registrada:
+        # Se já foi registrada, mostrar mensagem de "Ordem já foi finalizada"
+        return render(request, 'solicitacao/sucesso.html', {'mensagem': 'Ordem já finalizada.'})
+
+    # Obtendo a resposta do usuário
+    resposta = request.POST.get('resposta')
+
+    # Processar a resposta conforme necessário
+    if resposta in ['sim', 'nao']:
+        # Atualizar a ordem para indicar que a satisfação foi registrada
+        ordem.satisfacao_registrada = True
+        ordem.save()
+
+        # Lógica para salvar a resposta e fazer outras ações
+        if resposta == 'sim':
+            print(f"Ordem {ordem_id}: Usuário respondeu Sim.")
+        else:
+            # Se a resposta for "Não", abrir uma nova solicitação com as mesmas informações
+            nova_ordem = Solicitacao.objects.create(
+                setor=ordem.setor,
+                maquina=ordem.maquina,
+                maq_parada=ordem.maq_parada,
+                solicitante=ordem.solicitante,
+                equipamento_em_falha=ordem.equipamento_em_falha,
+                setor_maq_solda=ordem.setor_maq_solda,
+                impacto_producao=ordem.impacto_producao,
+                tipo_ferramenta=ordem.tipo_ferramenta,
+                codigo_ferramenta=ordem.codigo_ferramenta,
+                video=ordem.video,
+                descricao=ordem.descricao,
+                area=ordem.area,
+                planejada=ordem.planejada,
+                prioridade=ordem.prioridade,
+                tarefa=ordem.tarefa,
+                comentario_manutencao=ordem.comentario_manutencao,
+                status=ordem.status,
+                satisfacao_registrada=False  # Definir como não registrada para a nova solicitação
+            )
+
+            # Copiar as imagens associadas à solicitação original
+            for foto in ordem.fotos.all():
+                Foto.objects.create(
+                    solicitacao=nova_ordem,
+                    imagem=foto.imagem
+                )
+
+            print(f"Ordem {ordem_id}: Usuário respondeu Não. Nova solicitação criada com ID {nova_ordem.pk}.")
+
+    # Redirecionar para a página inicial ou outra página após o processamento
+    return redirect('home_producao')
+

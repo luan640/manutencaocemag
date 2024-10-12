@@ -6,6 +6,10 @@
     border-left-style: solid;
 }
 
+.custom-border-primary {
+    border-left-color: #0d6efd !important;
+}
+
 .custom-border-info {
     border-left-color: #0dcaf0 !important;
 }
