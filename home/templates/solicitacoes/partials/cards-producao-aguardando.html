@@ -220,19 +220,23 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <label for="status_inicial">Status</label>
-                                <select class="form-control" name="status_inicial" id="status_inicial" required>
+                                <label for="status_inicial_{{solicitacao.pk}}">Status</label>
+                                <select class="form-control" name="status_inicial" id="status_inicial_{{solicitacao.pk}}" required>
                                     <option value="">----------</option>
-                                    <option value="reijeitar">Rejeitar</option>
+                                    <option value="rejeitar">Rejeitar</option>
                                     <option value="aprovar">Aprovar</option>
                                 </select>
+                            </div>
+                            <div id="campoProgramacao_{{solicitacao.pk}}" class="col-sm-6">
+                                <label for="data_programacao_{{solicitacao.pk}}">Programação</label>
+                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" class="form-control" type="date" required>
                             </div>
                         </div>
                     </div>
                     <hr>
 
-                    <!-- Botão de Envio -->
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="submit" class="btn btn-primary">Programar</button>
+                    
                 </form>
             </div>
         </div>

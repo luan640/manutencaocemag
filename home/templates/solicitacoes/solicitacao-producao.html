@@ -221,16 +221,48 @@
 
 </div>
 
+
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        
+        function attachStatusChangeListeners() {
+            const statusSelects = document.querySelectorAll('select[id^="status_inicial_"]');
+
+            statusSelects.forEach(function(statusSelect) {
+                // Extrai o ID dinâmico da solicitação (pk)
+                const pk = statusSelect.id.split('_')[2]; // Pega o ID da solicitação a partir do ID do select
+                const dataProgramacao = document.getElementById('data_programacao_' + pk);
+                const campoProgramacao = document.getElementById('campoProgramacao_' + pk);
+
+                // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
+                function toggleDataProgramacao() {
+                    if (statusSelect.value === 'rejeitar') {
+                        // Oculta o campo de data e remove a obrigatoriedade
+                        campoProgramacao.style.display = 'none';
+                        dataProgramacao.removeAttribute('required');
+                    } else if (statusSelect.value === 'aprovar') {
+                        // Exibe o campo de data e torna-o obrigatório
+                        campoProgramacao.style.display = 'block';
+                        dataProgramacao.setAttribute('required', 'required');
+                    }
+                }
+
+                // Adiciona o listener de mudança (change) ao campo select
+                statusSelect.addEventListener('change', toggleDataProgramacao);
+
+                // Chama a função inicialmente para ajustar o estado inicial
+                toggleDataProgramacao();
+            });
+        }
 
         // Função para carregar seções usando fetch e atualizar os containers
         function loadSection(url, containerId, ...callbacks) {  // Aceita múltiplos callbacks usando o operador rest
             fetch(url)
                 .then(response => response.text())
                 .then(html => {
+                    
                     document.getElementById(containerId).innerHTML = html;
-
                     // Executa todos os callbacks (se houver) após o carregamento da seção
                     callbacks.forEach(callback => {
                         if (typeof callback === 'function') {
@@ -249,10 +281,6 @@
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
                     event.preventDefault(); // Impede o envio tradicional do formulário
-                    
-                    // Mostrar o modal de carregamento
-                    // const modalLoading = new bootstrap.Modal(document.getElementById('modalLoading'));
-                    // modalLoading.show();
 
                     // Obter a URL de envio
                     const url = form.getAttribute('action');
@@ -270,6 +298,7 @@
                         }
                     })
                     .then(response => {
+
                         if (response.ok) {
                             return response.json();
                         } else {
@@ -277,14 +306,17 @@
                         }
                     })
                     .then(data => {
-                        if (data.status === 'success') {
+
+                        if (data.success) {
                             // Atualizar as seções necessárias
-                            loadSection("maquinas-paradas/", "maquinas-paradas-container")
-                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
-                            
-                            // Ocultar o modal de carregamento e mostrar uma mensagem de sucesso
-                            // modalLoading.hide();
-                            
+                            loadSection("maquinas-paradas/", "maquinas-paradas-container", attachExecutarOrdemEventListeners);
+                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners);
+
+                            // Fechar o modal
+                            const modal = document.getElementById(modalId);
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+
                             // Mostrar o popup de sucesso
                             Swal.fire({
                                 icon: 'success',
@@ -292,12 +324,10 @@
                                 text: 'Execução feita com sucesso!',
                                 confirmButtonText: 'OK'
                             });
-                        
                         }
                     })
                     .catch(error => {
                         console.error('Erro:', error);
-                        alert('Ocorreu um erro ao executar a ordem. Tente novamente.');
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
@@ -316,10 +346,6 @@
                 form.addEventListener('submit', function(event) {
                     event.preventDefault(); // Impede o envio tradicional do formulário
                     
-                    // Mostrar o modal de carregamento
-                    // const modalLoading = new bootstrap.Modal(document.getElementById('modalLoading'));
-                    // modalLoading.show();
-                    
                     // Obter a URL de envio
                     const url = form.getAttribute('action');
                     const modalId = form.dataset.modalId;
@@ -336,6 +362,7 @@
                         }
                     })
                     .then(response => {
+
                         if (response.ok) {
                             return response.json();
                         } else {
@@ -343,21 +370,24 @@
                         }
                     })
                     .then(data => {
-                        if (data.status === 'success') {
-                            console.log(data);
+
+                        if (data.success) {
+
                             // Atualizar a seção das ordens em processo
                             loadSection("maquinas-paradas/", "maquinas-paradas-container")
-                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
-                            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners),
-
-                            // Ocultar o modal de carregamento e mostrar uma mensagem de sucesso
-                            // modalLoading.hide();
-
+                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners)
+                            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners, attachStatusChangeListeners)
+                            
+                            // Fechar o modal
+                            const modal = document.getElementById(modalId);
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+                            
                             // Mostrar o popup de sucesso
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Sucesso',
-                                text: 'Ordem finalizada com sucesso!',
+                                text: 'Ordem executada com sucesso!',
                                 confirmButtonText: 'OK'
                             });
 
@@ -365,11 +395,11 @@
                     })
                     .catch(error => {
                         console.error('Erro:', error);
-                        alert('Ocorreu um erro ao finalizar a ordem. Tente novamente.');
+                        alert('Ocorreu um erro ao executar a ordem. Tente novamente.');
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: 'Ocorreu um erro ao finalizar a ordem. Tente novamente.',
+                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
                             confirmButtonText: 'OK'
                         });
                     });
@@ -378,7 +408,7 @@
         }
 
         Promise.all([
-            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners),
+            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners, attachStatusChangeListeners),
             loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
             loadSection("maquinas-paradas/", "maquinas-paradas-container")
         ]).then(() => {
@@ -389,6 +419,8 @@
 
     });
 </script>
+
+
 <!-- <script>
     document.addEventListener('DOMContentLoaded', function() {
         var filterForm = document.getElementById('filter-form');
@@ -406,10 +438,6 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('solicitacoes-container').innerHTML = data.html;
-                document.getElementById('maquinas-paradas-container').innerHTML = data.html_maquinas_paradas;
-                document.getElementById('aguardando-primeiro-atendimento-container').innerHTML = data.html_aguardando_primeiro_atendimento;
-
                 var loadMoreButton = document.getElementById('loadMore');
                 if (data.nextPage) {
                     loadMoreButton.dataset.nextPage = data.nextPage;

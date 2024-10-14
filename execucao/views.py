@@ -94,14 +94,12 @@ def criar_execucao(request, solicitacao_id):
                 # Chamando o método mensagem_finalizar_ordem
                 status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
 
-                # criar uma pagina para o usuario confirmar a finalização da ordem, deverá ser dois botões de sim ou não.
-
-
             else:
                 print("Telefone não encontrado para o solicitante.")
-            
-        # Sempre retorna ou redireciona após o processamento
-        return redirect('home_producao')
+
+        return JsonResponse({
+            'success': True,
+        })
 
 @csrf_exempt
 def editar_solicitacao(request, solicitacao_id):
@@ -145,8 +143,6 @@ def editar_solicitacao(request, solicitacao_id):
         return JsonResponse({
             'success': True,
         })
-
-    return redirect('home_producao')
 
 @login_required
 @csrf_exempt
