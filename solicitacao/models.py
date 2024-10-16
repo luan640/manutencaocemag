@@ -63,9 +63,9 @@ class Solicitacao(models.Model):
     prioridade = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, null=True, blank=True)
     tarefa = models.ForeignKey(TipoTarefas, on_delete=models.CASCADE, null=True, blank=True)
     comentario_manutencao = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, blank=True, db_index=True)
     satisfacao_registrada = models.BooleanField(default=False)
-    status_andamento = models.CharField(max_length=30, choices=STATUS_ANDAMENTO_CHOICES, default='aguardando_atendimento')
+    status_andamento = models.CharField(max_length=30, choices=STATUS_ANDAMENTO_CHOICES, default='aguardando_atendimento', db_index=True)
     programacao = models.DateField(null=True, blank=True)
 
     def __str__(self):

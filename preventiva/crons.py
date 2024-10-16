@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from .models import PlanoPreventiva, Solicitacao, SolicitacaoPreventiva
+from execucao.models import InfoSolicitacao
 
 User = get_user_model()
 
@@ -56,4 +57,9 @@ def verificar_abertura_solicitacoes_preventivas():
                     ordem=nova_solicitacao,
                     plano=plano,
                     data=hoje
+                )
+
+                InfoSolicitacao.objects.create(
+                    solicitacao=nova_solicitacao,
+                    tipo_manutencao='preventiva_programada',
                 )

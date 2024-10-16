@@ -6,16 +6,19 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.template.loader import render_to_string
+from django.contrib.auth import get_user_model
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
 from cadastro.models import Maquina, Setor
+from funcionario.models import Funcionario
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
 
 import datetime
 
 ordem_service = OrdemServiceWpp()
+User = get_user_model()
 
 @login_required
 @csrf_exempt
@@ -26,19 +29,6 @@ def criar_execucao(request, solicitacao_id):
     n_execucao = ultima_execucao.n_execucao + 1 if ultima_execucao else 0
 
     if request.method == 'POST':
-
-        if n_execucao == 1:
-
-            tipo_manutencao = request.POST.get('tipo_manutencao')
-            area_manutencao = request.POST.get('area_manutencao')
-
-            infoSolicitacao = InfoSolicitacao.objects.create(
-                solicitacao=solicitacao,
-                tipo_manutencao=tipo_manutencao,
-                area_manutencao=area_manutencao,
-            )
-
-            infoSolicitacao.save()
 
         data_inicio = parse_datetime(request.POST.get('data_inicio'))
         data_fim = parse_datetime(request.POST.get('data_fim'))
@@ -71,7 +61,33 @@ def criar_execucao(request, solicitacao_id):
         execucao.operador.set(operadores)
         execucao.save()
 
+        
         if status == 'finalizada':
+
+            # Se o operador quiser reabrir uma nova ordem com um novo motivo
+            if request.POST.get('motivoNovaOrdemInput'):
+            
+                Solicitacao.objects.create(
+                    setor=solicitacao.setor,
+                    maquina=solicitacao.maquina,
+                    maq_parada=False,
+                    solicitante=request.user,
+                    equipamento_em_falha=solicitacao.equipamento_em_falha,
+                    setor_maq_solda=solicitacao.setor_maq_solda,
+                    impacto_producao=solicitacao.impacto_producao,
+                    tipo_ferramenta=solicitacao.tipo_ferramenta,
+                    codigo_ferramenta=solicitacao.codigo_ferramenta,
+                    video=solicitacao.video,
+                    descricao=request.POST.get('motivoNovaOrdemInput'),
+                    area=solicitacao.area,
+                    planejada=solicitacao.planejada,
+                    prioridade=solicitacao.prioridade,
+                    tarefa=solicitacao.tarefa,
+                    comentario_manutencao=solicitacao.comentario_manutencao,
+                    status=solicitacao.status,
+                    satisfacao_registrada=False
+                )
+
             # Obtendo o telefone do solicitante
             telefone = buscar_telefone(solicitacao.solicitante.matricula)
 
@@ -115,6 +131,13 @@ def editar_solicitacao(request, solicitacao_id):
         data_fim = datetime.datetime.now()
         status = 'em_espera'
         status_inicial = request.POST.get('status_inicial')
+
+        tipo_manutencao = request.POST.get('tipo_manutencao')
+        area_manutencao = request.POST.get('area_manutencao')
+
+        InfoSolicitacao.objects.filter(solicitacao=solicitacao).update(
+            area_manutencao=area_manutencao
+        )
 
         # Criar uma nova execução
         execucao = Execucao.objects.create(

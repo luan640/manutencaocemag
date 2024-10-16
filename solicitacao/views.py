@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from django.core.serializers import serialize
+from django.db import transaction
 
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
 from .models import Foto, Solicitacao
@@ -18,41 +19,43 @@ User = get_user_model()
 
 @login_required
 def criar_solicitacao(request):
-
     maquinas_producao = Maquina.objects.filter(area='producao')
 
     if request.method == 'POST':
-    
         form = SolicitacaoForm(request.POST)
         form2 = FotoForm(request.POST, request.FILES)
 
         if form.is_valid() and form2.is_valid():
-
-            solicitacao = form.save(commit=False)
-            
-            if isinstance(request.user, User):
-                solicitacao.solicitante = request.user
-                solicitacao.area = 'producao'
-                solicitacao.save()
-
-                for imagem in request.FILES.getlist('imagens'):
-                    Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
-
-                if 'video' in request.FILES:
-                    solicitacao.video = request.FILES['video']
+            try:
+                with transaction.atomic():
+                    solicitacao = form.save(commit=False)
+                    
+                    # Associa o usuário solicitante e define a área
+                    solicitacao.solicitante = request.user
+                    solicitacao.area = 'producao'
                     solicitacao.save()
-                
-                # Adiciona uma mensagem de sucesso
-                messages.success(request, 'Solicitação enviada com sucesso!')
-                
-                # Redireciona para a página de sucesso
-                return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'producao'}))
 
-            else:
-                return render(request, 'erro.html', {'mensagem': 'Usuário inválido.'})
+                    # Salvamento das imagens associadas à solicitação
+                    for imagem in request.FILES.getlist('imagens'):
+                        Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
+
+                    # Salvamento do vídeo, se fornecido
+                    if 'video' in request.FILES:
+                        solicitacao.video = request.FILES['video']
+                        solicitacao.save()
+
+                    # Adiciona mensagem de sucesso e redireciona
+                    messages.success(request, 'Solicitação enviada com sucesso!')
+                    return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'producao'}))
+
+            except Exception as e:
+                # Captura erros durante a transação
+                messages.error(request, f'Erro ao enviar solicitação: {e}')
         else:
+            # Exibe as mensagens de erro
+            messages.error(request, 'Há erros no formulário. Por favor, corrija-os.')
             print(form.errors)
-            print(form2.errors) 
+            print(form2.errors)
     else:
         form = SolicitacaoForm()
         form2 = FotoForm()
@@ -60,8 +63,7 @@ def criar_solicitacao(request):
     return render(request, 'solicitacao/solicitacao.html', {
         'form': form,
         'form2': form2,
-        'maquinas_producao':maquinas_producao,
-
+        'maquinas_producao': maquinas_producao,
     })
 
 @login_required

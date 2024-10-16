@@ -118,3 +118,5 @@ class MaquinaParada(models.Model):
 
     def __str__(self):
         return f'{self.data_inicio} - {self.data_fim if self.data_fim else "em andamento"}'
+
+

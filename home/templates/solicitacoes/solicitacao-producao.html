@@ -151,7 +151,16 @@
                 <div id="collapseAguardandoPrimeiroAtendimento" class="collapse show" aria-labelledby="headingAguardandoPrimeiroAtendimento">
                     <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="aguardando-primeiro-atendimento-container">
-                            <p>Carregando ordens...</p>
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <div class="col-auto" id="container-button-aguardando">
+                                    <button style="display: none;" class="btn btn-primary" id="loadMoreAguardandoPrimeiroAtendimento" data-next-page="">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -170,12 +179,20 @@
                 <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
                     <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="solicitacoes-container">
-                            <!-- Conteúdo será carregado via AJAX -->
-                            <p>Carregando ordens...</p>
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <button style="display: none;" class="btn btn-primary" id="loadMoreSolicitacoes" data-next-page="">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
+
         </div>
         {% else %}
         <!-- Solicitações -->
@@ -191,11 +208,18 @@
                 <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
                     <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="solicitacoes-container">
-                            <!-- Conteúdo será carregado via AJAX -->
-                            <p>Carregando ordens...</p>
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <button style="display: none;" class="btn btn-primary" id="loadMoreSolicitacoes" data-next-page="">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
         {% endif %}
@@ -211,8 +235,7 @@
                 </div>
                 <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                     <div class="row" id="maquinas-paradas-container">
-                        <!-- Conteúdo será carregado via AJAX -->
-                        <p>Carregando ordens...</p>
+                        <p>Carregando...</p>
                     </div>
                 </div>
             </div>
@@ -221,11 +244,161 @@
 
 </div>
 
-
-
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function() {      
         
+        var filterForm = document.getElementById('filter-form');
+
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Coleta os dados do formulário e converte para parâmetros de URL
+            var formData = new FormData(filterForm);
+            var params = new URLSearchParams(formData).toString();
+
+            // Chama a função fetchSolicitacoes passando os parâmetros
+            fetchSolicitacoes(
+                "solicitacoes/",                  // URL base
+                "solicitacoes-container",         // ID do container onde os dados serão inseridos
+                "loadMoreSolicitacoes",           // ID do botão de 'load more'
+                params,                           // Parâmetros do filtro
+                [attachExecutarOrdemEventListeners] // Callback após carregar as solicitações
+            );
+
+            fetchSolicitacoes(
+                "aguardando-primeiro-atendimento/",                  // URL base
+                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
+                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
+                params,                           // Parâmetros do filtro
+                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners] // Callback após carregar as solicitações
+            );
+
+        });
+
+        function fetchSolicitacoes(url, container, loadMoreButtonId, params, callbacks = []) {
+
+            let fetchUrl = `${url}?page=1`;
+
+            if (params) {
+                fetchUrl += `&${params}`;
+            }
+
+            fetch(fetchUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(container).innerHTML = data.html;
+
+                const loadMoreButton = document.getElementById(loadMoreButtonId);
+                if (data.nextPage) {
+                    loadMoreButton.setAttribute('data-next-page', data.nextPage);
+                    loadMoreButton.disabled = false;
+                    loadMoreButton.style.display = 'block';
+
+                    if (!loadMoreButton.hasListener) {
+                        // Use uma IIFE para capturar `params` e `callbacks` corretamente
+                        loadMoreButton.addEventListener('click', () => {
+                            loadMoreSolicitacoes(
+                                loadMoreButtonId, url, container, params, callbacks
+                            );
+                        });
+
+                        loadMoreButton.hasListener = true;
+                    }
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+
+                callbacks.forEach(callback => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                });
+            })
+            .catch(error => console.error("Erro ao carregar solicitações:", error));
+        }
+
+        // Função para carregar mais solicitações
+        function loadMoreSolicitacoes(loadMoreButtonId, url, container, params = '', callbacks = []) {
+            
+            var filterForm = document.getElementById('filter-form');
+            var formData = new FormData(filterForm);
+            var params = new URLSearchParams(formData).toString();
+
+            var loadMoreButton = document.getElementById(loadMoreButtonId);
+            if (!loadMoreButton) {
+                console.error("Botão de 'load more' não encontrado.");
+                return;
+            }
+
+            let nextPage = loadMoreButton.getAttribute('data-next-page');
+            if (!nextPage) {
+                console.error("Nenhuma página disponível para carregar.");
+                loadMoreButton.style.display = 'none';
+                return;
+            }
+
+            loadMoreButton.disabled = true; // Desabilita o botão para evitar múltiplos cliques
+
+            // Adiciona os parâmetros de filtro na URL da próxima página
+            var fetchUrl = url + "?page=" + nextPage;
+            if (params) {
+                fetchUrl += "&" + params;
+            }
+
+            fetch(fetchUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(container).insertAdjacentHTML('beforeend', data.html);
+
+                if (data.nextPage) {
+                    loadMoreButton.setAttribute('data-next-page', data.nextPage);
+                    loadMoreButton.disabled = false;
+                    loadMoreButton.style.display = 'block';  // Mostra o botão se há mais páginas
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+
+                callbacks.forEach(callback => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Erro ao carregar mais solicitações:", error);
+                loadMoreButton.disabled = false;
+            });
+        }
+
+        function loadSection(url, containerId, callbacks = []) {  // Aceita múltiplos callbacks usando o operador rest
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+
+                    document.getElementById(containerId).innerHTML = html;
+
+                    // Executa todos os callbacks (se houver) após o carregamento da seção
+                    callbacks.forEach(callback => {
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar seção:", error);
+                });
+        }
+
         function attachStatusChangeListeners() {
             const statusSelects = document.querySelectorAll('select[id^="status_inicial_"]');
 
@@ -256,28 +429,10 @@
             });
         }
 
-        // Função para carregar seções usando fetch e atualizar os containers
-        function loadSection(url, containerId, ...callbacks) {  // Aceita múltiplos callbacks usando o operador rest
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    
-                    document.getElementById(containerId).innerHTML = html;
-                    // Executa todos os callbacks (se houver) após o carregamento da seção
-                    callbacks.forEach(callback => {
-                        if (typeof callback === 'function') {
-                            callback();
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error("Erro ao carregar seção:", error);
-                });
-        }
-
         // Função para adicionar event listeners aos formulários de iniciar ordem
         function attachExecutarOrdemEventListeners() {
             const forms = document.querySelectorAll('.formExecucaoProducao');
+
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
                     event.preventDefault(); // Impede o envio tradicional do formulário
@@ -288,6 +443,16 @@
 
                     // Criar um objeto FormData para capturar os dados do formulário
                     const formData = new FormData(form);
+
+                    // Exibe o modal de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Aguarde enquanto processamos sua solicitação.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
 
                     // Enviar a requisição AJAX
                     fetch(url, {
@@ -308,9 +473,16 @@
                     .then(data => {
 
                         if (data.success) {
+                            Promise.all([
+                                loadSection("maquinas-paradas/", "maquinas-paradas-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
+
+                            ]).then(() => {
+
+                            }).catch(error => {
+                                console.error("Erro ao carregar as seções:", error);
+                            });
                             // Atualizar as seções necessárias
-                            loadSection("maquinas-paradas/", "maquinas-paradas-container", attachExecutarOrdemEventListeners);
-                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners);
 
                             // Fechar o modal
                             const modal = document.getElementById(modalId);
@@ -353,6 +525,16 @@
                     // Criar um objeto FormData para capturar os dados do formulário
                     const formData = new FormData(form);
 
+                    // Exibe o modal de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Aguarde enquanto processamos sua solicitação.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
+
                     // Enviar a requisição AJAX
                     fetch(url, {
                         method: 'POST',
@@ -372,12 +554,17 @@
                     .then(data => {
 
                         if (data.success) {
+                            Promise.all([
+                                loadSection("maquinas-paradas/", "maquinas-paradas-container"),
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+                                loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners]),
+                                // fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", attachExecutar1OrdemEventListeners, attachStatusChangeListeners)
 
-                            // Atualizar a seção das ordens em processo
-                            loadSection("maquinas-paradas/", "maquinas-paradas-container")
-                            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners)
-                            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners, attachStatusChangeListeners)
-                            
+                            ]).then(() => {
+                            }).catch(error => {
+                                console.error("Erro ao carregar as seções:", error);
+                            });
+
                             // Fechar o modal
                             const modal = document.getElementById(modalId);
                             const modalInstance = bootstrap.Modal.getInstance(modal);
@@ -407,72 +594,75 @@
             });
         }
 
+        function mudancaStatusFinalizada(){
+            document.querySelectorAll('[id^="id_status_"]').forEach(selectElement => {
+                selectElement.addEventListener('change', function() {
+                    const isFinalizada = this.value === 'finalizada';
+                    const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
+
+                    const containerReabrirOrdem = document.querySelector(`#executarModal${modalId} #container-reabrir-ordem`)
+                    const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
+                    const checkbox1 = document.querySelector(`#executarModal${modalId} #id_che_maq_parada`);
+                    const checkbox2 = document.querySelector(`#executarModal${modalId} #id_exec_maq_parada`);
+                    const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
+
+                    if (isFinalizada) {
+                        checkbox1.disabled = true;
+                        checkbox2.disabled = true;
+                        checkbox3.disabled = true;
+                        containerReabrirOrdem.style.display = 'block';
+                        solicitarAberturaNovaOrdem.setAttribute('required', 'required');
+                    } else {
+                        checkbox1.disabled = false;
+                        checkbox2.disabled = false;
+                        checkbox3.disabled = false;
+                        containerReabrirOrdem.style.display = 'none';
+                        solicitarAberturaNovaOrdem.removeAttribute('required');
+                    }
+                });
+            });
+
+            document.querySelectorAll('[id^="solicitarAberturaNovaOrdem_"]').forEach((selectElement) => {
+                selectElement.addEventListener('change', function () {
+                    const abrirOrdem = this.value.toLowerCase() === 'sim';  // Confirma se o valor é 'sim'
+                    const modalId = this.id.split('_').pop();  // Obtém o identificador único do modal
+
+                    const motivoElement = document.querySelector(`#executarModal${modalId} #motivoNovaOrdem`);
+                    const inputMotivoElement = document.querySelector(`#executarModal${modalId} #motivoNovaOrdemInput`);
+
+                    if (motivoElement && inputMotivoElement) {
+                        motivoElement.style.display = abrirOrdem ? 'block' : 'none';
+
+                        // Adiciona ou remove o atributo 'required' dinamicamente
+                        if (abrirOrdem) {
+                            inputMotivoElement.setAttribute('required', 'required');
+                        } else {
+                            inputMotivoElement.removeAttribute('required');
+                        }
+                    } else {
+                        console.error(`Elemento #motivoNovaOrdem ou #motivoNovaOrdemInput não encontrado no modal ${modalId}`);
+                    }
+                });
+            });
+
+        };
+        
         Promise.all([
-            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", attachExecutar1OrdemEventListeners, attachStatusChangeListeners),
-            loadSection("solicitacoes/", "solicitacoes-container", attachExecutarOrdemEventListeners),
-            loadSection("maquinas-paradas/", "maquinas-paradas-container")
+            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners]),
+            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+            loadSection("maquinas-paradas/", "maquinas-paradas-container"),
+
         ]).then(() => {
-            console.log("Todas as seções foram carregadas com sucesso.");
+
+            fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners])
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
+
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);
         });
 
     });
-</script>
 
-
-<!-- <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var filterForm = document.getElementById('filter-form');
-        
-        filterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData(filterForm);
-            var params = new URLSearchParams(formData).toString();
-
-            fetch("?" + params, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                var loadMoreButton = document.getElementById('loadMore');
-                if (data.nextPage) {
-                    loadMoreButton.dataset.nextPage = data.nextPage;
-                    loadMoreButton.style.display = 'block';
-                } else {
-                    loadMoreButton.style.display = 'none';
-                }
-            });
-        });
-
-        var loadMoreButton = document.getElementById('loadMore');
-        loadMoreButton.addEventListener('click', function() {
-            var nextPage = loadMoreButton.dataset.nextPage;
-            var formData = new FormData(filterForm);
-            formData.append('page', nextPage);
-            var params = new URLSearchParams(formData).toString();
-
-            fetch("?" + params, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('solicitacoes-container').insertAdjacentHTML('beforeend', data.html);
-                if (data.nextPage) {
-                    loadMoreButton.dataset.nextPage = data.nextPage;
-                    loadMoreButton.style.display = 'block';
-                } else {
-                    loadMoreButton.style.display = 'none';
-                }
-            });
-        });
-    });
 </script>
 
 <script>
@@ -506,27 +696,5 @@
     }
 </script>
 
-<script>
-    document.querySelectorAll('[id^="id_status_"]').forEach(selectElement => {
-        selectElement.addEventListener('change', function() {
-            const isFinalizada = this.value === 'finalizada';
-            const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
-
-            const checkbox1 = document.querySelector(`#executarModal${modalId} #id_che_maq_parada`);
-            const checkbox2 = document.querySelector(`#executarModal${modalId} #id_exec_maq_parada`);
-            const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
-
-            if (isFinalizada) {
-                checkbox1.disabled = true;
-                checkbox2.disabled = true;
-                checkbox3.disabled = true;
-            } else {
-                checkbox1.disabled = false;
-                checkbox2.disabled = false;
-                checkbox3.disabled = false;
-            }
-        });
-    });
-</script> -->
 
 {% endblock %}

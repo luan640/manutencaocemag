@@ -198,3 +198,6 @@ def editar_plano_preventiva(request, pk):
         'plano_form': plano_form,
         'tarefas': tarefas,
     })
+
+# def proximas_preventivas(request):
+

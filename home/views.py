@@ -6,12 +6,15 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
 from cadastro.models import Setor, Operador
 
 from .utils import *
+
+import time
 
 @login_required
 def home_producao(request):
@@ -27,6 +30,8 @@ def home_producao(request):
         'quantidade_em_execucao': solicitacoes.filter(status_andamento='em_execucao').count(),
         'aguardando_material': solicitacoes.filter(status_andamento='aguardando_material').count(),
         'aguardando_primeiro_atendimento_card': solicitacoes.filter(status_andamento='aguardando_atendimento').count(),
+        'status_choices': [choice for choice in Execucao.STATUS_CHOICES if choice[0] not in ('em_espera', 'aguardando_atendimento')],
+        'setores': Setor.objects.all()
 
     }
 
@@ -120,9 +125,16 @@ def home_solicitante(request):
 @login_required
 def solicitacoes_producao(request):
 
+    solicitante = request.GET.get('solicitante')
+    setor_id = request.GET.get('setor')
+    maq_parada = request.GET.get('maq_parada')
+    data_abertura = request.GET.get('data_abertura')
+    status = request.GET.get('ultimo_status')
+    planejada = request.GET.get('planejada')
+
     solicitacoes = Solicitacao.objects.filter(
-        Q(status__isnull=True) | Q(status='aprovar')
-    ).exclude(status_andamento='aguardando_atendimento')
+        Q(status__isnull=True) | Q(status='aprovar'),
+    ).select_related('solicitante', 'setor').prefetch_related('fotos').exclude(status_andamento='aguardando_atendimento')
 
     ultima_execucao_subquery = Execucao.objects.filter(
         ordem=OuterRef('pk')
@@ -130,16 +142,10 @@ def solicitacoes_producao(request):
 
     # Anotar a consulta de Solicitacao com o valor de n_execucao da última execução
     solicitacoes = solicitacoes.annotate(
-        ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1])
-    ).exclude(status_andamento='aguardando_atendimento')
+        ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1]),
+        ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1])
 
-    # Aplicando filtros
-    solicitante = request.GET.get('solicitante')
-    setor_id = request.GET.get('setor')
-    maq_parada = request.GET.get('maq_parada')
-    data_abertura = request.GET.get('data_abertura')
-    status = request.GET.get('ultimo_status')
-    planejada = request.GET.get('planejada')
+    )
 
     if solicitante:
         solicitacoes = solicitacoes.filter(solicitante__nome__icontains=solicitante)
@@ -158,44 +164,117 @@ def solicitacoes_producao(request):
 
     if status:
         solicitacoes = solicitacoes.filter(status_andamento=status)
-    else:
-        solicitacoes = solicitacoes.exclude(status_andamento='aguardando_atendimento')
 
     # Paginação
     paginator = Paginator(solicitacoes, 10)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get('page', 1)  # Pega o número da página, ou assume 1 como padrão
     page_obj = paginator.get_page(page_number)
+    next_page = page_obj.next_page_number() if page_obj.has_next() else None
 
-    # Contexto
+    # Verifica se é uma requisição AJAX para "Carregar mais"
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Preparar o contexto com os dados necessários
+        page_obj = paginator.get_page(page_number)
+        context = {
+            'page_obj': page_obj,
+            'operadores': operadores_all('producao'),
+            'status_choices': [choice for choice in Execucao.STATUS_CHOICES if choice[0] not in ('em_espera', 'aguardando_atendimento')],
+            'area_manutencao': InfoSolicitacao.AREA_CHOICES,
+            'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
+            'nextPage': page_obj.next_page_number() if page_obj.has_next() else None,
+            'today': timezone.now().date()  # Data atual sem hora
+        }
+
+        # Renderiza o conteúdo da página parcial como HTML
+        html = render_to_string('solicitacoes/partials/cards-producao.html', context, request=request)
+        
+        # Retorna a resposta em JSON contendo o HTML e o número da próxima página
+        return JsonResponse({
+            'html': html,
+            'nextPage': next_page  # Retorna nextPage para o controle no frontend
+        })
+
+    # Contexto para renderizar normalmente
     context = {
         'page_obj': page_obj,
         'operadores': operadores_all('producao'),
         'status_choices': [choice for choice in Execucao.STATUS_CHOICES if choice[0] not in ('em_espera', 'aguardando_atendimento')],
         'area_manutencao': InfoSolicitacao.AREA_CHOICES,
         'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
+        'nextPage': next_page,
+        'today': timezone.now().date()  # Data atual sem hora
+
     }
 
-    # # Renderização para AJAX
-    # if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-    #     html = render_to_string('solicitacoes/partials/cards-producao.html', context, request=request)
-    #     next_page = page_obj.next_page_number() if page_obj.has_next() else None
-    #     return JsonResponse({'html': html, 'nextPage': next_page})
-
+    # Renderiza a página completa no caso de não ser uma requisição AJAX
     return render(request, 'solicitacoes/partials/cards-producao.html', context)
 
 @login_required
 def aguardando_primeiro_atendimento_producao(request):
+    
+    solicitante = request.GET.get('solicitante')
+    setor_id = request.GET.get('setor')
+    maq_parada = request.GET.get('maq_parada')
+    data_abertura = request.GET.get('data_abertura')
+    status = request.GET.get('ultimo_status')
+    planejada = request.GET.get('planejada')
 
-    solicitacoes = Solicitacao.objects.filter(
-        Q(status__isnull=True) | Q(status='aprovar')
-    )
+    # Inicia o queryset base
+    aguardando_primeiro_atendimento = Solicitacao.objects.filter(
+        Q(status__isnull=True) | Q(status='aprovar'),
+        status_andamento='aguardando_atendimento'
+    ).select_related('solicitante', 'setor').prefetch_related('fotos', 'info_solicitacao')
 
-    aguardando_primeiro_atendimento = solicitacoes.filter(status_andamento='aguardando_atendimento')
+    if solicitante:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante__nome__icontains=solicitante)
 
+    if setor_id:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(setor_id=setor_id)
+
+    if maq_parada:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(maq_parada=(maq_parada == 'sim'))
+
+    if data_abertura:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura=data_abertura)
+
+    if planejada:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)
+
+    if status:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento=status)
+
+    # Paginação
+    paginator = Paginator(aguardando_primeiro_atendimento, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    next_page = page_obj.next_page_number() if page_obj.has_next() else None
+
+    # Contexto
     context = {
+        'page_obj': page_obj,
+        'nextPage': next_page,
         'aguardando_primeiro_atendimento': aguardando_primeiro_atendimento,
+        'area_manutencao': InfoSolicitacao.AREA_CHOICES,
+        'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
+
     }
 
+    # Verifica se é uma requisição AJAX
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        page_obj = paginator.get_page(page_number)
+        context = {
+            'page_obj': page_obj,
+            'nextPage': page_obj.next_page_number() if page_obj.has_next() else None,
+            'area_manutencao': InfoSolicitacao.AREA_CHOICES,
+            'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
+
+        }
+
+        html = render_to_string('solicitacoes/partials/cards-producao-aguardando.html', context)
+
+        return JsonResponse({'html': html, 'nextPage': next_page})
+
+    # Renderização normal
     return render(request, 'solicitacoes/partials/cards-producao-aguardando.html', context)
 
 @login_required
@@ -206,10 +285,5 @@ def maquinas_paradas_producao(request):
     context = {
         'maquinas': maquinas,
     }
-
-    # Renderização para AJAX
-    # if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-    #     html = render_to_string('solicitacoes/partials/cards-maq-paradas.html', context, request=request)
-    #     return JsonResponse({'html': html})
 
     return render(request, 'solicitacoes/partials/cards-maq-paradas.html', context)
