@@ -7,11 +7,14 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
 from cadastro.models import Maquina, Setor
 from funcionario.models import Funcionario
+from preventiva.models import SolicitacaoPreventiva
+
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
 
@@ -134,6 +137,7 @@ def editar_solicitacao(request, solicitacao_id):
 
         tipo_manutencao = request.POST.get('tipo_manutencao')
         area_manutencao = request.POST.get('area_manutencao')
+        plano = request.POST.get('escolherPlanoPreventiva')
 
         InfoSolicitacao.objects.filter(solicitacao=solicitacao).update(
             area_manutencao=area_manutencao
@@ -160,7 +164,17 @@ def editar_solicitacao(request, solicitacao_id):
         if request.POST.get('flagMaqParada'):
             solicitacao.maq_parada = True
 
+        if tipo_manutencao == 'preventiva_programada':
+            solicitacao.planejada = True
+
         solicitacao.save()
+
+        if tipo_manutencao == 'preventiva_programada':
+            SolicitacaoPreventiva.objects.create(
+                ordem=solicitacao,
+                plano=plano,
+                data=timezone.now().date()
+            )
 
         # Retorna uma resposta de sucesso em JSON
         return JsonResponse({

@@ -12,6 +12,7 @@ from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
 from .models import Foto, Solicitacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
 from execucao.models import Execucao
+from preventiva.models import PlanoPreventiva
 
 import json
 
@@ -293,3 +294,7 @@ def processar_satisfacao(request, ordem_id):
     # Redirecionar para a página inicial ou outra página após o processamento
     return redirect('home_producao')
 
+def get_planos_preventiva(request, maquina_id):
+    planos = PlanoPreventiva.objects.filter(maquina_id=maquina_id).values('id', 'nome')
+
+    return JsonResponse(list(planos), safe=False)

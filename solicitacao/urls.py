@@ -4,12 +4,13 @@ from django.conf.urls.static import static
 
 from . import views
 from execucao.views import criar_execucao, criar_execucao_predial, editar_solicitacao
-from solicitacao.views import tarefa_rotina, pagina_satisfacao, processar_satisfacao
+from solicitacao.views import tarefa_rotina, pagina_satisfacao, processar_satisfacao, get_planos_preventiva
 
 urlpatterns = [
     path('criar-solicitacao/', views.criar_solicitacao, name='criar_solicitacao'),
     path('ajax/get-maquinas/', views.get_maquina_by_setor, name='get_maquina_by_setor'),
     path('ajax/get-maquinas-by-eq-falha/', views.get_maquina_by_eq_em_falha, name='get_maquina_by_eq_em_falha'),
+    path('api/planos-preventiva/<int:maquina_id>/', get_planos_preventiva, name='get_planos_preventiva'),
 
     path('criar-solicitacao-predial/', views.criar_solicitacao_predial, name='criar_solicitacao_predial'),
     path('criar-tarefa-rotina/', views.tarefa_rotina, name='tarefa_rotina'),

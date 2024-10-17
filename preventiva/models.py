@@ -9,6 +9,7 @@ class PlanoPreventiva(models.Model):
     descricao = models.TextField(null=True, blank=True)
     periodicidade = models.IntegerField(help_text="Número de dias entre cada execução")
     abertura_automatica = models.BooleanField(default=True)
+    dias_antecedencia = models.IntegerField(help_text="Com quantos dias antes deverá abrir?", blank=True, null=True)
 
     def __str__(self):
         return f'{self.maquina} {self.nome}'

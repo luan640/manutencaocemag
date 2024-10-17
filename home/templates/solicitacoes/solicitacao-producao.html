@@ -270,7 +270,7 @@
                 "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
                 "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
-                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners] // Callback após carregar as solicitações
+                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
             );
 
         });
@@ -557,7 +557,7 @@
                             Promise.all([
                                 loadSection("maquinas-paradas/", "maquinas-paradas-container"),
                                 loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
-                                loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners]),
+                                loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]),
                                 // fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", attachExecutar1OrdemEventListeners, attachStatusChangeListeners)
 
                             ]).then(() => {
@@ -647,14 +647,54 @@
 
         };
         
+        function escolherPlanoPreventiva(){
+            document.querySelectorAll('[id^="tipo_manutencao_"]').forEach(selectElement => {
+                selectElement.addEventListener('change', function() {
+                    const tipoManutencao = this.value === 'preventiva_programada';
+                    const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
+
+                    const rowEscolhaPlano = document.querySelector(`#editarOrdemInicialModal${modalId} #rowEscolhaPlano`);
+                    const escolherPlanoPreventiva = document.querySelector(`#editarOrdemInicialModal${modalId} #escolherPlanoPreventiva`);
+                    const maquinaId = escolherPlanoPreventiva.getAttribute('data-id-maquina');
+
+                    if (tipoManutencao) {
+                        rowEscolhaPlano.style.display = 'block';
+                        escolherPlanoPreventiva.setAttribute('required', 'required');
+
+                        // Faz o fetch para buscar os planos preventivos da máquina
+                        fetch(`/solicitacao/api/planos-preventiva/${maquinaId}`)
+                            .then(response => response.json())
+                            .then(planos => {
+                                escolherPlanoPreventiva.innerHTML = '';  // Limpa as opções antigas
+                                planos.forEach(plano => {
+                                    const option = document.createElement('option');
+                                    option.value = plano.id;
+                                    option.textContent = plano.nome;
+                                    escolherPlanoPreventiva.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar planos preventivos:', error);
+                            });
+
+                    } else {
+                        rowEscolhaPlano.style.display = 'none';
+                        escolherPlanoPreventiva.innerHTML = '';  // Limpa as opções
+                        escolherPlanoPreventiva.removeAttribute('required');
+
+                    }
+                });
+            });
+        }
+
         Promise.all([
-            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners]),
+            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]),
             loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
             loadSection("maquinas-paradas/", "maquinas-paradas-container"),
 
         ]).then(() => {
 
-            fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners])
+            fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners,escolherPlanoPreventiva])
             fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
 
         }).catch(error => {

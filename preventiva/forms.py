@@ -4,14 +4,16 @@ from django.forms import modelformset_factory
 from .models import PlanoPreventiva, TarefaPreventiva, SolicitacaoPreventiva
 
 class PlanoPreventivaForm(forms.ModelForm):
+    nome = forms.CharField(label='Nome do Plano', widget=forms.TextInput(attrs={'class': 'form-control'}))
+    descricao = forms.CharField(label='Descrição', widget=forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}))
+    periodicidade = forms.IntegerField(label='Periodicidade (em dias)', widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    dias_antecedencia = forms.IntegerField(help_text="Dias para abertura com antecedência",label='Abertura com antecedência de:', widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    abertura_automatica = forms.BooleanField(label='Abertura Automática', required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
     class Meta:
         model = PlanoPreventiva
-        fields = ['nome', 'descricao', 'periodicidade', 'abertura_automatica']
-        widgets = {
-            'nome': forms.TextInput(attrs={'class':'form-control'}),
-            'descricao': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Descrição do Plano', 'class':'form-control'}),
-            'periodicidade': forms.NumberInput(attrs={'class':'form-control'})
-        }
+        fields = ['nome', 'descricao', 'periodicidade', 'dias_antecedencia', 'abertura_automatica']
+
 
 class TarefaPreventivaForm(forms.ModelForm):
     class Meta:

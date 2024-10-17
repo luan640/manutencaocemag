@@ -192,7 +192,7 @@
                                 <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
                             
                                 {% with info=solicitacao.info_solicitacao.first %}
-                                    <select class="form-control" name="tipo_manutencao" id="tipo_manutencao" 
+                                    <select class="form-control" name="tipo_manutencao" id="tipo_manutencao_{{solicitacao.pk}}" 
                                         {% if info and info.tipo_manutencao %}disabled{% else %}required{% endif %}>
                                         
                                         <option value=""></option>
@@ -213,6 +213,14 @@
                                     {% for area in area_manutencao %}
                                         <option value="{{area.0}}">{{area.1}}</option>
                                     {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div id="rowEscolhaPlano" style="display: none;" class="row mb-3">
+                            <div class="col-sm-12">
+                                <label for="">Escolha o plano</label>
+                                <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="{{solicitacao.maquina.pk}}">
+                                    <option value="">Carregando...</option>
                                 </select>
                             </div>
                         </div>
