@@ -91,13 +91,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Static files
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Diretório onde serão coletados
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static/'),
     os.path.join(BASE_DIR, 'home/static'),
     os.path.join(BASE_DIR, 'cadastro/static'),
     os.path.join(BASE_DIR, 'execucao/static'),
     os.path.join(BASE_DIR, 'preventiva/static'),
-
 ]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
