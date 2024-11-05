@@ -1,7 +1,7 @@
 from django.db import models
 
 from solicitacao.models import Solicitacao
-from cadastro.models import Operador
+from cadastro.models import Operador, PecaUtilizada
 
 class InfoSolicitacao(models.Model):
     
@@ -45,6 +45,8 @@ class Execucao(models.Model):
     apos_exec_maq_parada = models.BooleanField(default=False)
     status = models.CharField(max_length=40, choices=STATUS_CHOICES, default='em_espera')
     ultima_atualizacao = models.DateTimeField(auto_now=True)
+    peca_utilizada = models.ManyToManyField(PecaUtilizada, blank=True)
+    quantidade = models.FloatField(null=True, blank=True)
 
     class Meta:
         unique_together = ('ordem', 'n_execucao')
@@ -109,7 +111,7 @@ class Execucao(models.Model):
             duracao = self.data_fim - self.data_inicio
             return duracao.total_seconds() / 3600  # Converte segundos para horas
         return 0  # Retorna 0 se a execução ainda não foi finalizada
-    
+
 class MaquinaParada(models.Model):
     ordem = models.ForeignKey(Solicitacao, on_delete=models.CASCADE, related_name='ordem_maquinaparada')
     execucao = models.ForeignKey(Execucao, on_delete=models.CASCADE, related_name='maquina_parada', null=True, blank=True)
@@ -118,5 +120,4 @@ class MaquinaParada(models.Model):
 
     def __str__(self):
         return f'{self.data_inicio} - {self.data_fim if self.data_fim else "em andamento"}'
-
 

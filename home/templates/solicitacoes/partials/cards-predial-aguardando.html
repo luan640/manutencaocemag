@@ -1,0 +1,295 @@
+{% load custom_filters %}
+
+{% for solicitacao in page_obj %}
+<div class="col-md-6">
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>#{{ solicitacao.pk }}</span>
+            <div class="text-end ms-auto">
+                {% if solicitacao.status_andamento %}
+                    {% if solicitacao.status_andamento == 'finalizada' %}
+                    <span class="badge text-bg-success">Finalizado</span>
+                    {% elif solicitacao.status_andamento == 'em_execucao' %}
+                    <span class="badge text-bg-info">Em execução</span>
+                    {% elif solicitacao.status_andamento == 'aguardando_material' %}
+                    <span class="badge text-bg-secondary">Aguardando material</span>
+                    {% elif solicitacao.status_andamento == 'aguardando_atendimento' %}
+                    <span class="badge text-bg-primary"><small>Aguardando programação</small></span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <h6 class="card-title d-flex justify-content-between align-items-center">
+                <div class="d-flex flex-column">
+                    <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
+                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
+                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
+                </div>
+            
+                <div class="d-flex flex-column align-items-end">
+                    {% if solicitacao.maq_parada %}
+                        <div class="d-flex align-items-center text-danger mb-1">
+                            <!-- Ícone SVG de Exclamação -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-exclamation-triangle-fill me-1" viewBox="0 0 16 16">
+                                <path
+                                    d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                            </svg>
+                            <small>Parada</small>
+                        </div>
+                    {% endif %}
+            
+                    <div class="text-muted">
+                        <small>{{ solicitacao.data_abertura|days_since }}</small>
+                    </div>
+                    {% if solicitacao.planejada %}
+                        <small><span class="badge text-bg-dark ms-2">Preventiva</span></small>
+                    {% endif %}
+                </div>
+            </h6>
+            
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <div>
+                {% if solicitacao.fotos.exists %}
+                <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#fotosModal{{ solicitacao.pk }}">
+                    Fotos
+                </button>
+                {% else %}
+                <span class="badge bg-secondary">Sem Fotos</span>
+                {% endif %}
+                {% if solicitacao.video %}
+                <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#videosModal{{ solicitacao.pk }}">
+                    Vídeos
+                </button>
+                {% else %}
+                <span class="badge bg-secondary">Sem Vídeos</span>
+                {% endif %}
+            </div>
+            {% if not request.user.tipo_acesso == 'solicitante' %}
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+                    aria-expanded="false" style="background: none; border: none; padding: 0;">
+                    &#x22EE;
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    {% if not solicitacao.status_andamento == 'finalizada' %}
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal"
+                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Aguardando programação</a>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar foto -->
+<div class="modal fade" id="fotosModal{{ solicitacao.pk }}" tabindex="-1" aria-labelledby="fotosModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fotosModalLabel{{ solicitacao.pk }}">Fotos da Solicitação #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    {% for foto in solicitacao.fotos.all %}
+                    <div class="col-md-4">
+                        <img src="{{ foto.imagem.url }}" class="img-fluid img-thumbnail mb-2" alt="Foto da Solicitação #{{ solicitacao.pk }}" loading="lazy">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar vídeo -->
+<div class="modal fade" id="videosModal{{ solicitacao.pk }}" tabindex="-1" aria-labelledby="videosModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videosModalLabel{{ solicitacao.pk }}">Vídeo da Solicitação #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    {% if solicitacao.video %}
+                    <div class="col-md-12">
+                        <video controls class="img-fluid mb-2" loading="lazy">
+                            <source src="{{ solicitacao.video.url }}" type="video/mp4">
+                        </video>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para primeiro atendimento -->
+<div class="modal fade" id="editarOrdemInicialModal{{ solicitacao.pk }}" tabindex="-1"
+    aria-labelledby="editarOrdemInicialModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarOrdemInicialModalLabel{{ solicitacao.pk }}">Executar ordem #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form class="form1ExecucaoProducao" data-ordem-id="{{ solicitacao.pk }}" data-modal-id="editarOrdemInicialModal{{ solicitacao.pk }}" method="post" action="{% url 'editar_solicitacao' solicitacao.pk %}">
+                    {% csrf_token %}
+                    <!-- Collapse para Informações Gerais -->
+                    <h2 class="fs-5 d-flex justify-content-between align-items-center">
+                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseInformacoesGerais" role="button" aria-expanded="false" aria-controls="collapseInformacoesGerais">
+                            Informações gerais
+                        </a>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="flagMaqParada" id="maqParadaToggle{{ solicitacao.id }}" {% if solicitacao.maq_parada %} checked {% endif %}>
+                            <div class="text-danger">
+                                <!-- Ícone SVG de Exclamação -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                                    class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+                                    <path
+                                        d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                                </svg>
+                                <small>Parada</small>
+                            </div>
+                        </div>
+                    </h2>
+                    <div class="collapse show" id="collapseInformacoesGerais">
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="setor_info">Setor</label>
+                                <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="solicitante_info">Solicitante</label>
+                                <input class="form-control" type="text"
+                                    value="{{solicitacao.solicitante.matricula}} - {{solicitacao.solicitante.nome}}"
+                                    readonly>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="data_abertura_info">Data de abertura</label>
+                                <input class="form-control" type="datetime-local" id="data_abertura_info" name="data_abertura" value="{{ solicitacao.data_abertura|date:'Y-m-d\\TH:i' }}">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="data_abertura_info">Impacto na produção</label>
+                                <input class="form-control" type="text" value="{{solicitacao.get_impacto_producao_display}}"
+                                    readonly>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
+                            
+                                {% with info=solicitacao.info_solicitacao.first %}
+                                    <select class="form-control" name="tipo_manutencao" id="tipo_manutencao_{{solicitacao.pk}}" 
+                                        {% if info and info.tipo_manutencao %}disabled{% else %}required{% endif %}>
+                                        
+                                        <option value=""></option>
+                            
+                                        {% for tipo in tipo_manutencao %}
+                                            <option value="{{ tipo.0 }}" 
+                                                {% if info and tipo.0 == info.tipo_manutencao %}selected{% endif %}>
+                                                {{ tipo.1 }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                {% endwith %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="area_manutencao" class="form-label">Área de manutenção</label>
+                                <select class="form-control" name="area_manutencao" id="area_manutencao_{{solicitacao.pk}}" required>
+                                    <option value="predial">Predial</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="rowEscolhaPlano" style="display: none;" class="row mb-3">
+                            <div class="col-sm-12">
+                                <label for="">Escolha o plano</label>
+                                <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="{{solicitacao.maquina.pk}}">
+                                    <option value="">Carregando...</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% if solicitacao.setor.nome == 'Solda' %}
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="">Equipamento em falha</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="">Setor máquina de solda</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
+                                    readonly>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="">Tipo da ferramenta</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="">Código da ferramenta</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.codigo_ferramenta }}">
+                            </div>
+
+                        </div>
+                        {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="descricao_usuario">Descrição do usuário</label>
+                                <textarea rows="7" class="form-control" name="descricao_usuario" id="descricao_usuario" readonly>{{solicitacao.descricao}}</textarea>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="comentario_manutencao">Comentário do PCM</label>
+                                <textarea rows="7" class="form-control" name="comentario_manutencao" id="comentario_manutencao" required></textarea>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="status_inicial_{{solicitacao.pk}}">Status</label>
+                                <select class="form-control" name="status_inicial" id="status_inicial_{{solicitacao.pk}}" required>
+                                    <option value="">----------</option>
+                                    <option value="rejeitar">Rejeitar</option>
+                                    <option value="aprovar">Aprovar</option>
+                                </select>
+                            </div>
+                            <div style="display: none;" id="campoProgramacao_{{solicitacao.pk}}" class="col-sm-6">
+                                <label for="data_programacao_{{solicitacao.pk}}">Programação</label>
+                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" class="form-control" type="date">
+                            </div>
+                        </div>
+                        <div id="rowPrioridade_{{solicitacao.pk}}" class="row" style="display: none;">
+                            <div class="col-sm-6">
+                                <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade</label>
+                                <select class="form-control" name="prioridade" id="prioridade_{{solicitacao.pk}}">
+                                    <option value="">----------</option>
+                                    <option value="alto">Alto</option>
+                                    <option value="medio">Médio</option>
+                                    <option value="baixo">Baixo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <div class="text-end">
+                        <button id="salvarPrimeiraExecucao" type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endfor %}

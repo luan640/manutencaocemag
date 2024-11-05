@@ -4,24 +4,23 @@
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
-
 {% endblock %}
 
 {% block content %}
 
-<div class="container mb-3">
-
-    <div class="container mb-3">
-    <!-- Botão para mostrar/ocultar filtros -->
+<div class="mb-3">
+    <div class="mb-3">
+        <!-- Botão para mostrar/ocultar filtros -->
         <h2 class="fs-5">
             <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseFiltros" role="button" aria-expanded="false" aria-controls="collapseFiltros">
                 Filtros
             </a>
         </h2>
-
+    
         <!-- Collapse para o Formulário de Filtros -->
         <div class="collapse" id="collapseFiltros">
             <form method="GET" class="row g-3" id="filter-form">
+                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
                 <div class="col-md-3">
                     <label for="solicitante" class="form-label">Solicitante</label>
                     <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
@@ -35,6 +34,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 <div class="col-md-3">
                     <label for="ultimo_status" class="form-label">Status</label>
                     <select class="form-select" id="ultimo_status" name="ultimo_status">
@@ -45,10 +45,34 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                <!-- <div class="col-md-3">
+                    <label for="maq_parada" class="form-label">Máquina Parada</label>
+                    <select class="form-select" id="maq_parada" name="maq_parada">
+                        <option value="">Todos</option>
+                        <option value="sim" {% if maq_parada == 'sim' %}selected{% endif %}>Sim</option>
+                        <option value="nao" {% if maq_parada == 'nao' %}selected{% endif %}>Não</option>
+                    </select>
+                </div> -->
                 <div class="col-md-3">
                     <label for="data_abertura" class="form-label">Data de Abertura</label>
                     <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
                 </div>
+                <!-- Filtro de Planejadas -->
+                <div class="col-md-3">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
+                            {% if planejada == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="planejada">Mostrar Apenas Planejadas</label>
+                    </div>
+                
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="atrasada" name="atrasada" value="1"
+                            {% if atrasada == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="atrasada">Mostrar Apenas Atrasadas</label>
+                    </div>
+                </div>
+                {% endif %}
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Filtrar</button>
                     <a href="{% url 'home_predial' %}" class="btn btn-secondary">Limpar Filtros</a>
@@ -57,33 +81,15 @@
         </div>
     </div>
 
-    <div class="container my-4">
-        <div class="row row-cols-1 row-cols-md-3">
+    <div>
+        <div class="row row-cols-1 row-cols-md-4">
             <div class="col">
-                <div class="card custom-card custom-border-info">
+                <div class="card custom-card custom-border-primary">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div>
-                                <p class="mb-0 text-secondary">Aguardando atendimento</p>
-                                <h4 class="my-1 text-info">{{ quantidade_em_aberto }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-scooter ms-auto">
-                                <i class="fa fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card custom-card custom-border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Em andamento</p>
-                                <h4 class="my-1 text-success">{{ quantidade_em_execucao }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-ohhappiness ms-auto">
-                                <i class="fa fa-spinner"></i>
+                                <p class="mb-0 text-secondary">Aguardando programação</p>
+                                <h4 class="my-1 text-primary">{{ aguardando_primeiro_atendimento_card }}</h4>
                             </div>
                         </div>
                     </div>
@@ -94,78 +100,195 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div>
-                                <p class="mb-0 text-secondary">Finalizada</p>
-                                <h4 class="my-1 text-warning">{{ quantidade_finalizada }}</h4>
-                            </div>
-                            <div class="custom-icon custom-bg-gradient-blooker ms-auto">
-                                <i class="fa fa-check-circle"></i>
+                                <p class="mb-0 text-secondary">Em espera</p>
+                                <h4 class="my-1 text-warning">{{ quantidade_em_aberto }}</h4>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="row my-4">
-        <div class="col-sm-12">
-            <div class="card">
-                <div class="card-header">Solicitações</div>
-                <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
-                    <div class="row" id="solicitacoes-container">
-                        {% include 'cards/cards-predial.html' %}
-                    </div>
-                    {% if page_obj.has_next %}
-                    <div class="row justify-content-center my-4">
-                        <div class="col-auto">
-                            <button id="loadMore" class="btn btn-primary" data-next-page="{{ page_obj.next_page_number }}">
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
+            <div class="col">
+                <div class="card custom-card custom-border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Em andamento</p>
+                                <h4 class="my-1 text-info">{{ quantidade_em_execucao }}</h4>
+                            </div>
                         </div>
                     </div>
-                    {% endif %}
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-secondary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Aguardando material</p>
+                                <h4 class="my-1 text-secondary">{{ aguardando_material }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Finalizada</p>
+                                <h4 class="my-1 text-success">{{ quantidade_finalizada }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card custom-card custom-border-danger">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Atrasada</p>
+                                <h4 class="my-1 text-danger">{{ quantidade_atrasada }}</h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
+    <div class="row my-4">
+        <!-- Aguardando primeiro atendimento -->
+        {% if request.user.tipo_acesso == 'administrador' %}
+        <div class="col-sm-6 mb-3">
+            <div class="card">
+                <div class="card-header" id="headingAguardandoPrimeiroAtendimento">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAguardandoPrimeiroAtendimento" aria-expanded="true" aria-controls="collapseAguardandoPrimeiroAtendimento">
+                            A programar
+                        </button>
+                    </h5>
+                </div>
+                <div id="collapseAguardandoPrimeiroAtendimento" class="collapse show" aria-labelledby="headingAguardandoPrimeiroAtendimento">
+                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                        <div class="row" id="aguardando-primeiro-atendimento-container">
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <div class="col-auto" id="container-button-aguardando">
+                                    <button style="display: none;" class="btn btn-primary" id="loadMoreAguardandoPrimeiroAtendimento" data-next-page="">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Solicitações -->
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-header" id="headingSolicitacoes">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
+                            Programadas
+                        </button>
+                    </h5>
+                </div>
+                <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
+                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                        <div class="row" id="solicitacoes-container">
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <button style="display: none;" class="btn btn-primary" id="loadMoreSolicitacoes" data-next-page="">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+        {% else %}
+        <!-- Solicitações -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-header" id="headingSolicitacoes">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
+                            Programadas
+                        </button>
+                    </h5>
+                </div>
+                <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
+                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                        <div class="row" id="solicitacoes-container">
+                            <p>Carregando...</p>
+                        </div>
+                        <div class="row justify-content-center my-4">
+                            <div class="col-auto">
+                                <button style="display: none;" class="btn btn-primary" id="loadMoreSolicitacoes" data-next-page="">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener("DOMContentLoaded", function() {      
+        
         var filterForm = document.getElementById('filter-form');
+
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // Coleta os dados do formulário e converte para parâmetros de URL
             var formData = new FormData(filterForm);
             var params = new URLSearchParams(formData).toString();
-    
-            fetch("?" + params, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('solicitacoes-container').innerHTML = data.html;
-                var loadMoreButton = document.getElementById('loadMore');
-                if (data.nextPage) {
-                    loadMoreButton.dataset.nextPage = data.nextPage;
-                    loadMoreButton.style.display = 'block';
-                } else {
-                    loadMoreButton.style.display = 'none';
-                }
-            });
+
+            // Chama a função fetchSolicitacoes passando os parâmetros
+            fetchSolicitacoes(
+                "solicitacoes/",                  // URL base
+                "solicitacoes-container",         // ID do container onde os dados serão inseridos
+                "loadMoreSolicitacoes",           // ID do botão de 'load more'
+                params,                           // Parâmetros do filtro
+                [attachExecutarOrdemEventListeners] // Callback após carregar as solicitações
+            );
+
+            fetchSolicitacoes(
+                "aguardando-primeiro-atendimento/",                  // URL base
+                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
+                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
+                params,                           // Parâmetros do filtro
+                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+            );
+
         });
-    
-        var loadMoreButton = document.getElementById('loadMore');
-        loadMoreButton.addEventListener('click', function() {
-            var nextPage = loadMoreButton.dataset.nextPage;
-            var formData = new FormData(filterForm);
-            formData.append('page', nextPage);
-            var params = new URLSearchParams(formData).toString();
-    
-            fetch("?" + params, {
+
+        function fetchSolicitacoes(url, container, loadMoreButtonId, params, callbacks = []) {
+
+            let fetchUrl = `${url}?page=1`;
+
+            if (params) {
+                fetchUrl += `&${params}`;
+            }
+
+            fetch(fetchUrl, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -173,16 +296,490 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('solicitacoes-container').insertAdjacentHTML('beforeend', data.html);
+                document.getElementById(container).innerHTML = data.html;
+
+                const loadMoreButton = document.getElementById(loadMoreButtonId);
                 if (data.nextPage) {
-                    loadMoreButton.dataset.nextPage = data.nextPage;
+                    loadMoreButton.setAttribute('data-next-page', data.nextPage);
+                    loadMoreButton.disabled = false;
                     loadMoreButton.style.display = 'block';
+
+                    if (!loadMoreButton.hasListener) {
+                        // Use uma IIFE para capturar `params` e `callbacks` corretamente
+                        loadMoreButton.addEventListener('click', () => {
+                            loadMoreSolicitacoes(
+                                loadMoreButtonId, url, container, params, callbacks
+                            );
+                        });
+
+                        loadMoreButton.hasListener = true;
+                    }
                 } else {
                     loadMoreButton.style.display = 'none';
                 }
+
+                callbacks.forEach(callback => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                });
+            })
+            .catch(error => console.error("Erro ao carregar solicitações:", error));
+        }
+
+        // Função para carregar mais solicitações
+        function loadMoreSolicitacoes(loadMoreButtonId, url, container, params = '', callbacks = []) {
+            
+            var filterForm = document.getElementById('filter-form');
+            var formData = new FormData(filterForm);
+            var params = new URLSearchParams(formData).toString();
+
+            var loadMoreButton = document.getElementById(loadMoreButtonId);
+            if (!loadMoreButton) {
+                console.error("Botão de 'load more' não encontrado.");
+                return;
+            }
+
+            let nextPage = loadMoreButton.getAttribute('data-next-page');
+            if (!nextPage) {
+                console.error("Nenhuma página disponível para carregar.");
+                loadMoreButton.style.display = 'none';
+                return;
+            }
+
+            loadMoreButton.disabled = true; // Desabilita o botão para evitar múltiplos cliques
+
+            // Adiciona os parâmetros de filtro na URL da próxima página
+            var fetchUrl = url + "?page=" + nextPage;
+            if (params) {
+                fetchUrl += "&" + params;
+            }
+
+            fetch(fetchUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(container).insertAdjacentHTML('beforeend', data.html);
+
+                if (data.nextPage) {
+                    loadMoreButton.setAttribute('data-next-page', data.nextPage);
+                    loadMoreButton.disabled = false;
+                    loadMoreButton.style.display = 'block';  // Mostra o botão se há mais páginas
+                } else {
+                    loadMoreButton.style.display = 'none';
+                }
+
+                callbacks.forEach(callback => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Erro ao carregar mais solicitações:", error);
+                loadMoreButton.disabled = false;
             });
+        }
+
+        function loadSection(url, containerId, callbacks = []) {  // Aceita múltiplos callbacks usando o operador rest
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+
+                    document.getElementById(containerId).innerHTML = html;
+
+                    // Executa todos os callbacks (se houver) após o carregamento da seção
+                    callbacks.forEach(callback => {
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar seção:", error);
+                });
+        }
+
+        function attachStatusChangeListeners() {
+            const statusSelects = document.querySelectorAll('select[id^="status_inicial_"]');
+
+            statusSelects.forEach(function(statusSelect) {
+                // Extrai o ID dinâmico da solicitação (pk)
+                const pk = statusSelect.id.split('_')[2]; // Pega o ID da solicitação a partir do ID do select
+                const dataProgramacao = document.getElementById('data_programacao_' + pk);
+                const campoProgramacao = document.getElementById('campoProgramacao_' + pk);
+                const campoNivelPrioridade = document.getElementById('prioridade_'+pk);
+                const rowPrioridade = document.getElementById('rowPrioridade_'+pk);
+                const campoTipoManutencao = document.getElementById('tipo_manutencao_'+pk);
+                const campoAreaManutencao = document.getElementById('area_manutencao_'+pk);
+
+                // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
+                function toggleDataProgramacao() {
+                    if (statusSelect.value === 'rejeitar') {
+                        // Oculta o campo de data e remove a obrigatoriedade
+                        campoProgramacao.style.display = 'none';
+                        rowPrioridade.style.display = 'none';
+                        dataProgramacao.removeAttribute('required');
+                        campoNivelPrioridade.removeAttribute('required');
+                        campoTipoManutencao.removeAttribute('required');
+                        campoAreaManutencao.removeAttribute('required');
+                    } else if (statusSelect.value === 'aprovar') {
+                        // Exibe o campo de data e torna-o obrigatório
+                        campoProgramacao.style.display = 'block';
+                        rowPrioridade.style.display = 'block';
+                        dataProgramacao.setAttribute('required', 'required');
+                        campoNivelPrioridade.setAttribute('required', 'required');
+                        campoTipoManutencao.setAttribute('required','required');
+                        campoAreaManutencao.setAttribute('required','required');
+
+                    }
+                }
+
+                // Adiciona o listener de mudança (change) ao campo select
+                statusSelect.addEventListener('change', toggleDataProgramacao);
+
+                // Chama a função inicialmente para ajustar o estado inicial
+                toggleDataProgramacao();
+            });
+        }
+
+        // Função para adicionar event listeners aos formulários de iniciar ordem
+        function attachExecutarOrdemEventListeners() {
+            const forms = document.querySelectorAll('.formExecucaoProducao');
+
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Impede o envio tradicional do formulário
+
+                    // Obter a URL de envio
+                    const url = form.getAttribute('action');
+                    const modalId = form.dataset.modalId;
+
+                    // Criar um objeto FormData para capturar os dados do formulário
+                    const formData = new FormData(form);
+
+                    // Exibe o modal de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Aguarde enquanto processamos sua solicitação.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
+
+                    // Enviar a requisição AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => {
+
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Erro ao executar a ordem.');
+                        }
+                    })
+                    .then(data => {
+
+                        if (data.success) {
+                            Promise.all([
+
+                                document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+
+                            ]).then(() => {
+
+                            }).catch(error => {
+                                console.error("Erro ao carregar as seções:", error);
+                            });
+                            // Atualizar as seções necessárias
+
+                            // Fechar o modal
+                            const modal = document.getElementById(modalId);
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+
+                            // Mostrar o popup de sucesso
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Execução feita com sucesso!',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                });
+            });
+        }
+
+        // Função para adicionar event listeners aos formulários de finalizar ordem
+        function attachExecutar1OrdemEventListeners() {
+            const forms = document.querySelectorAll('.form1ExecucaoProducao');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Impede o envio tradicional do formulário
+                    
+                    // Obter a URL de envio
+                    const url = form.getAttribute('action');
+                    const modalId = form.dataset.modalId;
+
+                    // Criar um objeto FormData para capturar os dados do formulário
+                    const formData = new FormData(form);
+
+                    // Exibe o modal de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Aguarde enquanto processamos sua solicitação.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
+
+                    // Enviar a requisição AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => {
+
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Erro ao finalizar a ordem.');
+                        }
+                    })
+                    .then(data => {
+
+                        if (data.success) {
+                            Promise.all([
+
+                                document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+
+                            ]).then(() => {
+                            }).catch(error => {
+                                console.error("Erro ao carregar as seções:", error);
+                            });
+
+                            // Fechar o modal
+                            const modal = document.getElementById(modalId);
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+                            
+                            // Mostrar o popup de sucesso
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Ordem executada com sucesso!',
+                                confirmButtonText: 'OK'
+                            });
+
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Ocorreu um erro ao executar a ordem. Tente novamente.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                });
+            });
+        }
+
+        function attachStatusReenviarWpp() {
+            // Seleciona todos os links que começam com o ID "btnReenviarWpp_"
+            const btnReenviar = document.querySelectorAll('a[id^="btnReenviarWpp_"]');
+
+            btnReenviar.forEach(function (link) {
+                // Extrai o ID da solicitação (pk) a partir do ID do link
+                const pk = link.id.split('_')[1];  // Ajuste: posição correta do ID
+
+                // Adiciona o evento de clique a cada link
+                link.addEventListener('click', function (event) {
+                    event.preventDefault();  // Evita comportamento padrão do link
+                    reenviarMensagem(pk);  // Chama a função para reenviar a mensagem
+                });
+            });
+        }
+
+        function mudancaStatusFinalizada(){
+            document.querySelectorAll('[id^="id_status_"]').forEach(selectElement => {
+                selectElement.addEventListener('change', function() {
+                    const isFinalizada = this.value === 'finalizada';
+                    const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
+
+                    const containerReabrirOrdem = document.querySelector(`#executarModal${modalId} #container-reabrir-ordem`)
+                    const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
+
+                    if (isFinalizada) {
+                        containerReabrirOrdem.style.display = 'block';
+                        solicitarAberturaNovaOrdem.setAttribute('required', 'required');
+                    } else {
+                        containerReabrirOrdem.style.display = 'none';
+                        solicitarAberturaNovaOrdem.removeAttribute('required');
+                    }
+                });
+            });
+
+            document.querySelectorAll('[id^="solicitarAberturaNovaOrdem_"]').forEach((selectElement) => {
+                selectElement.addEventListener('change', function () {
+                    const abrirOrdem = this.value.toLowerCase() === 'sim';  // Confirma se o valor é 'sim'
+                    const modalId = this.id.split('_').pop();  // Obtém o identificador único do modal
+
+                    const motivoElement = document.querySelector(`#executarModal${modalId} #motivoNovaOrdem`);
+                    const inputMotivoElement = document.querySelector(`#executarModal${modalId} #motivoNovaOrdemInput`);
+
+                    if (motivoElement && inputMotivoElement) {
+                        motivoElement.style.display = abrirOrdem ? 'block' : 'none';
+
+                        // Adiciona ou remove o atributo 'required' dinamicamente
+                        if (abrirOrdem) {
+                            inputMotivoElement.setAttribute('required', 'required');
+                        } else {
+                            inputMotivoElement.removeAttribute('required');
+                        }
+                    } else {
+                        console.error(`Elemento #motivoNovaOrdem ou #motivoNovaOrdemInput não encontrado no modal ${modalId}`);
+                    }
+                });
+            });
+
+        };
+        
+        function escolherPlanoPreventiva(){
+            document.querySelectorAll('[id^="tipo_manutencao_"]').forEach(selectElement => {
+                selectElement.addEventListener('change', function() {
+                    const tipoManutencao = this.value === 'preventiva_programada';
+                    const modalId = this.id.split('_').pop(); // Obtém o identificador exclusivo do modal
+
+                    const rowEscolhaPlano = document.querySelector(`#editarOrdemInicialModal${modalId} #rowEscolhaPlano`);
+                    const escolherPlanoPreventiva = document.querySelector(`#editarOrdemInicialModal${modalId} #escolherPlanoPreventiva`);
+                    const maquinaId = escolherPlanoPreventiva.getAttribute('data-id-maquina');
+
+                    if (tipoManutencao) {
+                        rowEscolhaPlano.style.display = 'block';
+                        escolherPlanoPreventiva.setAttribute('required', 'required');
+
+                        // Faz o fetch para buscar os planos preventivos da máquina
+                        fetch(`/solicitacao/api/planos-preventiva/${maquinaId}`)
+                            .then(response => response.json())
+                            .then(planos => {
+                                escolherPlanoPreventiva.innerHTML = '';  // Limpa as opções antigas
+                                planos.forEach(plano => {
+                                    const option = document.createElement('option');
+                                    option.value = plano.id;
+                                    option.textContent = plano.nome;
+                                    escolherPlanoPreventiva.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar planos preventivos:', error);
+                            });
+
+                    } else {
+                        rowEscolhaPlano.style.display = 'none';
+                        escolherPlanoPreventiva.innerHTML = '';  // Limpa as opções
+                        escolherPlanoPreventiva.removeAttribute('required');
+
+                    }
+                });
+            });
+        }
+
+        function reenviarMensagem(ordemId) {
+
+            var url = `{% url 'reenviar_mensagem' 0 %}`.replace('/0/', `/${ordemId}/`);
+
+            // Exibe o modal de carregamento
+            Swal.fire({
+                title: 'Processando...',
+                text: 'Aguarde enquanto processamos sua solicitação.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Exibe o spinner de carregamento
+                }
+            });
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}', // Inclua o CSRF token
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+
+                    // Mostrar o popup de sucesso
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Ordem executada com sucesso!',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+
+        Promise.all([
+            // Verifica se o elemento existe antes de adicionar a função ao array de Promises
+            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp])
+
+        ]).then(() => {
+            // Executa fetchSolicitacoes para cada seção que foi carregada
+            // if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
+            //     fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]);
+            // }
+            // fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]);
+        }).catch(error => {
+            console.error("Erro ao carregar as seções:", error);
         });
     });
+
 </script>
 
 {% endblock %}

@@ -13,6 +13,10 @@ urlpatterns = [
     path('producao/aguardando-primeiro-atendimento/', views.aguardando_primeiro_atendimento_producao, name='aguardando_primeiro_atendimento_producao'),
     path('producao/maquinas-paradas/', views.maquinas_paradas_producao, name='maquinas_paradas_producao'),
 
+    path('predial/solicitacoes/', views.solicitacoes_predial, name='solicitacoes_predial'),
+    path('predial/aguardando-primeiro-atendimento/', views.aguardando_primeiro_atendimento_predial, name='aguardando_primeiro_atendimento_predial'),
+
+    path('reenviar-mensagem/<int:ordem_id>/', views.reenviar_mensagem, name='reenviar_mensagem'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-from cadastro.models import Setor, Maquina, TipoTarefas
+from cadastro.models import Setor, Maquina, TipoTarefas, Operador
 
 class Solicitacao(models.Model):
     
@@ -57,7 +57,7 @@ class Solicitacao(models.Model):
     tipo_ferramenta = models.CharField(max_length=20, choices=FERRAMENTAS_CHOICES, null=True, blank=True) 
     codigo_ferramenta = models.CharField(max_length=20, null=True, blank=True) 
     video = models.FileField(upload_to='videos/', blank=True, null=True)
-    descricao = models.TextField()
+    descricao = models.TextField(null=True, blank=True)
     area = models.CharField(max_length=20, choices=AREA_CHOICES)
     planejada = models.BooleanField(default=False)
     prioridade = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, null=True, blank=True)
@@ -67,6 +67,7 @@ class Solicitacao(models.Model):
     satisfacao_registrada = models.BooleanField(default=False)
     status_andamento = models.CharField(max_length=30, choices=STATUS_ANDAMENTO_CHOICES, default='aguardando_atendimento', db_index=True)
     programacao = models.DateField(null=True, blank=True)
+    atribuido = models.ForeignKey(Operador, on_delete=models.CASCADE, related_name='operador_atribuido', null=True, blank=True)
 
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'

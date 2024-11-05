@@ -4,12 +4,17 @@ from cadastro.models import Maquina, Operador, TipoTarefas
 from solicitacao.models import Solicitacao
 
 class PlanoPreventiva(models.Model):
+
+    CHOICES_AREA = (('producao','Produção'),('predial','Predial'))
+
     maquina = models.ForeignKey(Maquina, on_delete=models.CASCADE, related_name='planos_preventiva')
     nome = models.CharField(max_length=100)
     descricao = models.TextField(null=True, blank=True)
     periodicidade = models.IntegerField(help_text="Número de dias entre cada execução")
     abertura_automatica = models.BooleanField(default=True)
     dias_antecedencia = models.IntegerField(help_text="Com quantos dias antes deverá abrir?", blank=True, null=True)
+    area = models.CharField(max_length=20,choices=CHOICES_AREA)
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return f'{self.maquina} {self.nome}'

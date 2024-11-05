@@ -1,18 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.base_user import BaseUserManager
 
 class FuncionarioManager(BaseUserManager):
-    def create_user(self, matricula, nome, tipo_acesso, area=None, password=None, **extra_fields):
+    def create_user(self, matricula, nome, password=None, **extra_fields):
         if not matricula:
-            raise ValueError('A matrícula do funcionário deve ser fornecida')
+            raise ValueError('A matrícula é obrigatória.')
         if not nome:
-            raise ValueError('O nome do funcionário deve ser fornecido')
-        if tipo_acesso not in ['solicitante', 'administrador', 'operador']:
-            raise ValueError('Tipo de acesso inválido')
-        if area not in [None, 'producao', 'predial']:
-            raise ValueError('Área inválida')
+            raise ValueError('O nome é obrigatório.')
 
-        user = self.model(matricula=matricula, nome=nome, tipo_acesso=tipo_acesso, area=area, **extra_fields)
+        user = self.model(matricula=matricula, nome=nome, **extra_fields)
+        print(user)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -20,13 +18,16 @@ class FuncionarioManager(BaseUserManager):
     def create_superuser(self, matricula, nome, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('tipo_acesso', self.model.ADMINISTRADOR)
 
         if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser deve ter is_staff=True.')
+            raise ValueError('Superusuário precisa ter is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser deve ter is_superuser=True.')
+            raise ValueError('Superusuário precisa ter is_superuser=True.')
+        if extra_fields.get('tipo_acesso') != self.model.ADMINISTRADOR:
+            raise ValueError('Superusuário precisa ser ADMINISTRADOR.')
 
-        return self.create_user(matricula, nome, 'administrador', 'producao', password, **extra_fields)
+        return self.create_user(matricula, nome, password, **extra_fields)
 
 class Funcionario(AbstractBaseUser, PermissionsMixin):
     SOLICITANTE = 'solicitante'
@@ -71,6 +72,7 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'matricula'
     REQUIRED_FIELDS = ['nome']
 
+    # Aqui é onde você adiciona o manager personalizado
     objects = FuncionarioManager()
 
     def __str__(self):
@@ -78,9 +80,10 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
 
     def is_administrador(self):
         return self.tipo_acesso == self.ADMINISTRADOR
-    
+
     def save(self, *args, **kwargs):
-        # Adicionar "55" no início do telefone, se não estiver presente
+        # Adicionar "55" ao telefone, se necessário
         if self.telefone and not self.telefone.startswith('55'):
             self.telefone = '55' + self.telefone
+
         super(Funcionario, self).save(*args, **kwargs)

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Manutenções Semanais
+{% endblock %}
+
+{% block links %}    
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+
+        .janeiro { background-color: #f0f8ff; }    /* AliceBlue */
+        .fevereiro { background-color: #faebd7; }  /* AntiqueWhite */
+        .marco { background-color: #ffe4e1; }      /* MistyRose */
+        .abril { background-color: #f5f5dc; }      /* Beige */
+        .maio { background-color: #f0fff0; }       /* HoneyDew */
+        .junho { background-color: #e6e6fa; }      /* Lavender */
+        .julho { background-color: #fffacd; }      /* LemonChiffon */
+        .agosto { background-color: #fdf5e6; }     /* OldLace */
+        .setembro { background-color: #fafad2; }   /* LightGoldenRodYellow */
+        .outubro { background-color: #ffe4b5; }    /* Moccasin */
+        .novembro { background-color: #ffdab9; }   /* PeachPuff */
+        .dezembro { background-color: #e0ffff; }   /* LightCyan */
+
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<div>
+    <h2>Planejamento anual (52 semanas)</h2>
+    <table id="manutencaoTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/manutencoes-semana/')
+            .then(response => response.json())
+            .then(data => renderTable(data))
+            .catch(error => console.error('Erro ao carregar os dados:', error));
+
+        function renderTable(data) {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+
+            // Criação da linha de cabeçalho (Semanas)
+            const headerRow = document.createElement('tr');
+            const emptyHeader = document.createElement('th');
+            emptyHeader.textContent = 'Máquina / Plano';  // Coluna vazia para alinhar com a lista de máquinas
+            headerRow.appendChild(emptyHeader);
+
+            // Adiciona as colunas das semanas com numeração dinâmica
+            data.forEach((semana, index) => {
+                const th = document.createElement('th');
+                th.textContent = `Semana ${index + 1}`;  // Exibe Semana 1, Semana 2...
+
+                // Obter o mês a partir da data de início da semana
+                const dataSemana = new Date(semana.inicio);
+                const mes = dataSemana.getMonth();  // Mês é 0-indexado (janeiro = 0)
+
+                // Adicionar classe com base no mês
+                th.classList.add(getMesClasse(mes));
+
+                headerRow.appendChild(th);
+            });
+
+            tableHead.appendChild(headerRow);
+
+            // Preenchimento da tabela com máquinas e planos
+            const maquinas = {};  // Objeto para armazenar máquinas e seus planos por semana
+
+            data.forEach((semana, index) => {
+                semana.manutencoes.forEach(manutencao => {
+                    if (!maquinas[manutencao.maquina]) {
+                        maquinas[manutencao.maquina] = Array(data.length).fill('');
+                    }
+                    maquinas[manutencao.maquina][index] += `${manutencao.plano}<br>`;
+                });
+            });
+
+            // Criação das linhas da tabela para cada máquina
+            Object.entries(maquinas).forEach(([maquina, planosPorSemana]) => {
+                const row = document.createElement('tr');  // Cria uma linha para a máquina
+                const maquinaCell = document.createElement('td');  // Cria a célula com o nome da máquina
+                maquinaCell.textContent = maquina;
+                row.appendChild(maquinaCell);
+
+                // Itera pelas semanas e adiciona os planos numerados corretamente
+                planosPorSemana.forEach((planos, index) => {
+                    const cell = document.createElement('td');  // Cria uma célula para a semana
+                    let htmlContent = '';  // Inicializa o conteúdo da célula
+                    let contador = 1;  // Reinicia o contador para cada semana
+
+                    // Adiciona a lista de planos numerados
+                    planos.split('<br>').forEach(plano => {
+                        if (plano.trim()) {  // Ignora strings vazias
+                            htmlContent += `${contador}. ${plano}<br>`;  // Adiciona o número e o plano
+                            contador++;  // Incrementa o contador
+                        }
+                    });
+
+                    cell.innerHTML = htmlContent;  // Define o conteúdo da célula
+                    row.appendChild(cell);  // Adiciona a célula à linha
+                });
+
+                tableBody.appendChild(row);  // Adiciona a linha ao corpo da tabela
+            });
+        }
+
+        // Função para retornar a classe CSS correspondente ao mês
+        function getMesClasse(mes) {
+            const meses = [
+                'janeiro', 'fevereiro', 'marco', 'abril',
+                'maio', 'junho', 'julho', 'agosto',
+                'setembro', 'outubro', 'novembro', 'dezembro'
+            ];
+            return meses[mes];  // Retorna a classe correspondente ao mês
+        }
+    });
+</script>
+
+{% endblock %}
+

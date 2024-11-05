@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.core.serializers import serialize
 from django.db import transaction
 
+from .utils import criar_solicitacoes_aleatorias
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
 from .models import Foto, Solicitacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
@@ -46,7 +47,6 @@ def criar_solicitacao(request):
                         solicitacao.save()
 
                     # Adiciona mensagem de sucesso e redireciona
-                    messages.success(request, 'Solicitação enviada com sucesso!')
                     return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'producao'}))
 
             except Exception as e:
@@ -86,9 +86,6 @@ def criar_solicitacao_predial(request):
                 for imagem in request.FILES.getlist('imagens'):
                     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
 
-                # Adiciona uma mensagem de sucesso
-                messages.success(request, 'Solicitação enviada com sucesso!')
-
                 # Redireciona para a página de sucesso
                 return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'predial'}))
 
@@ -105,6 +102,70 @@ def criar_solicitacao_predial(request):
         'form': form,
         'form2': form2,
         'maquinas_predial': maquinas_predial
+    })
+
+@login_required
+def criar_execucao_rotina(request):
+    maquinas_predial = Maquina.objects.filter(area='predial')
+    operadores = Operador.objects.filter(area='predial')
+
+    if request.method == 'POST':
+        form = SolicitacaoPredialForm(request.POST)
+        # form2 = FotoForm(request.POST, request.FILES)
+
+        operadores_ids = request.POST.getlist('operador')  # Usar getlist para campos ManyToMany
+        observacao = request.POST.get('obs')
+        
+        data_inicio = request.POST.get('data_inicio')
+        if 'T' in data_inicio:
+            data_inicio = data_inicio.split('T')[0]
+        data_fim = request.POST.get('data_fim')
+
+        with transaction.atomic():
+            if form.is_valid(): #and form2.is_valid():
+                solicitacao = form.save(commit=False)
+                
+                if isinstance(request.user, User):
+                    solicitacao.solicitante = request.user
+                    solicitacao.area = 'predial'
+                    solicitacao.impacto_producao = 'baixo'
+                    solicitacao.descricao = 'Tarefa de rotina'
+                    solicitacao.status = 'aprovar'
+                    solicitacao.status_andamento = 'finalizada'
+                    solicitacao.programacao = data_inicio
+                    solicitacao.save()
+
+                    # for imagem in request.FILES.getlist('imagens'):
+                    #     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
+
+                    execucao = Execucao.objects.create(
+                                ordem=solicitacao,
+                                n_execucao=0,
+                                data_inicio=data_inicio,
+                                data_fim=data_fim,
+                                observacao=observacao,
+                                status='finalizada',
+                            )
+                    execucao.operador.set(operadores_ids)  # Usar o .set() para ManyToMany
+                    execucao.save()
+
+                    # Redireciona para a página de sucesso
+                    return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'predial'}))
+
+                else:
+                    return render(request, 'erro.html', {'mensagem': 'Usuário inválido.'})
+            else:
+                print(form.errors)
+                # print(form2.errors)
+    else:
+        form = SolicitacaoForm()
+        # form2 = FotoForm()
+
+    return render(request, 'execucao/executar-tarefa-rotina.html', {
+        'form': form,
+        # 'form2': form2,
+        'maquinas_predial': maquinas_predial,
+        'operadores': operadores
     })
 
 def solicitacao_sucesso(request, area):
@@ -252,49 +313,61 @@ def processar_satisfacao(request, ordem_id):
 
     # Processar a resposta conforme necessário
     if resposta in ['sim', 'nao']:
-        # Atualizar a ordem para indicar que a satisfação foi registrada
-        ordem.satisfacao_registrada = True
-        ordem.save()
+        with transaction.atomic():
+            
+            # Atualizar a ordem para indicar que a satisfação foi registrada
+            ordem.satisfacao_registrada = True
+            ordem.save()
 
-        # Lógica para salvar a resposta e fazer outras ações
-        if resposta == 'sim':
-            print(f"Ordem {ordem_id}: Usuário respondeu Sim.")
-        else:
-            # Se a resposta for "Não", abrir uma nova solicitação com as mesmas informações
-            nova_ordem = Solicitacao.objects.create(
-                setor=ordem.setor,
-                maquina=ordem.maquina,
-                maq_parada=ordem.maq_parada,
-                solicitante=ordem.solicitante,
-                equipamento_em_falha=ordem.equipamento_em_falha,
-                setor_maq_solda=ordem.setor_maq_solda,
-                impacto_producao=ordem.impacto_producao,
-                tipo_ferramenta=ordem.tipo_ferramenta,
-                codigo_ferramenta=ordem.codigo_ferramenta,
-                video=ordem.video,
-                descricao=ordem.descricao,
-                area=ordem.area,
-                planejada=ordem.planejada,
-                prioridade=ordem.prioridade,
-                tarefa=ordem.tarefa,
-                comentario_manutencao=ordem.comentario_manutencao,
-                status=ordem.status,
-                satisfacao_registrada=False  # Definir como não registrada para a nova solicitação
-            )
-
-            # Copiar as imagens associadas à solicitação original
-            for foto in ordem.fotos.all():
-                Foto.objects.create(
-                    solicitacao=nova_ordem,
-                    imagem=foto.imagem
+            # Lógica para salvar a resposta e fazer outras ações
+            if resposta == 'sim':
+                print(f"Ordem {ordem_id}: Usuário respondeu Sim.")
+            else:
+                # Se a resposta for "Não", abrir uma nova solicitação com as mesmas informações
+                nova_ordem = Solicitacao.objects.create(
+                    setor=ordem.setor,
+                    maquina=ordem.maquina,
+                    maq_parada=ordem.maq_parada,
+                    solicitante=ordem.solicitante,
+                    equipamento_em_falha=ordem.equipamento_em_falha,
+                    setor_maq_solda=ordem.setor_maq_solda,
+                    impacto_producao=ordem.impacto_producao,
+                    tipo_ferramenta=ordem.tipo_ferramenta,
+                    codigo_ferramenta=ordem.codigo_ferramenta,
+                    video=ordem.video,
+                    descricao=f"Solicitante optou por reabrir a ordem #OS{ordem_id}.\nMotivo anterior: " + ordem.descricao + '\nOrdem aberta novamente de forma automática.',
+                    area=ordem.area,
+                    planejada=ordem.planejada,
+                    prioridade=ordem.prioridade,
+                    tarefa=ordem.tarefa,
+                    comentario_manutencao=ordem.comentario_manutencao,
+                    status=ordem.status,
+                    satisfacao_registrada=False  # Definir como não registrada para a nova solicitação
                 )
 
-            print(f"Ordem {ordem_id}: Usuário respondeu Não. Nova solicitação criada com ID {nova_ordem.pk}.")
+                # Copiar as imagens associadas à solicitação original
+                for foto in ordem.fotos.all():
+                    Foto.objects.create(
+                        solicitacao=nova_ordem,
+                        imagem=foto.imagem
+                    )
 
-    # Redirecionar para a página inicial ou outra página após o processamento
-    return redirect('home_producao')
+                print(f"Ordem {ordem_id}: Usuário respondeu Não. Nova solicitação criada com ID {nova_ordem.pk}.")
+
+        return render(request, 'solicitacao/sucesso.html', {'mensagem': 'Ordem finalizada com sucesso!'})
 
 def get_planos_preventiva(request, maquina_id):
     planos = PlanoPreventiva.objects.filter(maquina_id=maquina_id).values('id', 'nome')
 
     return JsonResponse(list(planos), safe=False)
+
+@login_required
+def gerar_solicitacoes(request, qtd=10):
+    """
+    View para gerar 'qtd' solicitações aleatórias.
+    """
+    try:
+        criar_solicitacoes_aleatorias(qtd)  # Chama a função utilitária
+        return JsonResponse({'success': f'{qtd} solicitações geradas com sucesso.'}, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

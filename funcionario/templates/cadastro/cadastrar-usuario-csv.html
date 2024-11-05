@@ -1,0 +1,17 @@
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="csv_file">Arquivo CSV:</label>
+    <input type="file" name="csv_file" accept=".csv" required>
+    <button type="submit" class="btn btn-primary">Cadastrar Usuários em Massa</button>
+</form>
+
+{% if errors %}
+    <div class="alert alert-danger mt-4">
+        <h4>Erros de Cadastro:</h4>
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

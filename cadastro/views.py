@@ -158,7 +158,6 @@ def edit_operador(request,pk):
 
     return render(request, 'operador/edit.html', {'form':form})
 
-
 def importar_csv_maquina(request):
     
     if request.method == 'POST' and request.FILES.get('csv_file'):

@@ -2,30 +2,354 @@
 {% load static %}
 
 {% block content %}
+<input id="area" name="area" type="hidden" value="{{request.user.area}}">
 <div class="mt-5">
-    <h2>Lista de Preventivas</h2>
-    <div class="table-responsive">
-        <table id="preventivasTable" class="table table-bordered table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>Máquina</th>
-                    <th>Nome do Plano</th>
-                    <th>Descrição</th>
-                    <th>Periodicidade (dias)</th>
-                    <th>Abertura Automática</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- DataTables irá preencher este corpo automaticamente -->
-            </tbody>
-        </table>
+    <div class="row mb-3">
+        <div class="col-sm-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">Plano de Preventivas</span>
+                    <div class="text-end ms-auto">
+                        <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modalAddPreventiva">
+                            Add Preventiva
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table id="preventivasTable" class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Máquina</th>
+                                <th>Nome do Plano</th>
+                                <th>Descrição</th>
+                                <th>Periodicidade (dias)</th>
+                                <th>Abertura Automática</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- DataTables irá preencher este corpo automaticamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-sm-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">Últimas preventivas realizadas</span>
+                </div>
+                <div class="card-body">
+                    <ul id="preventivasList" class="list-group list-group-flush">
+                        
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">Preventivas em aberto</span>
+                    <div class="text-end ms-auto">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul id="preventivasAbertoList" class="list-group list-group-flush">
+                        
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- modalAddPreventiva -->
+<div class="modal fade" id="modalAddPreventiva" tabindex="-1" aria-labelledby="modalAddPreventiva" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Escolha a máquina</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <input type="text" class="form-control" id="maquinaInput" placeholder="Digite o nome da máquina...">
+                        <ul id="sugestoes" class="list-group mt-2"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a class="btn badge btn-success" id="continuarButton" href="#">Continuar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- modalConfirmarExclusao -->
+<div class="modal fade" id="modalConfirmarExclusao" tabindex="-1" aria-labelledby="modalConfirmarExclusao" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza de que deseja excluir este item?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a class="btn btn-danger" id="btnConfirmarExclusao" href="#">Confirmar</a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="{% static 'js/datatable-preventivas.js' %}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let area = document.getElementById('area').value;
+        const apiUrl = `?area=${area}`;  // Certifique-se de que essa é a rota correta
+        const inputElement = document.getElementById('maquinaInput');
+        const sugestoesElement = document.getElementById('sugestoes');
+        const continuarButton = document.getElementById('continuarButton');
+        const modalConfirmarExclusao = document.getElementById('modalConfirmarExclusao');
+        const btnConfirmarExclusao = document.getElementById('btnConfirmarExclusao');
+        let itemId;  // Variável para armazenar o ID do item a ser excluído
+
+        let maquinas = [];  // Variável para armazenar as máquinas carregadas
+
+        // Função para buscar dados do backend
+        function fetchData() {
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Máquinas:', data.maquinas);  // Exibe no console para depuração
+                maquinas = data.maquinas;  // Armazena as máquinas
+            })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+        }
+
+        function fetchUltimasPreventivas(){
+            fetch(`/ultimas-preventivas?area=${area}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('data', data);  // Exibe no console para depuração
+                renderPreventivas(data.data);  // Chama a função para renderizar a lista
+            })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+        }
+
+        function renderPreventivas(preventivas) {
+            const preventivasList = document.getElementById('preventivasList');
+            preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
+
+            if (preventivas.length === 0) {
+                preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
+                return;
+            }
+
+            preventivas.forEach(preventiva => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+
+                const dataFormatada = preventiva.ultima_atualizacao 
+                    ? formatarData(preventiva.ultima_atualizacao) 
+                    : 'N/A';
+
+                listItem.innerHTML = `
+                    <strong>${preventiva.maquina__codigo}:</strong> 
+                    ${preventiva.descricao} <br>
+                    Data: ${dataFormatada}
+                `;
+
+                preventivasList.appendChild(listItem);
+            });
+        }
+
+        function fetchPreventivasAberto(){
+            fetch(`/preventivas-aberto?area=${area}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('data', data);  // Exibe no console para depuração
+                renderPreventivasAberto(data.data);  // Chama a função para renderizar a lista
+            })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+        }
+
+        function renderPreventivasAberto(preventivas) {
+            const preventivasList = document.getElementById('preventivasAbertoList');
+            preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
+
+            if (preventivas.length === 0) {
+                preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
+                return;
+            }
+
+            preventivas.forEach((preventiva, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+
+                const dataFormatada = preventiva.proxima_execucao 
+                    ? formatarData(preventiva.proxima_execucao) 
+                    : 'N/A';
+
+                    listItem.innerHTML = `
+                        <strong>${index + 1}. ${preventiva.maquina__codigo}</strong> 
+                        <br>
+                        Descrição: ${preventiva.descricao} <br>
+                    `;
+
+                preventivasList.appendChild(listItem);
+            });
+        }
+
+        function formatarData(dataString) {
+            const data = new Date(dataString);
+            const dia = String(data.getDate()).padStart(2, '0');
+            const mes = String(data.getMonth() + 1).padStart(2, '0');  // Os meses são 0-indexados
+            const ano = data.getFullYear();
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        // Função para filtrar as sugestões com base no input do usuário
+        inputElement.addEventListener('input', function () {
+            const searchValue = inputElement.value.toLowerCase();
+            const filteredMaquinas = maquinas.filter(maquina =>
+                maquina.nome.toLowerCase().includes(searchValue) ||
+                maquina.codigo.toLowerCase().includes(searchValue)
+            );
+
+            showSuggestions(filteredMaquinas);
+        });
+
+        // Função para exibir as sugestões na lista
+        function showSuggestions(maquinas) {
+            sugestoesElement.innerHTML = '';  // Limpa as sugestões anteriores
+
+            maquinas.forEach(maquina => {
+                const li = document.createElement('li');
+                li.textContent = `${maquina.codigo} - ${maquina.nome}`;
+                li.classList.add('list-group-item', 'list-group-item-action');
+                li.dataset.id = maquina.id;  // Armazena o ID da máquina
+
+                // Adiciona evento de clique para selecionar a máquina
+                li.addEventListener('click', function () {
+                    inputElement.value = li.textContent;  // Define o texto no input
+                    inputElement.dataset.selectedId = li.dataset.id;  // Armazena o ID selecionado
+                    sugestoesElement.innerHTML = '';  // Limpa as sugestões
+                });
+
+                sugestoesElement.appendChild(li);  // Adiciona a sugestão à lista
+            });
+        }
+
+        continuarButton.addEventListener('click', function (event) {
+            event.preventDefault();  // Previne o comportamento padrão do link
+
+            const maquinaId = inputElement.dataset.selectedId;  // Pega o ID selecionado
+            if (maquinaId) {
+                const url = `/plano-preventiva/criar/${maquinaId}/`;
+                window.location.href = url;  // Redireciona para a URL
+            } else {
+                alert('Por favor, selecione uma máquina.');
+            }
+        });
+
+        // Event listener para o botão "Excluir"
+        $('#preventivasTable').on('click', '.btnExcluir', function (event) {
+            event.preventDefault();
+            itemId = $(this).data('id');  // Armazena o ID do item
+        });
+
+        // Event listener para o botão "Confirmar" no modal
+        btnConfirmarExclusao.addEventListener('click', function (event) {
+            event.preventDefault();  // Previne o comportamento padrão do link
+            
+            Swal.fire({
+                title: 'Processando...',
+                text: 'Aguarde enquanto desativamos seu planejamento.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Exibe o spinner de carregamento
+                }
+            });
+
+            fetchDataExcluir(itemId);
+            $(modalConfirmarExclusao).modal('hide');  // Fecha o modal após confirmação
+        });
+
+        // Função para realizar a requisição de exclusão
+        function fetchDataExcluir(id) {
+
+            fetch(`/plano-preventiva/excluir/${id}/`, {
+                method: 'DELETE',  // Use o método DELETE para exclusão
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }  // Inclua o CSRF token se necessário
+            })
+            .then(response => {
+                if (response.ok) {
+
+                    // Mostrar o popup de sucesso
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Salvo!',
+                        confirmButtonText: 'OK'
+                    });
+
+                    window.location.reload();
+
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Ocorreu um erro ao desativar o planejamento. Tente novamente.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+        
+        // Chama a função para buscar dados ao carregar a página
+        fetchData();
+        fetchUltimasPreventivas();
+        fetchPreventivasAberto();
+    });
+</script>
 
 {% endblock %}

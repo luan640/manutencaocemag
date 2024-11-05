@@ -1,0 +1,127 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% block links %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+
+<style>
+    .legenda {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .legenda-item {
+        display: flex;
+        align-items: center;
+    }
+
+    .legenda-cor {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        border-radius: 5px;
+    }
+
+    .legenda-red {
+        background-color: red;
+    }
+
+    .legenda-yellow {
+        background-color: orange;
+    }
+
+    .legenda-green {
+        background-color: green;
+    }
+
+    .legenda-blue {
+        background-color: blue;
+    }
+
+    #calendar {
+        max-width: 100%;
+        margin: 50px auto;
+    }
+</style>
+{% endblock %}
+
+<div>
+    <input type="hidden" id="area" value="{{area}}">
+    <h2>Programação de Ordens</h2>
+
+    <!-- Legenda -->
+    <div class="legenda">
+        <div class="legenda-item">
+            <div class="legenda-cor legenda-red"></div>
+            <span>Atrasada</span>
+        </div>
+        <div class="legenda-item">
+            <div class="legenda-cor legenda-green"></div>
+            <span>Preventiva</span>
+        </div>
+        <div class="legenda-item">
+            <div class="legenda-cor legenda-yellow"></div>
+            <span>Preventiva Atrasada</span>
+        </div>
+        <div class="legenda-item">
+            <div class="legenda-cor legenda-blue"></div>
+            <span>No prazo</span>
+        </div>
+    </div>
+
+</div>
+
+<div id="calendar"></div>
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var area = document.getElementById('area').value;
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',  // Exibe o calendário no modo mensal
+            events: `/programacao/ordens-programadas/${area}/`,
+            locale: 'pt-br',  // Define o idioma para português
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            eventClick: function(info) {
+                // Exibe um alert com detalhes da ordem ao clicar no evento
+                alert(`Máquina: ${info.event.title}\nMotivo: ${info.event.extendedProps.description}\nSetor: ${info.event.extendedProps.setor}`);
+            },
+            eventDidMount: function(info) {
+                // Adiciona um tooltip com a descrição ao passar o mouse sobre o evento
+                info.el.setAttribute('title', info.event.extendedProps.description);
+
+                if (info.event.extendedProps.atrasada && info.event.extendedProps.planejada) {
+                    info.el.style.backgroundColor = 'orange';  // Cor para planejadas e atrasadas
+                    info.el.style.borderColor = 'orange';
+                } else if (info.event.extendedProps.atrasada) {
+                    info.el.style.backgroundColor = 'red';  // Cor para apenas atrasadas
+                    info.el.style.borderColor = 'red';
+                } else if (info.event.extendedProps.planejada) {
+                    info.el.style.backgroundColor = 'green';  // Cor para planejadas
+                    info.el.style.borderColor = 'green';
+                } else {
+                    info.el.style.backgroundColor = 'blue';  // Cor padrão para outras ordens
+                    info.el.style.borderColor = 'blue';
+                }
+            }
+        });
+
+        // Renderiza o calendário
+        calendar.render();
+    });
+</script>
+
+
+{% endblock %}

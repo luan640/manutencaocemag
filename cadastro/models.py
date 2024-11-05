@@ -49,9 +49,17 @@ class Operador(models.Model):
     salario = models.FloatField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, blank=True, null=True)
     area = models.CharField(max_length=20, choices=AREA_CHOICES)
+    telefone = models.CharField(max_length=13, blank=True, null=True)
 
     def __str__(self):
         return self.nome
+    
+    def save(self, *args, **kwargs):
+        # Adicionar "55" ao telefone, se necessário
+        if self.telefone and not self.telefone.startswith('55'):
+            self.telefone = '55' + self.telefone
+
+        super(Operador, self).save(*args, **kwargs)
     
 class TipoTarefas(models.Model):
 
@@ -59,3 +67,22 @@ class TipoTarefas(models.Model):
 
     def __str__(self):
         return self.nome
+    
+class PecaUtilizada(models.Model):
+
+    codigo = models.CharField(max_length=10, unique=True)
+    descricao = models.CharField(max_length=255),
+    valor = models.FloatField(default=0)
+
+    def __str__(self):
+        return self.descricao
+    
+class Checklist(models.Model):
+
+    nome = models.CharField(max_length=100)
+    maquinas = models.ManyToManyField(Maquina, related_name='checklists')  # Relacionamento ManyToMany
+
+class ItensCheckList(models.Model):
+
+    nome = models.CharField(max_length=100)
+    checklist = models.ForeignKey(Checklist, on_delete=models.CASCADE, related_name='itens')

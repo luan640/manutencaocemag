@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block links %}
+
+{% endblock %}
+
+{% block content %}
+<h6 class="text-center mt-4">Registro de rotina</h6>
+<div class="container d-flex justify-content-center align-items-center">
+    <div class="col-12 col-md-8 col-lg-6 p-4 border rounded shadow">
+
+        <form id="abrirOrdemServico" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <input type="hidden" value="predial" name="tipo_solicitacao" id="tipo_solicitacao">
+
+            <div class="mb-3">
+                {{ form.setor.label_tag }}
+                {{ form.setor }}
+            </div>
+        
+            <div id="maquina-geral" class="mb-3">
+                <label for="id_maquina">Local</label>
+                <select name="maquina" class="form-select" required="" id="id_maquina">
+                    <option value="" selected="">---------</option>
+                    {% for maquina in maquinas_predial %}
+                    <option value="{{maquina.id}}">{{maquina.codigo}} - {{maquina.descricao}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        
+            <!-- <div class="mb-3">
+                <label for="id_imagens" class="form-label">Upload de Fotos:</label>
+                {{ form2.as_p }}
+            </div>
+        
+            <div class="mb-3">
+                {{ form.video.label_tag }}
+                {{ form.video }}
+            </div> -->
+
+            <div class="row">
+                <!-- Data de Início -->
+                <div class="col-sm-6">
+                    <div class="mb-3">
+                        <label for="id_data_inicio" class="form-label">Data de Início</label>
+                        <input type="datetime-local" class="form-control" id="id_data_inicio"
+                            name="data_inicio" value="" required>
+                    </div>
+                </div>
+
+                <!-- Data de Fim -->
+                <div class="col-sm-6">
+                    <div class="mb-3">
+                        <label for="id_data_fim" class="form-label">Data de Fim</label>
+                        <input type="datetime-local" class="form-control" id="id_data_fim" name="data_fim"
+                            value="" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observação -->
+            <div class="mb-3">
+                <label for="id_observacao" class="form-label">Observação</label>
+                <textarea class="form-control" id="id_observacao" name="observacao"></textarea>
+            </div>
+                    
+            <!-- Operador -->
+            <div class="mb-3">
+                <label for="id_operador" class="form-label">Operador</label>
+                <select name="operador" multiple="multiple" class="form-control js-example-basic-multiple" id="id_operador" required>
+                    {% for operador in operadores %}
+                    <option value="{{ operador.pk }}">{{ operador.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button id="btnEnviar" type="submit" class="btn btn-primary w-100">Salvar</button>
+
+        </form>
+    
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        
+        $(document).ready(function() {
+            $('.js-example-basic-multiple').select2();
+        });
+
+        var setorSelect = document.getElementById('id_setor');
+        var maquinaSelect = document.getElementById('id_maquina');
+        var tipoSolicitacao = document.getElementById('tipo_solicitacao').value;
+
+        setorSelect.addEventListener('change', function () {
+            var setorId = this.value;
+
+            maquinaSelect.innerHTML = '<option value="">Carregando...</option>';
+            maquinaSelect.disabled = true;
+
+            if (setorId) {
+                // Faz a requisição para buscar as máquinas com base no setor selecionado
+                fetch("{% url 'filtrar_maquinas_por_setor' %}?setor_id=" + setorId + "&tipo_solicitacao=" + tipoSolicitacao)
+                .then(function (response) {
+                    return response.json();  // Converte a resposta em JSON
+                })
+                .then(function (data) {
+                    maquinaSelect.disabled = false;
+                    maquinaSelect.innerHTML = '';
+
+                    // Adiciona as novas opções com base nas máquinas retornadas
+                    data.maquinas.forEach(function (maquina) {
+                        var option = document.createElement('option');
+                        option.value = maquina.id;
+                        option.textContent = maquina.codigo + ' - ' + maquina.descricao;
+                        maquinaSelect.appendChild(option);
+                    });
+                })
+                .catch(function (error) {
+                    console.error('Erro ao buscar as máquinas:', error);
+                });
+            } else {
+                // Se nenhum setor for selecionado, limpa o campo de seleção de máquinas
+                maquinaSelect.innerHTML = '<option value="">---------</option>';
+            }
+        });
+    });
+
+    const form = document.getElementById('abrirOrdemServico');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    form.addEventListener('submit', function () {
+        // Desativa ambos os botões após o clique em um deles
+        btnEnviar.disabled = true;
+    });
+
+</script>
+
+{% endblock %}

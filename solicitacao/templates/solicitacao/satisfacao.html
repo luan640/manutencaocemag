@@ -2,25 +2,51 @@
 {% load static %}
 
 {% block content %}
-
-<div class="container mt-5">
+<div class="mt-5">
     <div class="mt-3">
-        <form method="post" action="{% url 'processar_satisfacao' ordem_id %}">
+        <form method="post" action="{% url 'processar_satisfacao' ordem_id %}" id="satisfacaoForm">
             {% csrf_token %}
             <div class="alert alert-success" role="alert">
                 <h4 class="alert-heading">A execução da ordem foi eficaz?</h4>
-                <p>Caso a reposta seja "Não", será aberta uma nova ordem de serviço para a mesma máquina de forma automática.</p>
+                <p>Caso a resposta seja "Não", será aberta uma nova ordem de serviço para a mesma máquina de forma automática.</p>
                 <hr>
-                <button type="submit" name="resposta" value="sim" class="btn btn-success">
+                <button type="submit" class="btn btn-success" id="btnSim" data-resposta="sim">
                     Sim
                 </button>
-                <button type="submit" name="resposta" value="nao" class="btn btn-danger">
+                <button type="submit" class="btn btn-danger" id="btnNao" data-resposta="nao">
                     Não
                 </button>
             </div>
+            <input type="hidden" name="resposta" id="inputResposta" value=""> <!-- Input escondido -->
         </form>
     </div>
 </div>
 
-{% endblock %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('satisfacaoForm');
+        const btnSim = document.getElementById('btnSim');
+        const btnNao = document.getElementById('btnNao');
+        const inputResposta = document.getElementById('inputResposta');
 
+        // Adiciona evento de clique nos botões para definir o valor da resposta
+        btnSim.addEventListener('click', function (event) {
+            event.preventDefault();  // Evita o envio imediato do formulário
+            inputResposta.value = btnSim.getAttribute('data-resposta');  // Define a resposta
+            form.submit();  // Envia o formulário
+        });
+
+        btnNao.addEventListener('click', function (event) {
+            event.preventDefault();  // Evita o envio imediato do formulário
+            inputResposta.value = btnNao.getAttribute('data-resposta');  // Define a resposta
+            form.submit();  // Envia o formulário
+        });
+
+        // Desativa os botões após o envio
+        form.addEventListener('submit', function () {
+            btnSim.disabled = true;
+            btnNao.disabled = true;
+        });
+    });
+</script>
+{% endblock %}

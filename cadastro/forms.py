@@ -19,4 +19,9 @@ class MaquinaForm(forms.ModelForm):
 class AddOperadorForm(forms.ModelForm):
     class Meta:
         model = Operador
-        fields = ['nome', 'matricula', 'salario', 'status', 'area']
+        fields = ['nome', 'matricula', 'status', 'area']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class':'form-control'}),
+            'matricula': forms.TextInput(attrs={'class':'form-control'}),
+            'area': forms.Select(attrs={'class':'form-control'}),
+        }

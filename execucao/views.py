@@ -8,12 +8,13 @@ from django.urls import reverse
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.db import transaction
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
-from cadastro.models import Maquina, Setor
+from cadastro.models import Maquina, Setor, Operador
 from funcionario.models import Funcionario
-from preventiva.models import SolicitacaoPreventiva
+from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
 
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
@@ -32,154 +33,188 @@ def criar_execucao(request, solicitacao_id):
     n_execucao = ultima_execucao.n_execucao + 1 if ultima_execucao else 0
 
     if request.method == 'POST':
-
-        data_inicio = parse_datetime(request.POST.get('data_inicio'))
-        data_fim = parse_datetime(request.POST.get('data_fim'))
-        observacao = request.POST.get('observacao')
-        operadores = request.POST.getlist('operador')
-        status = request.POST.get('status')
-        che_maq_parada = request.POST.get('che_maq_parada') == 'on'
-        exec_maq_parada = request.POST.get('exec_maq_parada') == 'on'
-        apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'on'
-
-        if not apos_exec_maq_parada:
-            solicitacao.maq_parada = False
-            
-        solicitacao.status_andamento = status
-
-        solicitacao.save()
-
-        execucao = Execucao.objects.create(
-            ordem=solicitacao,
-            n_execucao=n_execucao,
-            data_inicio=data_inicio,
-            data_fim=data_fim,
-            observacao=observacao,
-            status=status,
-            che_maq_parada=che_maq_parada,
-            exec_maq_parada=exec_maq_parada,
-            apos_exec_maq_parada=apos_exec_maq_parada,
-        )
-
-        execucao.operador.set(operadores)
-        execucao.save()
-
         
-        if status == 'finalizada':
+        with transaction.atomic():
+            data_inicio = parse_datetime(request.POST.get('data_inicio'))
+            data_fim = parse_datetime(request.POST.get('data_fim'))
+            observacao = request.POST.get('observacao')
+            operadores = request.POST.getlist('operador')
+            status = request.POST.get('status')
+            che_maq_parada = request.POST.get('che_maq_parada') == 'on'
+            exec_maq_parada = request.POST.get('exec_maq_parada') == 'on'
+            apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'on'
 
-            # Se o operador quiser reabrir uma nova ordem com um novo motivo
-            if request.POST.get('motivoNovaOrdemInput'):
+            if not apos_exec_maq_parada:
+                solicitacao.maq_parada = False
+                
+            solicitacao.status_andamento = status
+
+            solicitacao.save()
+
+            execucao = Execucao.objects.create(
+                ordem=solicitacao,
+                n_execucao=n_execucao,
+                data_inicio=data_inicio,
+                data_fim=data_fim,
+                observacao=observacao,
+                status=status,
+                che_maq_parada=che_maq_parada,
+                exec_maq_parada=exec_maq_parada,
+                apos_exec_maq_parada=apos_exec_maq_parada,
+            )
+
+            execucao.operador.set(operadores)
+            execucao.save()
             
-                Solicitacao.objects.create(
-                    setor=solicitacao.setor,
-                    maquina=solicitacao.maquina,
-                    maq_parada=False,
-                    solicitante=request.user,
-                    equipamento_em_falha=solicitacao.equipamento_em_falha,
-                    setor_maq_solda=solicitacao.setor_maq_solda,
-                    impacto_producao=solicitacao.impacto_producao,
-                    tipo_ferramenta=solicitacao.tipo_ferramenta,
-                    codigo_ferramenta=solicitacao.codigo_ferramenta,
-                    video=solicitacao.video,
-                    descricao=request.POST.get('motivoNovaOrdemInput'),
-                    area=solicitacao.area,
-                    planejada=solicitacao.planejada,
-                    prioridade=solicitacao.prioridade,
-                    tarefa=solicitacao.tarefa,
-                    comentario_manutencao=solicitacao.comentario_manutencao,
-                    status=solicitacao.status,
-                    satisfacao_registrada=False
-                )
+            if status == 'finalizada':
 
-            # Obtendo o telefone do solicitante
-            telefone = buscar_telefone(solicitacao.solicitante.matricula)
+                # Se o operador quiser reabrir uma nova ordem com um novo motivo
+                if request.POST.get('motivoNovaOrdemInput'):
+                
+                    Solicitacao.objects.create(
+                        setor=solicitacao.setor,
+                        maquina=solicitacao.maquina,
+                        maq_parada=False,
+                        solicitante=request.user,
+                        equipamento_em_falha=solicitacao.equipamento_em_falha,
+                        setor_maq_solda=solicitacao.setor_maq_solda,
+                        impacto_producao=solicitacao.impacto_producao,
+                        tipo_ferramenta=solicitacao.tipo_ferramenta,
+                        codigo_ferramenta=solicitacao.codigo_ferramenta,
+                        video=solicitacao.video,
+                        descricao=request.POST.get('motivoNovaOrdemInput'),
+                        area=solicitacao.area,
+                        planejada=False,
+                        prioridade=solicitacao.prioridade,
+                        tarefa=solicitacao.tarefa,
+                        comentario_manutencao=solicitacao.comentario_manutencao,
+                        status=solicitacao.status,
+                        satisfacao_registrada=False
+                    )
 
-            link_satisfacao = request.build_absolute_uri(reverse('pagina_satisfacao', args=[solicitacao.pk]))
+                # Obtendo o telefone do solicitante
+                telefone = buscar_telefone(solicitacao.solicitante.matricula)
 
-            if telefone:  # Verifica se o telefone foi encontrado
-                kwargs = {
-                    'ordem': solicitacao.pk,
-                    'data_abertura': solicitacao.data_abertura,
-                    'data_fechamento': execucao.data_fim,
-                    'maquina': solicitacao.maquina.codigo,
-                    'motivo': solicitacao.descricao,
-                    'descricao': solicitacao.maquina.descricao,
-                    'link': link_satisfacao
-                }
+                link_satisfacao = request.build_absolute_uri(reverse('pagina_satisfacao', args=[solicitacao.pk]))
 
-                # Cria uma instância de OrdemServiceWpp
-                ordem_service = OrdemServiceWpp()
+                if telefone:  # Verifica se o telefone foi encontrado
+                    kwargs = {
+                        'ordem': solicitacao.pk,
+                        'data_abertura': solicitacao.data_abertura,
+                        'data_fechamento': execucao.data_fim,
+                        'maquina': solicitacao.maquina.codigo,
+                        'motivo': solicitacao.descricao,
+                        'descricao': solicitacao.maquina.descricao,
+                        'link': link_satisfacao
+                    }
 
-                # Chamando o método mensagem_finalizar_ordem
-                status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+                    # Cria uma instância de OrdemServiceWpp
+                    ordem_service = OrdemServiceWpp()
 
-            else:
-                print("Telefone não encontrado para o solicitante.")
+                    # Chamando o método mensagem_finalizar_ordem
+                    status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
 
-        return JsonResponse({
-            'success': True,
-        })
+                else:
+                    print("Telefone não encontrado para o solicitante.")
+
+            return JsonResponse({
+                'success': True,
+            })
 
 @csrf_exempt
 def editar_solicitacao(request, solicitacao_id):
-
     solicitacao = get_object_or_404(Solicitacao, id=solicitacao_id)
 
     if request.method == 'POST':
+        try:
+            
+            # Obtém os dados do formulário
+            comentario_pcm = request.POST.get('comentario_manutencao')
+            data_abertura = parse_datetime(request.POST.get('data_abertura'))
+            if not data_abertura:
+                raise ValueError('Data de abertura inválida.')
 
-        comentario_pcm = request.POST.get('comentario_manutencao')
-        data_abertura = parse_datetime(request.POST.get('data_abertura'))
+            programacao = parse_datetime(request.POST.get('data_programacao'))
+            programacao = programacao if programacao else None
 
-        data_inicio = datetime.datetime.now()
-        data_fim = datetime.datetime.now()
-        status = 'em_espera'
-        status_inicial = request.POST.get('status_inicial')
+            data_inicio = timezone.now()
+            data_fim = timezone.now()
+            status_inicial = request.POST.get('status_inicial')
+            nivel_prioridade = request.POST.get('prioridade')
+            if not nivel_prioridade:
+                nivel_prioridade = None
 
-        tipo_manutencao = request.POST.get('tipo_manutencao')
-        area_manutencao = request.POST.get('area_manutencao')
-        plano = request.POST.get('escolherPlanoPreventiva')
+            tipo_manutencao = request.POST.get('tipo_manutencao')
+            area_manutencao = request.POST.get('area_manutencao')
+            plano = request.POST.get('escolherPlanoPreventiva')
 
-        InfoSolicitacao.objects.filter(solicitacao=solicitacao).update(
-            area_manutencao=area_manutencao
-        )
+            responsavel = request.POST.get('operador')
 
-        # Criar uma nova execução
-        execucao = Execucao.objects.create(
-            ordem=solicitacao,
-            n_execucao=0,
-            data_inicio=data_inicio,
-            data_fim=data_fim,
-            status=status,
-            che_maq_parada=True if request.POST.get('flagMaqParada') else False,
-            exec_maq_parada=True if request.POST.get('flagMaqParada') else False,
-            apos_exec_maq_parada=True if request.POST.get('flagMaqParada') else False,
-        )
+            responsavel_object = None
+            if responsavel:
+                responsavel_object = get_object_or_404(Operador, id=responsavel)
 
-        # Atualizar a solicitação
-        solicitacao.comentario_manutencao = comentario_pcm
-        solicitacao.data_abertura = data_abertura
-        solicitacao.status = status_inicial
-        solicitacao.status_andamento = status
+            with transaction.atomic():
+                if status_inicial == 'rejeitar':
+                    solicitacao.status_andamento = 'rejeitado'
+                else:
+                    
+                    InfoSolicitacao.objects.update_or_create(
+                        solicitacao=solicitacao,
+                        defaults={'area_manutencao': area_manutencao, 'tipo_manutencao': tipo_manutencao}
+                    )
 
-        if request.POST.get('flagMaqParada'):
-            solicitacao.maq_parada = True
+                    Execucao.objects.create(
+                        ordem=solicitacao,
+                        n_execucao=0,
+                        data_inicio=data_inicio,
+                        data_fim=data_fim,
+                        status='em_espera',
+                        che_maq_parada=request.POST.get('flagMaqParada') == 'true',
+                        exec_maq_parada=request.POST.get('flagMaqParada') == 'true',
+                        apos_exec_maq_parada=request.POST.get('flagMaqParada') == 'true',
+                    )
 
-        if tipo_manutencao == 'preventiva_programada':
-            solicitacao.planejada = True
+                    solicitacao.programacao = programacao
+                    solicitacao.atribuido = responsavel_object
+                    solicitacao.prioridade = nivel_prioridade
 
-        solicitacao.save()
+                    if request.POST.get('flagMaqParada') == 'true':
+                        solicitacao.maq_parada = True
+                    if tipo_manutencao == 'preventiva_programada':
+                        solicitacao.planejada = True
 
-        if tipo_manutencao == 'preventiva_programada':
-            SolicitacaoPreventiva.objects.create(
-                ordem=solicitacao,
-                plano=plano,
-                data=timezone.now().date()
-            )
+                solicitacao.comentario_manutencao = comentario_pcm
+                solicitacao.data_abertura = data_abertura
+                solicitacao.status = status_inicial
+                solicitacao.status_andamento = 'em_espera'
+                solicitacao.save()
 
-        # Retorna uma resposta de sucesso em JSON
-        return JsonResponse({
-            'success': True,
-        })
+                if not status_inicial == 'rejeitar':
+                    if tipo_manutencao == 'preventiva_programada' and plano:
+                        SolicitacaoPreventiva.objects.create(
+                            ordem=solicitacao,
+                            plano=get_object_or_404(PlanoPreventiva, id=plano),
+                            data=timezone.now().date()
+                        )
+
+                    if responsavel_object and hasattr(responsavel_object, 'telefone'):
+                        telefone = responsavel_object.telefone
+                        kwargs = {
+                            'ordem': solicitacao.pk,
+                            'solicitante': solicitacao.solicitante,
+                            'maquina': solicitacao.maquina.descricao,
+                            'motivo': solicitacao.descricao,
+                            'prioridade': solicitacao.get_prioridade_display()  # Usando o display legível
+                        }
+
+                        ordem_service = OrdemServiceWpp()
+                        status_code, response_data = ordem_service.mensagem_atribuir_ordem(telefone, kwargs)
+
+                return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 @login_required
 @csrf_exempt

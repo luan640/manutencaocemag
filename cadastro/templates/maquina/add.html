@@ -3,53 +3,58 @@
 
 {% block content %}
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    
-    <div class="col-12 col-md-8 col-lg-6">
-        <h1>Adicionar máquina</h1>
+    <div class="col-12 col-md-8 col-lg-6 p-5 shadow rounded" style="background-color: #ffffff; border-radius: 10px;">
+        <h2 class="text-center mb-4" style="font-weight: 600; color: #333;">Adicionar Máquina</h2>
+        
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             
-            <div class="mb-3">
-                {{ form.codigo.label_tag }}
+            <!-- Código -->
+            <div class="form-group mb-4">
+                <label for="{{ form.codigo.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.codigo.label }}</label>
                 {{ form.codigo }}
             </div>
 
-            <div class="mb-3">
-                {{ form.descricao.label_tag }}
+            <!-- Descrição -->
+            <div class="form-group mb-4">
+                <label for="{{ form.descricao.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.descricao.label }}</label>
                 {{ form.descricao }}
             </div>
 
-            <div class="mb-3">
-                {{ form.apelido.label_tag }}
+            <!-- Apelido -->
+            <div class="form-group mb-4">
+                <label for="{{ form.apelido.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.apelido.label }}</label>
                 {{ form.apelido }}
             </div>
 
-            <div class="mb-3">
-                {{ form.setor.label_tag }}
+            <!-- Setor -->
+            <div class="form-group mb-4">
+                <label for="{{ form.setor.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.setor.label }}</label>
                 {{ form.setor }}
             </div>
 
-            <div class="mb-3">
-                {{ form.tombamento.label_tag }}
+            <!-- Tombamento -->
+            <div class="form-group mb-4">
+                <label for="{{ form.tombamento.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.tombamento.label }}</label>
                 {{ form.tombamento }}
             </div>
 
-            <div class="mb-3">
-                {{ form.area.label_tag }}
-                {{ form.area }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.criticidade.label_tag }}
+            <!-- Criticidade -->
+            <div class="form-group mb-4">
+                <label for="{{ form.criticidade.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.criticidade.label }}</label>
                 {{ form.criticidade }}
             </div>
 
-            <div class="mb-3">
-                {{ form.foto.label_tag }}
+            <!-- Foto -->
+            <div class="form-group mb-4">
+                <label for="{{ form.foto.id_for_label }}" class="form-label" style="font-weight: 500; color: #555;">{{ form.foto.label }}</label>
                 {{ form.foto }}
             </div>
 
-            <button type="submit" class="btn btn-primary">Salvar</button>
+            <!-- Botão Salvar -->
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary py-2" style="font-size: 1rem; font-weight: 500;">Salvar</button>
+            </div>
         </form>
     </div>
 </div>

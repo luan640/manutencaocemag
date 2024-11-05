@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-
 {% load static %}
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
+
 {% endblock %}
 
 {% block content %}
@@ -20,6 +20,11 @@
         <!-- Collapse para o Formulário de Filtros -->
         <div class="collapse" id="collapseFiltros">
             <form method="GET" class="row g-3" id="filter-form">
+                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                <div class="col-md-3">
+                    <label for="ordem" class="form-label">#OS</label>
+                    <input type="text" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
+                </div>
                 <div class="col-md-3">
                     <label for="solicitante" class="form-label">Solicitante</label>
                     <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
@@ -33,6 +38,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 <div class="col-md-3">
                     <label for="ultimo_status" class="form-label">Status</label>
                     <select class="form-select" id="ultimo_status" name="ultimo_status">
@@ -43,6 +49,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
                 <div class="col-md-3">
                     <label for="maq_parada" class="form-label">Máquina Parada</label>
                     <select class="form-select" id="maq_parada" name="maq_parada">
@@ -55,14 +62,20 @@
                     <label for="data_abertura" class="form-label">Data de Abertura</label>
                     <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
                 </div>
-                <!-- Filtro de Planejadas -->
                 <div class="col-md-3">
-                    <label for="planejada" class="form-label"></label>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1" {% if planejada == '1' %}checked{% endif %}>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
+                            {% if planejada == '1' %}checked{% endif %}>
                         <label class="form-check-label" for="planejada">Mostrar Apenas Planejadas</label>
                     </div>
+                
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="atrasada" name="atrasada" value="1"
+                            {% if atrasada == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="atrasada">Mostrar Apenas Atrasadas</label>
+                    </div>
                 </div>
+                {% endif %}
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Filtrar</button>
                     <a href="{% url 'home_producao' %}" class="btn btn-secondary">Limpar Filtros</a>
@@ -78,7 +91,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div>
-                                <p class="mb-0 text-secondary">Primeiro atendimento</p>
+                                <p class="mb-0 text-secondary">Aguardando programação</p>
                                 <h4 class="my-1 text-primary">{{ aguardando_primeiro_atendimento_card }}</h4>
                             </div>
                         </div>
@@ -133,6 +146,18 @@
                     </div>
                 </div>
             </div>
+            <div class="col">
+                <div class="card custom-card custom-border-danger">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Atrasada</p>
+                                <h4 class="my-1 text-danger">{{ quantidade_atrasada }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -144,7 +169,7 @@
                 <div class="card-header" id="headingAguardandoPrimeiroAtendimento">
                     <h5 class="mb-0">
                         <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAguardandoPrimeiroAtendimento" aria-expanded="true" aria-controls="collapseAguardandoPrimeiroAtendimento">
-                            Primeiro atendimento
+                            A programar
                         </button>
                     </h5>
                 </div>
@@ -172,7 +197,7 @@
                 <div class="card-header" id="headingSolicitacoes">
                     <h5 class="mb-0">
                         <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
-                            Solicitações
+                            Programadas
                         </button>
                     </h5>
                 </div>
@@ -201,7 +226,7 @@
                 <div class="card-header" id="headingSolicitacoes">
                     <h5 class="mb-0">
                         <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
-                            Solicitações
+                            Programadas
                         </button>
                     </h5>
                 </div>
@@ -225,6 +250,7 @@
         {% endif %}
     </div>
     <!-- Máquinas paradas -->
+    {% if request.user.tipo_acesso == 'administrador' %}
     <div class="row my-4">
         <div class="col-sm-12">
             <div class="card mb-3">
@@ -241,12 +267,17 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {      
-        
+
+        $(document).ready(function() {
+            $('.js-example-basic-multiple').select2();
+        });
+
         var filterForm = document.getElementById('filter-form');
 
         filterForm.addEventListener('submit', function(e) {
@@ -407,17 +438,35 @@
                 const pk = statusSelect.id.split('_')[2]; // Pega o ID da solicitação a partir do ID do select
                 const dataProgramacao = document.getElementById('data_programacao_' + pk);
                 const campoProgramacao = document.getElementById('campoProgramacao_' + pk);
-
+                const campoAtribuirOperador = document.getElementById('rowAtribuirOperador_' + pk)
+                const campoOperador = document.getElementById('operador_'+pk)
+                const campoNivelPrioridade = document.getElementById('prioridade_'+pk)
+                const campoTipoManutencao = document.getElementById('tipo_manutencao_'+pk)
+                const campoAreaManutencao = document.getElementById('area_manutencao_'+pk)
+                
                 // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
                 function toggleDataProgramacao() {
                     if (statusSelect.value === 'rejeitar') {
                         // Oculta o campo de data e remove a obrigatoriedade
                         campoProgramacao.style.display = 'none';
+                        campoProgramacao.value = '';
+                        campoAtribuirOperador.style.display = 'none';
+                        campoAtribuirOperador.value = '';
                         dataProgramacao.removeAttribute('required');
+                        campoOperador.removeAttribute('required');
+                        campoNivelPrioridade.removeAttribute('required');
+                        campoTipoManutencao.removeAttribute('required');
+                        campoAreaManutencao.removeAttribute('required');
                     } else if (statusSelect.value === 'aprovar') {
                         // Exibe o campo de data e torna-o obrigatório
                         campoProgramacao.style.display = 'block';
+                        campoAtribuirOperador.style.display = 'block';
                         dataProgramacao.setAttribute('required', 'required');
+                        campoOperador.setAttribute('required', 'required');
+                        campoNivelPrioridade.setAttribute('required', 'required');
+                        campoTipoManutencao.setAttribute('required', 'required');
+                        campoAreaManutencao.setAttribute('required', 'required');
+
                     }
                 }
 
@@ -474,7 +523,15 @@
 
                         if (data.success) {
                             Promise.all([
-                                loadSection("maquinas-paradas/", "maquinas-paradas-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+
+                                document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+                                document.getElementById('headingMaquinasParadas') 
+                                    ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
                                 loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
 
                             ]).then(() => {
@@ -555,10 +612,16 @@
 
                         if (data.success) {
                             Promise.all([
-                                loadSection("maquinas-paradas/", "maquinas-paradas-container"),
+
+                            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+                            
+                                document.getElementById('headingMaquinasParadas') 
+                                ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
                                 loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
-                                loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]),
-                                // fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", attachExecutar1OrdemEventListeners, attachStatusChangeListeners)
 
                             ]).then(() => {
                             }).catch(error => {
@@ -602,19 +665,13 @@
 
                     const containerReabrirOrdem = document.querySelector(`#executarModal${modalId} #container-reabrir-ordem`)
                     const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
-                    const checkbox1 = document.querySelector(`#executarModal${modalId} #id_che_maq_parada`);
-                    const checkbox2 = document.querySelector(`#executarModal${modalId} #id_exec_maq_parada`);
                     const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
 
                     if (isFinalizada) {
-                        checkbox1.disabled = true;
-                        checkbox2.disabled = true;
                         checkbox3.disabled = true;
                         containerReabrirOrdem.style.display = 'block';
                         solicitarAberturaNovaOrdem.setAttribute('required', 'required');
                     } else {
-                        checkbox1.disabled = false;
-                        checkbox2.disabled = false;
                         checkbox3.disabled = false;
                         containerReabrirOrdem.style.display = 'none';
                         solicitarAberturaNovaOrdem.removeAttribute('required');
@@ -687,15 +744,95 @@
             });
         }
 
+        function attachStatusReenviarWpp() {
+            // Seleciona todos os links que começam com o ID "btnReenviarWpp_"
+            const btnReenviar = document.querySelectorAll('a[id^="btnReenviarWpp_"]');
+
+            btnReenviar.forEach(function (link) {
+                // Extrai o ID da solicitação (pk) a partir do ID do link
+                const pk = link.id.split('_')[1];  // Ajuste: posição correta do ID
+
+                // Adiciona o evento de clique a cada link
+                link.addEventListener('click', function (event) {
+                    event.preventDefault();  // Evita comportamento padrão do link
+                    reenviarMensagem(pk);  // Chama a função para reenviar a mensagem
+                });
+            });
+        }
+
+        function reenviarMensagem(ordemId) {
+
+            var url = `{% url 'reenviar_mensagem' 0 %}`.replace('/0/', `/${ordemId}/`);
+
+            // Exibe o modal de carregamento
+            Swal.fire({
+                title: 'Processando...',
+                text: 'Aguarde enquanto processamos sua solicitação.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Exibe o spinner de carregamento
+                }
+            });
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}', // Inclua o CSRF token
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+
+                    // Mostrar o popup de sucesso
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Mensagem reenviada com sucesso!',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Ocorreu um erro ao reenviar a mensagem. Tente novamente.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+
         Promise.all([
-            loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]),
-            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
-            loadSection("maquinas-paradas/", "maquinas-paradas-container"),
+            
+            // Verifica se o elemento existe antes de adicionar a função ao array de Promises
+            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+            document.getElementById('headingMaquinasParadas') 
+                ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+                
+            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
+            
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
+
+            fetchSolicitacoes(
+                "aguardando-primeiro-atendimento/",                  // URL base
+                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
+                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
+                params,                           // Parâmetros do filtro
+                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+            )
 
         ]).then(() => {
 
-            fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners,escolherPlanoPreventiva])
-            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
+            // document.getElementById('headingAguardandoPrimeiroAtendimento') 
+            //     ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+            //     : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+            // fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp])
 
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);
@@ -735,6 +872,5 @@
         });
     }
 </script>
-
 
 {% endblock %}

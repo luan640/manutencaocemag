@@ -24,8 +24,10 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Salvar Plano</button>
-        <a href="{% url 'list_preventivas' %}" class="btn btn-secondary">Cancelar</a>
+        <div class="text-end">
+            <button id="btnSalvarPlanejamento" type="submit" class="btn btn-primary">Salvar Plano</button>
+        </div>
+        <!-- <a href="{% url 'list_preventivas' %}" class="btn btn-secondary">Cancelar</a> -->
     </form>
 </div>
 
@@ -67,6 +69,63 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target && e.target.classList.contains('remove-tarefa')) {
             e.target.closest('.tarefa-form').remove();
         }
+    });
+
+    document.getElementById('planoPreventivaForm').addEventListener('submit', function(e) {
+        e.preventDefault();  // Impede o envio padrão
+
+        document.getElementById('btnSalvarPlanejamento').innerHTML = 'Carregando...';
+        document.getElementById('btnSalvarPlanejamento').disabled = true;
+
+        const formData = new FormData(this);
+        
+        // Exibe o modal de carregamento
+        Swal.fire({
+            title: 'Processando...',
+            text: 'Aguarde enquanto salvamos seu planejamento.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading(); // Exibe o spinner de carregamento
+            }
+        });
+
+        // Envie os dados usando fetch ou XMLHttpRequest
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Mostrar o popup de sucesso
+            Swal.fire({
+                icon: 'success',
+                title: 'Sucesso',
+                text: 'Planejamento salvo com sucesso!',
+                confirmButtonText: 'OK'
+            });
+
+            // Lide com a resposta do servidor aqui
+
+            document.getElementById('btnSalvarPlanejamento').innerHTML = 'Salvar Plano';
+            document.getElementById('btnSalvarPlanejamento').disabled = false;
+
+            if (data.success) {
+                window.location.href = '/preventiva/'
+            } else {
+                // Lide com erros
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Ocorreu um erro ao salvar o plano. Tente novamente.',
+                    confirmButtonText: 'OK'
+                });
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+
     });
 });
 </script>

@@ -29,5 +29,9 @@ urlpatterns = [
     path('satisfacao/<int:ordem_id>/', views.pagina_satisfacao, name='pagina_satisfacao'),
     path('satisfacao/<int:ordem_id>/responder/', views.processar_satisfacao, name='processar_satisfacao'),
 
+    path('gerar-solicitacoes/<int:qtd>/', views.gerar_solicitacoes, name='gerar_solicitacoes'),
+
+    path('executar-tarefa-rotina/', views.criar_execucao_rotina, name='criar_execucao_rotina'),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import HttpResponse
 from rest_framework import status
 
+from django.http import HttpResponse
 from wpp.utils import tratar_numero_wa, OrdemServiceWpp
 
 # class WhatsAppWebhookView(APIView):
@@ -64,7 +64,7 @@ class WhatsAppWebhookView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        print('Mensagem recebida:', data)
+        print(data)
 
         if 'contacts' in data['entry'][0]['changes'][0]['value']:
             recipient_number = data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
@@ -83,3 +83,43 @@ class WhatsAppWebhookView(APIView):
                     print(f"Mensagem não interativa recebida: {message}")
 
         return Response(status=status.HTTP_200_OK)
+
+class AccountView(APIView):
+    def post(self, request, *args, **kwargs):
+        # Extrair os dados do payload
+        data = request.data
+        cc = data.get('cc')
+        phone_number = data.get('phone_number')
+        method = data.get('method')
+        cert = data.get('cert')
+        pin = data.get('pin')
+
+        # Verificar se todos os campos obrigatórios estão presentes
+        if not all([cc, phone_number, method, cert]):
+            return Response(
+                {"error": "Campos obrigatórios ausentes."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Lógica para verificar se a conta já existe (simulação)
+        if phone_number == "8596758103":  # Simulando uma conta existente
+            return Response(
+                {"message": "Conta já existe. Nenhuma ação necessária."},
+                status=status.HTTP_201_CREATED
+            )
+
+        # Lógica para enviar o código por SMS ou voz (simulação)
+        if method in ["sms", "voice"]:
+            return Response(
+                {
+                    "message": "Código de registro enviado. Verifique seu dispositivo.",
+                    "account": [{"vname": "vname-decodificado-do-cert"}]
+                },
+                status=status.HTTP_202_ACCEPTED
+            )
+
+        # Caso o método seja inválido
+        return Response(
+            {"error": "Método inválido."},
+            status=status.HTTP_400_BAD_REQUEST
+        )

@@ -14,7 +14,7 @@
                     {% elif solicitacao.status_andamento == 'aguardando_material' %}
                     <span class="badge text-bg-secondary">Aguardando material</span>
                     {% elif solicitacao.status_andamento == 'aguardando_atendimento' %}
-                    <span class="badge text-bg-primary"><small>Aguardando atendimento</small></span>
+                    <span class="badge text-bg-primary"><small>Aguardando programação</small></span>
                     {% endif %}
                 {% endif %}
             </div>
@@ -23,7 +23,8 @@
             <h6 class="card-title d-flex justify-content-between align-items-center">
                 <div class="d-flex flex-column">
                     <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
-                    <span class="text-secondary">{{ solicitacao.impacto_producao }}</span>
+                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
+                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
                 </div>
             
                 <div class="d-flex flex-column align-items-end">
@@ -42,15 +43,11 @@
                     <div class="text-muted">
                         <small>{{ solicitacao.data_abertura|days_since }}</small>
                     </div>
+                    {% if solicitacao.planejada %}
+                        <small><span class="badge text-bg-dark ms-2">Preventiva</span></small>
+                    {% endif %}
                 </div>
             </h6>
-            <small><span class="fw-bold">{{ solicitacao.maquina.descricao }}</span></small>
-        
-            <p class="card-text d-flex align-items-center mt-2">
-                {% if solicitacao.planejada %}
-                    <span class="badge text-bg-dark ms-2">Preventiva</span>
-                {% endif %}
-            </p>
         </div>
         <div class="card-footer d-flex justify-content-between">
             <div>
@@ -80,7 +77,7 @@
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% if not solicitacao.status_andamento == 'finalizada' %}
                     <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Primeiro atendimento</a>
+                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Aguardando programação</a>
                     {% endif %}
                 </ul>
             </div>
@@ -139,7 +136,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editarOrdemInicialModalLabel{{ solicitacao.pk }}">Criar Execução para Solicitação #{{ solicitacao.pk }}</h5>
+                <h5 class="modal-title" id="editarOrdemInicialModalLabel{{ solicitacao.pk }}">Executar ordem #{{ solicitacao.pk }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -208,7 +205,7 @@
                             </div>
                             <div class="col-sm-6">
                                 <label for="area_manutencao" class="form-label">Área de manutenção</label>
-                                <select class="form-control" name="area_manutencao" id="area_manutencao" required>
+                                <select class="form-control" name="area_manutencao" id="area_manutencao_{{solicitacao.pk}}" required>
                                     <option value=""></option>
                                     {% for area in area_manutencao %}
                                         <option value="{{area.0}}">{{area.1}}</option>
@@ -222,6 +219,7 @@
                                 <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="{{solicitacao.maquina.pk}}">
                                     <option value="">Carregando...</option>
                                 </select>
+                                <a class="form-control" href="{% url 'criar_plano_preventiva' solicitacao.maquina.pk %}">Criar novo plano</a>
                             </div>
                         </div>
                         {% if solicitacao.setor.nome == 'Solda' %}
@@ -252,11 +250,11 @@
                         <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="descricao_usuario">Descrição do usuário</label>
-                                <textarea class="form-control" name="descricao_usuario" id="descricao_usuario" readonly>{{solicitacao.descricao}}</textarea>
+                                <textarea rows="7" class="form-control" name="descricao_usuario" id="descricao_usuario" readonly>{{solicitacao.descricao}}</textarea>
                             </div>
                             <div class="col-sm-6">
                                 <label for="comentario_manutencao">Comentário do PCM</label>
-                                <textarea class="form-control" name="comentario_manutencao" id="comentario_manutencao" required>{% if solicitacao.comentario_manutencao %}{{ solicitacao.comentario_manutencao }}{% endif %}</textarea>
+                                <textarea rows="7" class="form-control" name="comentario_manutencao" id="comentario_manutencao" required></textarea>
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -268,9 +266,32 @@
                                     <option value="aprovar">Aprovar</option>
                                 </select>
                             </div>
-                            <div id="campoProgramacao_{{solicitacao.pk}}" class="col-sm-6">
+                            <div style="display: none;" id="campoProgramacao_{{solicitacao.pk}}" class="col-sm-6">
                                 <label for="data_programacao_{{solicitacao.pk}}">Programação</label>
-                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" class="form-control" type="date" required>
+                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" class="form-control" type="date">
+                            </div>
+                        </div>
+                        <div id="rowAtribuirOperador_{{solicitacao.pk}}" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <label for="operador_{{solicitacao.pk}}" class="form-label">Responsável</label>
+                                    <select class="form-control" name="operador" id="operador_{{solicitacao.pk}}">
+                                        <option value="">----------</option>
+                                        {% for operador in operadores %}
+                                            <option value="{{operador.pk}}">{{operador}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            
+                                <div class="col-sm-6">
+                                    <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade</label>
+                                    <select class="form-control" name="prioridade" id="prioridade_{{solicitacao.pk}}">
+                                        <option value="">----------</option>
+                                        <option value="alto">Alto</option>
+                                        <option value="medio">Médio</option>
+                                        <option value="baixo">Baixo</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

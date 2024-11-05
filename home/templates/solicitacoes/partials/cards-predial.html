@@ -1,87 +1,130 @@
+{% load custom_filters %}
+
 {% for solicitacao in page_obj %}
-<div class="col-md-4">
+
+<div class="{% if request.user.tipo_acesso == 'administrador' %}col-md-6{% else %}col-md-4{% endif %}">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
             <div class="text-end ms-auto">
-                {% if solicitacao.ultimo_status %}
-                {% if solicitacao.ultimo_status == 'finalizada' %}
-                <span class="badge text-bg-success">Finalizado</span>
-                {% elif solicitacao.ultimo_status == 'em_execucao' %}
-                <span class="badge text-bg-info">Em execução</span>
-                {% elif solicitacao.ultimo_status == 'aguardando_material' %}
-                <span class="badge text-bg-secondary">Aguardando material</span>
-                {% else %}
-                <span class="badge text-bg-warning">Em espera</span>
-                {% endif %}
+                {% if solicitacao.status_andamento %}
+                    {% if solicitacao.status_andamento == 'finalizada' %}
+                        <span class="badge text-bg-success">Finalizado</span>
+                    {% elif solicitacao.status_andamento == 'em_execucao' %}
+                        <span class="badge text-bg-info">Em execução</span>
+                    {% elif solicitacao.status_andamento == 'aguardando_material' %}
+                        <span class="badge text-bg-secondary">Aguardando material</span>
+                    {% elif solicitacao.status_andamento == 'em_espera' %}
+                        <span class="badge text-bg-warning">Em espera</span>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
         <div class="card-body">
             <h6 class="card-title d-flex justify-content-between align-items-center">
-                {{ solicitacao.setor.nome }} - {{ solicitacao.maquina.descricao }}
-                {% if solicitacao.maq_parada %}
-                <span class="text-danger ms-2">
-                    <!-- Ícone SVG de Exclamação -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
-                        class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
-                        <path
-                            d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-                    </svg>
-                    <span><small>Parada</small></span>
-                </span>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
+                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
+                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
+                </div>
+                
+                {% if solicitacao.status_andamento != 'finalizada' %}
+                    <div class="d-flex flex-column align-items-end">
+                        {% if solicitacao.maq_parada %}
+                            <div class="d-flex align-items-center text-danger mb-1">
+                                <!-- Ícone SVG de Exclamação -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    class="bi bi-exclamation-triangle-fill me-1" viewBox="0 0 16 16">
+                                    <path
+                                        d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                                </svg>
+                                <small>Parada</small>
+                            </div>
+                        {% endif %}
+                
+                        <div class="text-muted">
+                            <small>{{ solicitacao.ultima_atualizacao|days_since }}</small>
+                        </div>
+                        {% if solicitacao.planejada %}
+                            <small><span class="badge text-bg-dark ms-2">Preventiva</span></small>
+                        {% endif %}
+                        {% if solicitacao.programacao < today %}
+                            <small class="text-danger ms-2">
+                                <i class="bi bi-exclamation-circle-fill"></i> Atrasada
+                            </small>
+                        {% else %}
+                            <small class="text-success ms-2">
+                                <i class="bi bi-check-circle-fill"></i> Em dia
+                            </small>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="d-flex flex-column align-items-end">
+                        {% if solicitacao.satisfacao_registrada %}
+                            <small title="Respondido pelo solicitante" class="text-success ms-2">
+                                <i class="bi bi-check-circle-fill"></i>Respondido
+                            </small>
+                        {% else %}
+                            <small title="Aguardando resposta do solicitante" class="text-warning ms-2">
+                                <i class="bi bi-clock-fill"></i> Aguardando
+                                <a id="btnReenviarWpp_{{solicitacao.pk}}" href="#" title="Reenviar">
+                                    <i class="bi bi-arrow-repeat"></i> <!-- Ícone de reenvio -->
+                                </a>
+                            </small>
+                        {% endif %}
+                    </div>
                 {% endif %}
             </h6>
-            <p class="card-text">
-                {{ solicitacao.data_abertura }}<br>
-            </p>
+
         </div>
         <div class="card-footer d-flex justify-content-between">
             <div>
                 {% if solicitacao.fotos.exists %}
-                <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#fotosModal{{ solicitacao.pk }}">
-                    Fotos
-                </button>
+                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#fotosModal{{ solicitacao.pk }}">
+                        Fotos
+                    </button>
                 {% else %}
-                <span class="badge bg-secondary">Sem Fotos</span>
+                    <span class="badge bg-secondary">Sem Fotos</span>
                 {% endif %}
                 {% if solicitacao.video %}
-                <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#videosModal{{ solicitacao.pk }}">
-                    Vídeos
-                </button>
+                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#videosModal{{ solicitacao.pk }}">
+                        Vídeos
+                    </button>
                 {% else %}
-                <span class="badge bg-secondary">Sem Vídeos</span>
+                    <span class="badge bg-secondary">Sem Vídeos</span>
                 {% endif %}
             </div>
-            <div class="dropdown">
-                <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
-                    aria-expanded="false" style="background: none; border: none; padding: 0;">
-                    &#x22EE;
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    {% if not solicitacao.ultimo_status == 'finalizada' %}
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#executarModal{{ solicitacao.pk }}">Executar</a>
-                    {% endif %}
-                </ul>
-            </div>
+            {% if not request.user.tipo_acesso == 'solicitante' %}
+                <div class="dropdown">
+                    <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+                        aria-expanded="false" style="background: none; border: none; padding: 0;">
+                        &#x22EE;
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        {% if not solicitacao.status_andamento == 'finalizada' %}
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                data-bs-target="#executarModal{{ solicitacao.pk }}">Executar</a>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Modal para executar ordem -->
 <div class="modal fade" id="executarModal{{ solicitacao.pk }}" tabindex="-1"
     aria-labelledby="executarModalLabel{{ solicitacao.pk }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="executarModalLabel{{ solicitacao.pk }}">Criar Execução para Solicitação #{{ solicitacao.pk }}</h5>
+                <h5 class="modal-title" id="executarModalLabel{{ solicitacao.pk }}">Executar ordem #{{ solicitacao.pk }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" action="{% url 'criar_execucao_predial' solicitacao.pk %}">
+                <form class="formExecucaoProducao" data-ordem-id="{{ solicitacao.pk }}" data-modal-id="executarModal{{ solicitacao.pk }}" method="post" action="{% url 'criar_execucao' solicitacao.pk %}">
                     {% csrf_token %}
 
                     <!-- Collapse para Informações Gerais -->
@@ -92,54 +135,71 @@
                         </a>
                     </h2>
                     <div class="collapse show" id="collapseInformacoesGerais">
-                        <div class="row">
-                            <div class="col-sm-3">
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
                                 <label for="setor_info">Setor</label>
                                 <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
                             </div>
-                            <div class="col-sm-3">
+                            <div class="col-sm-6">
                                 <label for="solicitante_info">Solicitante</label>
                                 <input class="form-control" type="text"
                                     value="{{solicitacao.solicitante.matricula}} - {{solicitacao.solicitante.nome}}"
                                     readonly>
                             </div>
-                            <div class="col-sm-3">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
                                 <label for="data_abertura_info">Data de abertura</label>
                                 <input class="form-control" type="text" value="{{solicitacao.data_abertura}}" readonly>
                             </div>
-                            <div class="col-sm-3">
+                            <div class="col-sm-6">
                                 <label for="data_abertura_info">Impacto na produção</label>
-                                <input class="form-control" type="text" value="{{solicitacao.impacto_producao}}"
+                                <input class="form-control" type="text" value="{{solicitacao.get_impacto_producao_display}}"
                                     readonly>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="form-label">Motivo</label>
+                                <textarea class="form-control" readonly>{{solicitacao.descricao}}</textarea>
+                            </div>
+                        </div>
+
                     </div>
                     <hr>
-
-                    {% if solicitacao.ultimo_numero_execucao < 1 %}
-                    <!-- Collapse para Mais Detalhes -->
-                    <h2 class="fs-5">
-                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseMaisDetalhes" role="button"
-                            aria-expanded="false" aria-controls="collapseMaisDetalhes">
-                            Mais detalhes
+                    
+                    <!-- Collapse para Detalhes sobre máquina de solda -->
+                    {% if solicitacao.setor.nome == 'Solda' %}
+                    <h2>
+                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
+                            aria-expanded="false" aria-controls="collapseDetalheSetorSolda">
+                            Detalhes sobre setor de Solda
                         </a>
                     </h2>
-                    <div class="collapse" id="collapseMaisDetalhes">
+                    <div class="collapse" id="collapseDetalheSetorSolda">
                         <div class="row">
                             <div class="col-sm-6">
-                                <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
-                                <select class="form-control" name="tipo_manutencao" id="tipo_manutencao" required>
-                                    <option value=""></option>
-                                    {% for tipo in tipo_manutencao %}
-                                    <option value="{{tipo.0}}">{{tipo.1}}</option>
-                                    {% endfor %}
-                                </select>
+                                <label for="equipamento_em_falha" class="form-label">Equipamento em falha</label>
+                                <input class="form-control" type="text" value="{{solicitacao.get_equipamento_em_falha_display }}" readonly>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="setor_maq_solda" class="form-label">Setor da máquina de solda</label>
+                                <input class="form-control" type="text" value="{{solicitacao.get_setor_maq_solda_display}}" readonly>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <label for="tipo_ferramenta" class="form-label">Tipo da ferramenta</label>
+                                <input class="form-control" type="text" value="{{solicitacao.tipo_ferramenta}}" readonly>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="codigo_ferramenta" class="form-label">Código da ferramenta</label>
+                                <input class="form-control" type="text" value="{{solicitacao.codigo_ferramenta}}" readonly>
                             </div>
                         </div>
                     </div>
                     <hr>
-                    {% endif %}
-
+                    {% endif %}                    
                     <!-- Collapse para Execução -->
                     <h2 class="fs-5">
                         <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseExecucao" role="button"
@@ -186,8 +246,8 @@
 
                         <!-- Status -->
                         <div class="mb-3">
-                            <label for="id_status" class="form-label">Status</label>
-                            <select class="form-control" id="id_status" name="status" required>
+                            <label for="id_status_{{ solicitacao.pk }}" class="form-label">Status</label>
+                            <select class="form-control" id="id_status_{{ solicitacao.pk }}" name="status" required>
                                 <option value=""></option>
                                 {% for choice in status_choices %}
                                 <option value="{{ choice.0 }}">{{ choice.1 }}</option>
@@ -195,10 +255,29 @@
                             </select>
                         </div>
                         <hr>
-                        
+
+                        <div id="container-reabrir-ordem" style="display: none;">
+                            <div id="solicitarNovaOrdem_{{solicitacao.pk}}" class="row mb-3">
+                                <div class="col-sm-12">
+                                    <label for="">Deseja abrir uma nova ordem para essa máquina?</label>
+                                    <select class="form-control" id="solicitarAberturaNovaOrdem_{{solicitacao.pk}}">
+                                        <option value="">--------</option>
+                                        <option value="sim">Sim</option>
+                                        <option value="nao">Não</option>
+                                    </select>
+                                </div>
+                                <div id="motivoNovaOrdem" class="col-sm-12" style="display: none;">
+                                    <label for="motivoNovaOrdemInput">Motivo:</label>
+                                    <input class="form-control" type="text" name="motivoNovaOrdemInput" id="motivoNovaOrdemInput">
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <!-- Botão de Envio -->
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -250,5 +329,4 @@
     </div>
 </div>
 
-
-{% endfor %}
+{% endfor %}    

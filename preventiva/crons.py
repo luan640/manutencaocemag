@@ -10,7 +10,7 @@ User = get_user_model()
 def verificar_abertura_solicitacoes_preventivas():
     hoje = timezone.now().date()
     solicitante = User.objects.get(matricula='4357')
-    planos = PlanoPreventiva.objects.all()
+    planos = PlanoPreventiva.objects.filter(ativo=True)
 
     for plano in planos:
         # Obtém o número de dias de antecedência do plano

@@ -10,6 +10,11 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 
 AUTH_USER_MODEL = 'funcionario.Funcionario'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'e03c-177-19-132-134.ngrok-free.app']
+LOGOUT_REDIRECT_URL = 'login'  # Redireciona para a página de login
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -26,7 +31,8 @@ INSTALLED_APPS = [
     'home',
     'wpp',
     'preventiva',
-    'dashboard'
+    'dashboard',
+    'storages'
 
 ]
 
@@ -61,24 +67,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'manutencao_project.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    # },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    # },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    # },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    # },
 ]
 
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = False
+LOGIN_URL = '/login/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -96,7 +103,42 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Define a base URL para servir arquivos de mídia
-MEDIA_URL = '/media/'
+# MEDIA_URL = '/media/'
 
 # Define o diretório onde os arquivos de mídia serão armazenados
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        # Root logger
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        # Your specific logger
+        'yourapp.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME')
+
+DEFAULT_FILE_STORAGE = env('DEFAULT_FILE_STORAGE')
+
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+# Define a base URL para servir arquivos de mídia
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'

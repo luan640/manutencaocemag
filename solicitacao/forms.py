@@ -21,11 +21,12 @@ class SolicitacaoForm(forms.ModelForm):
 class SolicitacaoPredialForm(forms.ModelForm):
     class Meta:
         model = Solicitacao
-        fields = ['setor','maquina','descricao','video']
+        fields = ['setor','maquina','descricao','impacto_producao','video']
         widgets = {
             'setor': forms.Select(attrs={'class': 'form-select'}),
             'maquina': forms.Select(attrs={'class': 'form-select'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control','placeholder':'Descreva o motivo da sua solicitação.'}),
+            'impacto_producao': forms.Select(attrs={'class': 'form-select'}),
             'video': forms.Textarea(attrs={'class': 'form-control'}),
         }
 
