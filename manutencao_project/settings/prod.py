@@ -4,7 +4,7 @@ import os
 
 # Configurações específicas de produção
 DEBUG = False
-ALLOWED_HOSTS = ['apontamentousinagem.onrender.com']
+ALLOWED_HOSTS = ['manutencaocemag.onrender.com']
 
 # Banco de dados para produção
 DATABASES = {
