@@ -13,7 +13,7 @@ AUTH_USER_MODEL = 'funcionario.Funcionario'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com']
 LOGOUT_REDIRECT_URL = 'login'  # Redireciona para a página de login
 
 INSTALLED_APPS = [
