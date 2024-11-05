@@ -76,8 +76,8 @@
                     </div>
                 </div>
                 {% endif %}
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                <div class="col-12 text-end">
+                    <button id="btnFilter" type="submit" class="btn btn-primary">Filtrar</button>
                     <a href="{% url 'home_producao' %}" class="btn btn-secondary">Limpar Filtros</a>
                 </div>
             </form>
@@ -283,6 +283,10 @@
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            var btnFilter = document.getElementById('btnFilter');
+            btnFilter.disabled = true;
+            btnFilter.innerHTML = 'carregando...';
+
             // Coleta os dados do formulário e converte para parâmetros de URL
             var formData = new FormData(filterForm);
             var params = new URLSearchParams(formData).toString();
@@ -296,13 +300,18 @@
                 [attachExecutarOrdemEventListeners] // Callback após carregar as solicitações
             );
 
-            fetchSolicitacoes(
-                "aguardando-primeiro-atendimento/",                  // URL base
-                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
-                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
-                params,                           // Parâmetros do filtro
-                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
-            );
+            if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
+                fetchSolicitacoes(
+                    "aguardando-primeiro-atendimento/",             // URL base
+                    "aguardando-primeiro-atendimento-container",    // ID do container onde os dados serão inseridos
+                    "loadMoreAguardandoPrimeiroAtendimento",        // ID do botão de 'load more'
+                    params,                                         // Parâmetros do filtro
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+                );
+            }
+
+            btnFilter.disabled = false;
+            btnFilter.innerHTML = 'Filtrar';
 
         });
 
@@ -818,13 +827,15 @@
             
             fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
 
-            fetchSolicitacoes(
-                "aguardando-primeiro-atendimento/",                  // URL base
-                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
-                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
-                params,                           // Parâmetros do filtro
-                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
-            )
+            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                ? fetchSolicitacoes(
+                    "aguardando-primeiro-atendimento/",                  // URL base
+                    "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
+                    "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
+                    params,                           // Parâmetros do filtro
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+                )
+                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
         ]).then(() => {
 

@@ -255,7 +255,6 @@ def tarefa_rotina(request):
 
 def get_maquina_by_setor(request):
     setor = request.GET.get('setor')
-    print(setor)
 
     # Filtrar as máquinas pelo setor
     maquinas = Maquina.objects.filter(setor=setor)
