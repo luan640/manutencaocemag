@@ -1,3 +1,4 @@
+
 $(document).ready(function () {
 
   let area = document.getElementById('area').value;

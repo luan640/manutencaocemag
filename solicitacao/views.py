@@ -272,7 +272,6 @@ def get_maquina_by_setor(request):
 def get_maquina_by_eq_em_falha(request):
     setor = request.GET.get('setor')
     tipo = request.GET.get('tipo')
-    print(tipo)
 
     # Filtrar as máquinas pelo setor
     maquinas = Maquina.objects.filter(setor=setor,tipo=tipo)
