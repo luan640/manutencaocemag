@@ -815,15 +815,15 @@
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
-            document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
-                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+            // document.getElementById('headingAguardandoPrimeiroAtendimento') 
+            //     ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+            //     : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
             document.getElementById('headingMaquinasParadas') 
                 ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
                 
-            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
+            // loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
             
             fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
 
