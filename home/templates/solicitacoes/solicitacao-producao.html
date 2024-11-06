@@ -163,7 +163,7 @@
     
     <div class="row my-4">
         <!-- Aguardando primeiro atendimento -->
-        {% if request.user.tipo_acesso == 'administrador' %}
+        {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'solicitante' %}
         <div class="col-sm-6 mb-3">
             <div class="card">
                 <div class="card-header" id="headingAguardandoPrimeiroAtendimento">
@@ -811,6 +811,7 @@
             })
             .catch(error => console.error('Erro:', error));
         }
+
 
         Promise.all([
             

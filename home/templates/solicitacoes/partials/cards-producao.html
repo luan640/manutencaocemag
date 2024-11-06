@@ -2,7 +2,7 @@
 
 {% for solicitacao in page_obj %}
 
-<div class="{% if request.user.tipo_acesso == 'administrador' %}col-md-6{% else %}col-md-4{% endif %}">
+<div class="{% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'solicitante' %}col-md-6{% else %}col-md-4{% endif %}">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
@@ -97,20 +97,25 @@
                     <span class="badge bg-secondary">Sem Vídeos</span>
                 {% endif %}
             </div>
-            {% if not request.user.tipo_acesso == 'solicitante' %}
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
-                        aria-expanded="false" style="background: none; border: none; padding: 0;">
-                        &#x22EE;
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                        {% if not solicitacao.status_andamento == 'finalizada' %}
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                                data-bs-target="#executarModal{{ solicitacao.pk }}">Executar</a>
-                        {% endif %}
-                    </ul>
-                </div>
-            {% endif %}
+            
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+                    aria-expanded="false" style="background: none; border: none; padding: 0;">
+                    &#x22EE;
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    {% if not solicitacao.status_andamento == 'finalizada' %}
+                        <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+                            data-bs-target="#executarModal{{ solicitacao.pk }}">
+                            {% if request.user.tipo_acesso == 'solicitante' %}
+                            Visualizar
+                            {% else %}
+                            Executar
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -167,150 +172,152 @@
                         </div>
                     </div>
                     <hr>
-                    
-                    <!-- Collapse para Detalhes sobre máquina de solda -->
-                    {% if solicitacao.setor.nome == 'Solda' %}
-                    <h2>
-                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
-                            aria-expanded="false" aria-controls="collapseDetalheSetorSolda">
-                            Detalhes sobre setor de Solda
-                        </a>
-                    </h2>
-                    <div class="collapse" id="collapseDetalheSetorSolda">
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <label for="equipamento_em_falha" class="form-label">Equipamento em falha</label>
-                                <input class="form-control" type="text" value="{{solicitacao.get_equipamento_em_falha_display }}" readonly>
-                            </div>
-                            <div class="col-sm-6">
-                                <label for="setor_maq_solda" class="form-label">Setor da máquina de solda</label>
-                                <input class="form-control" type="text" value="{{solicitacao.get_setor_maq_solda_display}}" readonly>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <label for="tipo_ferramenta" class="form-label">Tipo da ferramenta</label>
-                                <input class="form-control" type="text" value="{{solicitacao.tipo_ferramenta}}" readonly>
-                            </div>
-                            <div class="col-sm-6">
-                                <label for="codigo_ferramenta" class="form-label">Código da ferramenta</label>
-                                <input class="form-control" type="text" value="{{solicitacao.codigo_ferramenta}}" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <hr>
-                    {% endif %}                    
-                    <!-- Collapse para Execução -->
-                    <h2 class="fs-5">
-                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseExecucao" role="button"
-                            aria-expanded="false" aria-controls="collapseExecucao">
-                            Execução
-                        </a>
-                    </h2>
-                    <div class="collapse" id="collapseExecucao">
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <!-- Data de Início -->
-                                <div class="mb-3">
-                                    <label for="id_data_inicio" class="form-label">Data de Início</label>
-                                    <input type="datetime-local" class="form-control" id="id_data_inicio"
-                                        name="data_inicio" value="" required>
+
+                    {% if not request.user.tipo_acesso == 'solicitante' %}
+                        <!-- Collapse para Detalhes sobre máquina de solda -->
+                        {% if solicitacao.setor.nome == 'Solda' %}
+                        <h2>
+                            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
+                                aria-expanded="false" aria-controls="collapseDetalheSetorSolda">
+                                Detalhes sobre setor de Solda
+                            </a>
+                        </h2>
+                        <div class="collapse" id="collapseDetalheSetorSolda">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="equipamento_em_falha" class="form-label">Equipamento em falha</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.get_equipamento_em_falha_display }}" readonly>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="setor_maq_solda" class="form-label">Setor da máquina de solda</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.get_setor_maq_solda_display}}" readonly>
                                 </div>
                             </div>
-
-                            <!-- Data de Fim -->
-                            <div class="col-sm-6">
-                                <div class="mb-3">
-                                    <label for="id_data_fim" class="form-label">Data de Fim</label>
-                                    <input type="datetime-local" class="form-control" id="id_data_fim" name="data_fim"
-                                        value="" required>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="tipo_ferramenta" class="form-label">Tipo da ferramenta</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.tipo_ferramenta}}" readonly>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="codigo_ferramenta" class="form-label">Código da ferramenta</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.codigo_ferramenta}}" readonly>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Observação -->
-                        <div class="mb-3">
-                            <label for="id_observacao" class="form-label">Observação</label>
-                            <textarea class="form-control" id="id_observacao" name="observacao" required></textarea>
-                        </div>
-
-                        <!-- Operador -->
-                        <div class="mb-3">
-                            <label for="id_operador" class="form-label">Operador</label>
-                            <select multiple="multiple" class="form-control js-example-basic-multiple" id="id_operador" name="operador" required>
-                                {% for operador in operadores %}
-                                <option value="{{ operador.pk }}">{{ operador.nome }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Check Máquina Parada -->
-                        {% if solicitacao.ultima_execucao_n < 1 %} 
-                            <div class="mb-3">
-                                <label for="id_che_maq_parada" class="form-label">Ao chegar a máquina estava parada?</label>
-                                {% if solicitacao.maq_parada %}
-                                    <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada" checked disabled>
-                                    <!-- Campo oculto para enviar o valor da máquina parada se o checkbox estiver desativado -->
-                                    <input type="hidden" name="che_maq_parada" value="on">
-                                {% else %}
-                                    <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada">
-                                {% endif %}
-                            </div>
-                        {% endif %}
-
-                        <!-- Exec Máquina Parada -->
-                        <div class="mb-3">
-                            <label for="id_exec_maq_parada" class="form-label">A execução foi feita com máquina parada?</label>
-                            {% if solicitacao.maq_parada %}
-                                <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada" checked disabled>
-                                <!-- Campo oculto para enviar o valor quando o checkbox estiver desabilitado -->
-                                <input type="hidden" name="exec_maq_parada" value="on">
-                            {% else %}
-                                <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada">
-                            {% endif %}
-                        </div>
-
-                        <!-- Após Exec Máquina Parada -->
-                        <div class="mb-3">
-                            <label for="id_apos_exec_maq_parada" class="form-label">Após a execução a máquina ficou parada?</label>
-                            <input type="checkbox" class="form-check-input" id="id_apos_exec_maq_parada"
-                                name="apos_exec_maq_parada">
-                        </div>
-                        
-                        <!-- Status -->
-                        <div class="mb-3">
-                            <label for="id_status_{{ solicitacao.pk }}" class="form-label">Status</label>
-                            <select class="form-control" id="id_status_{{ solicitacao.pk }}" name="status" required>
-                                <option value=""></option>
-                                {% for choice in status_choices %}
-                                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
-                                {% endfor %}
-                            </select>
                         </div>
                         <hr>
-
-                        <div id="container-reabrir-ordem" style="display: none;">
-                            <div id="solicitarNovaOrdem_{{solicitacao.pk}}" class="row mb-3">
-                                <div class="col-sm-12">
-                                    <label for="">Deseja abrir uma nova ordem para essa máquina?</label>
-                                    <select class="form-control" id="solicitarAberturaNovaOrdem_{{solicitacao.pk}}">
-                                        <option value="">--------</option>
-                                        <option value="sim">Sim</option>
-                                        <option value="nao">Não</option>
-                                    </select>
+                        {% endif %}                    
+                        <!-- Collapse para Execução -->
+                        <h2 class="fs-5">
+                            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseExecucao" role="button"
+                                aria-expanded="false" aria-controls="collapseExecucao">
+                                Execução
+                            </a>
+                        </h2>
+                        <div class="collapse" id="collapseExecucao">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <!-- Data de Início -->
+                                    <div class="mb-3">
+                                        <label for="id_data_inicio" class="form-label">Data de Início</label>
+                                        <input type="datetime-local" class="form-control" id="id_data_inicio"
+                                            name="data_inicio" value="" required>
+                                    </div>
                                 </div>
-                                <div id="motivoNovaOrdem" class="col-sm-12" style="display: none;">
-                                    <label for="motivoNovaOrdemInput">Motivo:</label>
-                                    <input class="form-control" type="text" name="motivoNovaOrdemInput" id="motivoNovaOrdemInput">
+
+                                <!-- Data de Fim -->
+                                <div class="col-sm-6">
+                                    <div class="mb-3">
+                                        <label for="id_data_fim" class="form-label">Data de Fim</label>
+                                        <input type="datetime-local" class="form-control" id="id_data_fim" name="data_fim"
+                                            value="" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Observação -->
+                            <div class="mb-3">
+                                <label for="id_observacao" class="form-label">Observação</label>
+                                <textarea class="form-control" id="id_observacao" name="observacao" required></textarea>
+                            </div>
+
+                            <!-- Operador -->
+                            <div class="mb-3">
+                                <label for="id_operador" class="form-label">Operador</label>
+                                <select multiple="multiple" class="form-control js-example-basic-multiple" id="id_operador" name="operador" required>
+                                    {% for operador in operadores %}
+                                    <option value="{{ operador.pk }}">{{ operador.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Check Máquina Parada -->
+                            {% if solicitacao.ultima_execucao_n < 1 %} 
+                                <div class="mb-3">
+                                    <label for="id_che_maq_parada" class="form-label">Ao chegar a máquina estava parada?</label>
+                                    {% if solicitacao.maq_parada %}
+                                        <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada" checked disabled>
+                                        <!-- Campo oculto para enviar o valor da máquina parada se o checkbox estiver desativado -->
+                                        <input type="hidden" name="che_maq_parada" value="on">
+                                    {% else %}
+                                        <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada">
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <!-- Exec Máquina Parada -->
+                            <div class="mb-3">
+                                <label for="id_exec_maq_parada" class="form-label">A execução foi feita com máquina parada?</label>
+                                {% if solicitacao.maq_parada %}
+                                    <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada" checked disabled>
+                                    <!-- Campo oculto para enviar o valor quando o checkbox estiver desabilitado -->
+                                    <input type="hidden" name="exec_maq_parada" value="on">
+                                {% else %}
+                                    <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada">
+                                {% endif %}
+                            </div>
+
+                            <!-- Após Exec Máquina Parada -->
+                            <div class="mb-3">
+                                <label for="id_apos_exec_maq_parada" class="form-label">Após a execução a máquina ficou parada?</label>
+                                <input type="checkbox" class="form-check-input" id="id_apos_exec_maq_parada"
+                                    name="apos_exec_maq_parada">
+                            </div>
+                            
+                            <!-- Status -->
+                            <div class="mb-3">
+                                <label for="id_status_{{ solicitacao.pk }}" class="form-label">Status</label>
+                                <select class="form-control" id="id_status_{{ solicitacao.pk }}" name="status" required>
+                                    <option value=""></option>
+                                    {% for choice in status_choices %}
+                                    <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <hr>
+
+                            <div id="container-reabrir-ordem" style="display: none;">
+                                <div id="solicitarNovaOrdem_{{solicitacao.pk}}" class="row mb-3">
+                                    <div class="col-sm-12">
+                                        <label for="">Deseja abrir uma nova ordem para essa máquina?</label>
+                                        <select class="form-control" id="solicitarAberturaNovaOrdem_{{solicitacao.pk}}">
+                                            <option value="">--------</option>
+                                            <option value="sim">Sim</option>
+                                            <option value="nao">Não</option>
+                                        </select>
+                                    </div>
+                                    <div id="motivoNovaOrdem" class="col-sm-12" style="display: none;">
+                                        <label for="motivoNovaOrdemInput">Motivo:</label>
+                                        <input class="form-control" type="text" name="motivoNovaOrdemInput" id="motivoNovaOrdemInput">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Botão de Envio -->
-                    <div class="text-end">
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
+                    
+                        <!-- Botão de Envio -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+                    {% endif %}
                 </form>
             </div>
         </div>

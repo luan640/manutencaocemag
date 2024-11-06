@@ -68,7 +68,6 @@
                 <span class="badge bg-secondary">Sem Vídeos</span>
                 {% endif %}
             </div>
-            {% if not request.user.tipo_acesso == 'solicitante' %}
             <div class="dropdown">
                 <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
                     aria-expanded="false" style="background: none; border: none; padding: 0;">
@@ -77,11 +76,16 @@
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% if not solicitacao.status_andamento == 'finalizada' %}
                     <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Aguardando programação</a>
+                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">
+                        {% if request.user.tipo_acesso == 'solicitante' %}
+                        Visualizar
+                        {% else %}
+                        Programar
+                        {% endif %}
+                    </a>
                     {% endif %}
                 </ul>
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -136,7 +140,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editarOrdemInicialModalLabel{{ solicitacao.pk }}">Executar ordem #{{ solicitacao.pk }}</h5>
+                <h5 class="modal-title" id="editarOrdemInicialModalLabel{{ solicitacao.pk }}">Programar ordem #{{ solicitacao.pk }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -160,6 +164,7 @@
                             </div>
                         </div>
                     </h2>
+                    
                     <div class="collapse show" id="collapseInformacoesGerais">
                         <div class="row mb-3">
                             <div class="col-sm-6">
@@ -174,6 +179,37 @@
                             </div>
                         </div>
                         <div class="row mb-3">
+                            <div class="col-sm-12">
+                                <label for="">Máquina</label>
+                                <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
+                            </div>
+                        </div>
+                        {% if solicitacao.setor.nome == 'Solda' %}
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="">Equipamento em falha</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="">Setor máquina de solda</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
+                                    readonly>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="">Tipo da ferramenta</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="">Código da ferramenta</label>
+                                <input class="form-control" type="text" value="{{ solicitacao.codigo_ferramenta }}">
+                            </div>
+
+                        </div>
+                        {% endif %}
+                        <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="data_abertura_info">Data de abertura</label>
                                 <input class="form-control" type="datetime-local" id="data_abertura_info" name="data_abertura" value="{{ solicitacao.data_abertura|date:'Y-m-d\\TH:i' }}">
@@ -184,6 +220,7 @@
                                     readonly>
                             </div>
                         </div>
+
                         <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
@@ -222,31 +259,7 @@
                                 <a class="form-control" href="{% url 'criar_plano_preventiva' solicitacao.maquina.pk %}">Criar novo plano</a>
                             </div>
                         </div>
-                        {% if solicitacao.setor.nome == 'Solda' %}
-                        <div class="row mb-3">
-                            <div class="col-sm-6">
-                                <label for="">Equipamento em falha</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}">
-                            </div>
-                            <div class="col-sm-6">
-                                <label for="">Setor máquina de solda</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
-                                    readonly>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-6">
-                                <label for="">Tipo da ferramenta</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-6">
-                                <label for="">Código da ferramenta</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.codigo_ferramenta }}">
-                            </div>
-
-                        </div>
-                        {% endif %}
+                        
                         <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="descricao_usuario">Descrição do usuário</label>
@@ -296,11 +309,11 @@
                         </div>
                     </div>
                     <hr>
-
+                    {% if not request.user.tipo_acesso == 'solicitante' %}
                     <div class="text-end">
                         <button id="salvarPrimeiraExecucao" type="submit" class="btn btn-primary">Salvar</button>
                     </div>
-                    
+                    {% endif %}
                 </form>
             </div>
         </div>
