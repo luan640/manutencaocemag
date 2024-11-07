@@ -256,11 +256,11 @@
                                 <div class="mb-3">
                                     <label for="id_che_maq_parada" class="form-label">Ao chegar a máquina estava parada?</label>
                                     <div class="form-check form-check-inline">
-                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_sim" name="che_maq_parada" value="sim">
+                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_sim" name="che_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
                                         <label class="form-check-label" for="id_che_maq_parada_sim">Sim</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_nao" name="che_maq_parada" value="nao">
+                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_nao" name="che_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
                                         <label class="form-check-label" for="id_che_maq_parada_nao">Não</label>
                                     </div>
                                 </div>
@@ -270,11 +270,11 @@
                             <div class="mb-3">
                                 <label for="id_exec_maq_parada" class="form-label">A execução foi feita com máquina parada?</label>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_sim" name="exec_maq_parada" value="sim">
+                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_sim" name="exec_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
                                     <label class="form-check-label" for="id_exec_maq_parada_sim">Sim</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_nao" name="exec_maq_parada" value="nao">
+                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_nao" name="exec_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
                                     <label class="form-check-label" for="id_exec_maq_parada_nao">Não</label>
                                 </div>
                             </div>
