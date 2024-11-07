@@ -283,10 +283,6 @@
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            var btnFilter = document.getElementById('btnFilter');
-            btnFilter.disabled = true;
-            btnFilter.innerHTML = 'carregando...';
-
             // Coleta os dados do formulário e converte para parâmetros de URL
             var formData = new FormData(filterForm);
             var params = new URLSearchParams(formData).toString();
@@ -297,7 +293,7 @@
                 "solicitacoes-container",         // ID do container onde os dados serão inseridos
                 "loadMoreSolicitacoes",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
-                [attachExecutarOrdemEventListeners] // Callback após carregar as solicitações
+                [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp] // Callback após carregar as solicitações
             );
 
             if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
@@ -310,8 +306,6 @@
                 );
             }
 
-            btnFilter.disabled = false;
-            btnFilter.innerHTML = 'Filtrar';
 
         });
 
@@ -493,6 +487,32 @@
 
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
+                    // Verificar se algum radio button foi selecionado
+                    const radioGroups = form.querySelectorAll('input[type="radio"][name]');
+                    let allRadioGroupsChecked = true;
+
+                    // Agrupar por nome e verificar se pelo menos uma opção está marcada em cada grupo
+                    const uniqueNames = [...new Set(Array.from(radioGroups).map(radio => radio.name))];
+
+                    uniqueNames.forEach(name => {
+                        const radios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
+                        const isChecked = Array.from(radios).some(radio => radio.checked);
+                        if (!isChecked) {
+                            allRadioGroupsChecked = false;
+                        }
+                    });
+
+                    if (!allRadioGroupsChecked) {
+                        event.preventDefault();
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Atenção',
+                            text: 'Por favor, selecione uma opção em todas as perguntas antes de enviar.',
+                            confirmButtonText: 'OK'
+                        });
+                        return; // Impede o envio do formulário
+                    }
+
                     event.preventDefault(); // Impede o envio tradicional do formulário
 
                     // Obter a URL de envio
@@ -521,7 +541,6 @@
                         }
                     })
                     .then(response => {
-
                         if (response.ok) {
                             return response.json();
                         } else {
@@ -529,26 +548,23 @@
                         }
                     })
                     .then(data => {
-
                         if (data.success) {
                             Promise.all([
-
                                 document.getElementById('headingAguardandoPrimeiroAtendimento') 
                                     ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
-                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+                                    : Promise.resolve(),
 
                                 document.getElementById('headingMaquinasParadas') 
                                     ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
-                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+                                    : Promise.resolve(),
 
-                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada])
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp])
 
                             ]).then(() => {
 
                             }).catch(error => {
                                 console.error("Erro ao carregar as seções:", error);
                             });
-                            // Atualizar as seções necessárias
 
                             // Fechar o modal
                             const modal = document.getElementById(modalId);
@@ -630,7 +646,7 @@
                                 ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada]),
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp]),
 
                             ]).then(() => {
                             }).catch(error => {
@@ -674,14 +690,14 @@
 
                     const containerReabrirOrdem = document.querySelector(`#executarModal${modalId} #container-reabrir-ordem`)
                     const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
-                    const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
+                    // const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
 
                     if (isFinalizada) {
-                        checkbox3.disabled = true;
+                        // checkbox3.disabled = true;
                         containerReabrirOrdem.style.display = 'block';
                         solicitarAberturaNovaOrdem.setAttribute('required', 'required');
                     } else {
-                        checkbox3.disabled = false;
+                        // checkbox3.disabled = false;
                         containerReabrirOrdem.style.display = 'none';
                         solicitarAberturaNovaOrdem.removeAttribute('required');
                     }

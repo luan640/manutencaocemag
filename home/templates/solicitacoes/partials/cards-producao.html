@@ -254,33 +254,41 @@
                             {% if solicitacao.ultima_execucao_n < 1 %} 
                                 <div class="mb-3">
                                     <label for="id_che_maq_parada" class="form-label">Ao chegar a máquina estava parada?</label>
-                                    {% if solicitacao.maq_parada %}
-                                        <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada" checked disabled>
-                                        <!-- Campo oculto para enviar o valor da máquina parada se o checkbox estiver desativado -->
-                                        <input type="hidden" name="che_maq_parada" value="on">
-                                    {% else %}
-                                        <input type="checkbox" class="form-check-input" id="id_che_maq_parada" name="che_maq_parada">
-                                    {% endif %}
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_sim" name="che_maq_parada" value="sim">
+                                        <label class="form-check-label" for="id_che_maq_parada_sim">Sim</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_nao" name="che_maq_parada" value="nao">
+                                        <label class="form-check-label" for="id_che_maq_parada_nao">Não</label>
+                                    </div>
                                 </div>
                             {% endif %}
 
                             <!-- Exec Máquina Parada -->
                             <div class="mb-3">
                                 <label for="id_exec_maq_parada" class="form-label">A execução foi feita com máquina parada?</label>
-                                {% if solicitacao.maq_parada %}
-                                    <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada" checked disabled>
-                                    <!-- Campo oculto para enviar o valor quando o checkbox estiver desabilitado -->
-                                    <input type="hidden" name="exec_maq_parada" value="on">
-                                {% else %}
-                                    <input type="checkbox" class="form-check-input" id="id_exec_maq_parada" name="exec_maq_parada">
-                                {% endif %}
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_sim" name="exec_maq_parada" value="sim">
+                                    <label class="form-check-label" for="id_exec_maq_parada_sim">Sim</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_nao" name="exec_maq_parada" value="nao">
+                                    <label class="form-check-label" for="id_exec_maq_parada_nao">Não</label>
+                                </div>
                             </div>
 
                             <!-- Após Exec Máquina Parada -->
                             <div class="mb-3">
                                 <label for="id_apos_exec_maq_parada" class="form-label">Após a execução a máquina ficou parada?</label>
-                                <input type="checkbox" class="form-check-input" id="id_apos_exec_maq_parada"
-                                    name="apos_exec_maq_parada">
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" id="id_apos_exec_maq_parada_sim" name="apos_exec_maq_parada" value="sim">
+                                    <label class="form-check-label" for="id_apos_exec_maq_parada_sim">Sim</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" class="form-check-input" id="id_apos_exec_maq_parada_nao" name="apos_exec_maq_parada" value="nao">
+                                    <label class="form-check-label" for="id_apos_exec_maq_parada_nao">Não</label>
+                                </div>
                             </div>
                             
                             <!-- Status -->

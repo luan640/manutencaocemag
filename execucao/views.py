@@ -40,9 +40,9 @@ def criar_execucao(request, solicitacao_id):
             observacao = request.POST.get('observacao')
             operadores = request.POST.getlist('operador')
             status = request.POST.get('status')
-            che_maq_parada = request.POST.get('che_maq_parada') == 'on'
-            exec_maq_parada = request.POST.get('exec_maq_parada') == 'on'
-            apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'on'
+            che_maq_parada = request.POST.get('che_maq_parada') == 'sim'
+            exec_maq_parada = request.POST.get('exec_maq_parada') == 'sim'
+            apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'sim'
 
             if not apos_exec_maq_parada:
                 solicitacao.maq_parada = False
