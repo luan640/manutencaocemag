@@ -286,9 +286,9 @@ def get_maquina_by_eq_em_falha(request):
     return JsonResponse({'error': 'Setor não encontrado'}, status=404)
 
 def get_maquinas(request):
-    maquinas = Maquina.objects.filter(area='producao').values('id', 'descricao')
+    maquinas = Maquina.objects.filter(area='producao').values('id', 'codigo','descricao')
     if maquinas.exists():
-        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['descricao']} for maquina in maquinas]
+        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['codigo'] + " - " + maquina['descricao']} for maquina in maquinas]
         return JsonResponse({'results': maquinas_serializadas}, safe=False)
     return JsonResponse({'error': 'Nenhuma máquina encontrada'}, status=404)
 
