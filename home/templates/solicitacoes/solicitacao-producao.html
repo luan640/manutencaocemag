@@ -274,6 +274,8 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {      
 
+
+
         $(document).ready(function() {
             $('.js-example-basic-multiple').select2();
         });
@@ -302,7 +304,7 @@
                     "aguardando-primeiro-atendimento-container",    // ID do container onde os dados serão inseridos
                     "loadMoreAguardandoPrimeiroAtendimento",        // ID do botão de 'load more'
                     params,                                         // Parâmetros do filtro
-                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
                 );
             }
 
@@ -431,6 +433,7 @@
                 .catch(error => {
                     console.error("Erro ao carregar seção:", error);
                 });
+
         }
 
         function attachStatusChangeListeners() {
@@ -551,7 +554,7 @@
                         if (data.success) {
                             Promise.all([
                                 document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners])
                                     : Promise.resolve(),
 
                                 document.getElementById('headingMaquinasParadas') 
@@ -639,14 +642,16 @@
                             Promise.all([
 
                             document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners])
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
                             
-                                document.getElementById('headingMaquinasParadas') 
+                            document.getElementById('headingMaquinasParadas') 
                                 ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp]),
+                            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp]),
+
+
 
                             ]).then(() => {
                             }).catch(error => {
@@ -729,6 +734,110 @@
 
         };
         
+        function updateSelectElement(selectElementId, options, labelCallback) {
+            var selectElement = document.getElementById(selectElementId);
+
+            if (!selectElement) return;
+
+            // Limpa as opções atuais do select
+            selectElement.innerHTML = '';
+
+            // Adiciona a opção padrão
+            var defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = 'Selecione...';
+            selectElement.appendChild(defaultOption);
+
+            // Adiciona novas opções baseadas nos dados retornados
+            options.forEach(function(optionData) {
+                var option = document.createElement('option');
+                option.value = optionData.id;  // Use `id` como valor da opção
+                option.text = labelCallback(optionData);  // Usa o callback para definir o texto exibido
+                selectElement.appendChild(option);
+            });
+        }
+        
+        function attachModalEventListeners() {
+            document.querySelectorAll('#habilitarEdicaoMaquina').forEach(function(editLink) {
+                editLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    const container = editLink.closest('div[id^="editarMaquina_"]');
+                    const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
+                    
+                    // Remove o campo de texto e adiciona um <select> no lugar
+                    container.innerHTML = `
+                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" required>
+                            <option value="">Carregando máquinas...</option>
+                        </select>
+                    `;
+
+                    // Faz a requisição AJAX para carregar as máquinas
+                    fetch('/solicitacao/ajax/get-all-maquinas/')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.results) {
+                                updateSelectElement(`id_maquina_${solicitacaoPk}`, data.results, function(optionData) {
+                                    return optionData.text;  // Exibe o nome da máquina
+                                });
+
+                                // Inicializa o Select2 após adicionar as opções
+                                $(`#id_maquina_${solicitacaoPk}`).select2({
+                                    placeholder: "Selecione a máquina",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                                });
+                            } else {
+                                console.error('Nenhuma máquina encontrada.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar as máquinas:', error);
+                        });
+                });
+            });
+            document.querySelectorAll('#habilitarEdicaoSetor').forEach(function(editLink) {
+                editLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    const container = editLink.closest('div[id^="editarSetor_"]');
+                    const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
+                    
+                    // Remove o campo de texto e adiciona um <select> no lugar
+                    container.innerHTML = `
+                        <select class="form-control select2_setor" name="id_setor" id="id_setor_${solicitacaoPk}" required>
+                            <option value="">Carregando setores...</option>
+                        </select>
+                    `;
+
+                    // Faz a requisição AJAX para carregar as máquinas
+                    fetch('/solicitacao/ajax/get-all-setores/')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.results) {
+                                updateSelectElement(`id_setor_${solicitacaoPk}`, data.results, function(optionData) {
+                                    return optionData.text;  // Exibe o nome da máquina
+                                });
+
+                                // Inicializa o Select2 após adicionar as opções
+                                $(`#id_setor_${solicitacaoPk}`).select2({
+                                    placeholder: "Selecione a máquina",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $(`#editarSetor_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                                });
+                            } else {
+                                console.error('Nenhuma máquina encontrada.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar as máquinas:', error);
+                        });
+                });
+            });
+        }
+
         function escolherPlanoPreventiva(){
             document.querySelectorAll('[id^="tipo_manutencao_"]').forEach(selectElement => {
                 selectElement.addEventListener('change', function() {
@@ -828,7 +937,6 @@
             .catch(error => console.error('Erro:', error));
         }
 
-
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
@@ -850,9 +958,11 @@
                     "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
                     "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
                     params,                           // Parâmetros do filtro
-                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
                 )
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+
 
         ]).then(() => {
 

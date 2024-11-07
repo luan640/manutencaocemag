@@ -135,7 +135,7 @@
                     soldaMaqLocal.style.display = 'none';
                     document.getElementById('id_setor_maq_solda').value = '';
                 } else if (eqEmFalha.value === 'robo_kuka' || eqEmFalha.value === 'outros') {
-                    maquinaGeral.style.display = 'none';
+                    // maquinaGeral.style.display = 'none';
                     soldaMaqLocal.style.display = 'none';
                     document.getElementById('id_setor_maq_solda').value = '';
                     ferramentaSolda.style.display = 'none';
@@ -234,6 +234,12 @@
             
             toggleFieldsSolda();
 
+            var maquinaSelect = document.getElementById('id_maquina');
+            maquinaSelect.disabled = true;
+            
+            // Exibe a opção "Carregando..." enquanto a requisição é processada
+            maquinaSelect.innerHTML = '<option>Carregando...</option>';
+
             var setorSelect = document.getElementById('id_setor');
             var tipoSelect = document.getElementById('id_equipamento_em_falha');
 
@@ -249,6 +255,7 @@
                         updateSelectElement('id_maquina', JSON.parse(data.maquinas), function(optionData) {
                             return optionData.fields.codigo + ' - ' + optionData.fields.descricao;
                         });
+                        maquinaSelect.disabled = false;
                     } else {
                         console.error('Nenhuma máquina encontrada.');
                     }

@@ -127,8 +127,9 @@ def editar_solicitacao(request, solicitacao_id):
 
     if request.method == 'POST':
         try:
-            
             # Obtém os dados do formulário
+            maquina = request.POST.get('id_maquina')
+            setor = request.POST.get('id_setor')
             comentario_pcm = request.POST.get('comentario_manutencao')
             data_abertura = parse_datetime(request.POST.get('data_abertura'))
             if not data_abertura:
@@ -188,6 +189,12 @@ def editar_solicitacao(request, solicitacao_id):
                 solicitacao.data_abertura = data_abertura
                 solicitacao.status = status_inicial
                 solicitacao.status_andamento = 'em_espera'
+
+                if maquina:
+                    solicitacao.maquina = maquina
+                if setor:
+                    solicitacao.setor = setor
+
                 solicitacao.save()
 
                 if not status_inicial == 'rejeitar':

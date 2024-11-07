@@ -169,7 +169,10 @@
                         <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="setor_info">Setor</label>
-                                <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
+                                <div id="editarSetor_{{solicitacao.pk}}">
+                                    <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
+                                    <small><a href="#" id="habilitarEdicaoSetor">Editar</a></small>
+                                </div>
                             </div>
                             <div class="col-sm-6">
                                 <label for="solicitante_info">Solicitante</label>
@@ -181,7 +184,10 @@
                         <div class="row mb-3">
                             <div class="col-sm-12">
                                 <label for="">Máquina</label>
-                                <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
+                                <div id="editarMaquina_{{solicitacao.pk}}">
+                                    <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
+                                    <small><a href="#" id="habilitarEdicaoMaquina">Editar</a></small>
+                                </div>
                             </div>
                         </div>
                         {% if solicitacao.setor.nome == 'Solda' %}

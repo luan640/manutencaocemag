@@ -10,6 +10,9 @@ urlpatterns = [
     path('criar-solicitacao/', views.criar_solicitacao, name='criar_solicitacao'),
     path('ajax/get-maquinas/', views.get_maquina_by_setor, name='get_maquina_by_setor'),
     path('ajax/get-maquinas-by-eq-falha/', views.get_maquina_by_eq_em_falha, name='get_maquina_by_eq_em_falha'),
+    path('ajax/get-all-maquinas/', views.get_maquinas, name='get_maquinas'),
+    path('ajax/get-all-setores/', views.get_setores, name='get_setores'),
+
     path('api/planos-preventiva/<int:maquina_id>/', get_planos_preventiva, name='get_planos_preventiva'),
 
     path('criar-solicitacao-predial/', views.criar_solicitacao_predial, name='criar_solicitacao_predial'),

@@ -26,6 +26,7 @@ def criar_solicitacao(request):
     if request.method == 'POST':
         form = SolicitacaoForm(request.POST)
         form2 = FotoForm(request.POST, request.FILES)
+        print(request.POST)
 
         if form.is_valid() and form2.is_valid():
             try:
@@ -283,6 +284,22 @@ def get_maquina_by_eq_em_falha(request):
     
     # Retornar erro caso não haja máquinas encontradas
     return JsonResponse({'error': 'Setor não encontrado'}, status=404)
+
+def get_maquinas(request):
+    maquinas = Maquina.objects.filter(area='producao').values('id', 'descricao')
+    if maquinas.exists():
+        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['descricao']} for maquina in maquinas]
+        return JsonResponse({'results': maquinas_serializadas}, safe=False)
+    return JsonResponse({'error': 'Nenhuma máquina encontrada'}, status=404)
+
+def get_setores(request):
+
+    setores = Setor.objects.all().values('id', 'nome')
+    if setores.exists():
+        setores_serializadas = [{'id': setor['id'], 'text': setor['nome']} for setor in setores]
+        return JsonResponse({'results': setores_serializadas}, safe=False)
+    return JsonResponse({'error': 'Nenhum setor encontrado'}, status=404)
+
 
 def pagina_satisfacao(request, ordem_id):
     # Buscar a ordem pelo ID
