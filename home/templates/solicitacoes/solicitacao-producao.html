@@ -3,7 +3,11 @@
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
-
+<style>
+    .modal-open .select2-container {
+        z-index: 9999;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -283,10 +287,6 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {      
 
-        $(document).ready(function() {
-            $('.js-example-basic-multiple').select2();
-        });
-
         var filterForm = document.getElementById('filter-form');
 
         filterForm.addEventListener('submit', function(e) {
@@ -310,7 +310,7 @@
                 "solicitacoes-container",         // ID do container onde os dados serão inseridos
                 "loadMoreSolicitacoes",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
-                [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp] // Callback após carregar as solicitações
+                [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp, attachSelect2Operador] // Callback após carregar as solicitações
             );
 
             if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
@@ -326,6 +326,11 @@
         });
 
         function fetchSolicitacoes(url, container, loadMoreButtonId, params, callbacks = []) {
+            
+            const loadMoreButton = document.getElementById(loadMoreButtonId);
+
+            document.getElementById(container).innerHTML = 'Carregando...';
+            loadMoreButton.style.display = 'none';
 
             let fetchUrl = `${url}?page=1`;
 
@@ -343,7 +348,6 @@
             .then(data => {
                 document.getElementById(container).innerHTML = data.html;
 
-                const loadMoreButton = document.getElementById(loadMoreButtonId);
                 if (data.nextPage) {
                     loadMoreButton.setAttribute('data-next-page', data.nextPage);
                     loadMoreButton.disabled = false;
@@ -368,6 +372,7 @@
                         callback();
                     }
                 });
+
             })
             .catch(error => console.error("Erro ao carregar solicitações:", error));
         }
@@ -575,7 +580,7 @@
                                     ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                     : Promise.resolve(),
 
-                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp])
+                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp,attachSelect2Operador])
 
                             ]).then(() => {
 
@@ -663,7 +668,7 @@
                                 ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-                            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp]),
+                            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp,attachSelect2Operador]),
 
 
 
@@ -951,6 +956,44 @@
             .catch(error => console.error('Erro:', error));
         }
 
+        function attachSelect2Operador() {
+            // Seleciona todos os elementos <a> com o id que começa com "btnVisualizarOrdem_"
+            const buttons = document.querySelectorAll('[id^="btnVisualizarOrdem_"]');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Extrai o número da chave primária (pk) do ID do botão
+                    const pk = this.id.split('_')[1];
+                    const selectId = `#id_operador_${pk}`;
+                    const modalId = `#executarModal${pk}`;
+
+                    // Verifica se o modal já tem o evento registrado para evitar múltiplas anexações
+                    if (!$(modalId).data('select2-attached')) {
+                        $(modalId).on('shown.bs.modal', function() {
+                            console.log("Tentando inicializar o select2 para:", selectId);
+
+                            if ($(selectId).length) {
+                                // Inicializa o select2
+                                $(selectId).select2({
+                                    placeholder: "Selecione o operador",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $(modalId) // Garante que o dropdown esteja contido no modal
+                                });
+                                console.log("Select2 inicializado com sucesso para:", selectId);
+                            } else {
+                                console.log("Elemento select não encontrado:", selectId);
+                            }
+                        });
+
+                        // Marca o modal como tendo o evento registrado
+                        $(modalId).data('select2-attached', true);
+                    }
+                });
+            });
+        }
+
+
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
@@ -964,7 +1007,7 @@
                 
             // loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
             
-            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp,attachModalEventListeners,attachSelect2Operador]),
 
             document.getElementById('headingAguardandoPrimeiroAtendimento') 
                 ? fetchSolicitacoes(
@@ -976,15 +1019,9 @@
                 )
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-
-
         ]).then(() => {
 
-            // document.getElementById('headingAguardandoPrimeiroAtendimento') 
-            //     ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
-            //     : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
-
-            // fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp])
+            
 
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);

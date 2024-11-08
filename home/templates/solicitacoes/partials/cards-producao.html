@@ -248,7 +248,7 @@
                             <!-- Operador -->
                             <div class="mb-3">
                                 <label for="id_operador" class="form-label">Operador</label>
-                                <select multiple="multiple" class="form-control js-example-basic-multiple" id="id_operador" name="operador" required>
+                                <select multiple="multiple" class="form-control" id="id_operador_{{solicitacao.pk}}" name="operador" required>
                                     {% for operador in operadores %}
                                     <option value="{{ operador.pk }}">{{ operador.nome }}</option>
                                     {% endfor %}
