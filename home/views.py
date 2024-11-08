@@ -25,7 +25,7 @@ ordem_service = OrdemServiceWpp()
 def home_producao(request):
     # Definir filtros iniciais
     base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='producao')
-
+    
     # Filtrar por solicitante se o usuário for um 'solicitante'
     if request.user.tipo_acesso == 'solicitante':
         base_filters &= Q(solicitante=request.user)
@@ -66,6 +66,7 @@ def home_producao(request):
     context['setores'] = Setor.objects.all()
     
     context['quantidade_atrasada'] = quantidade_atrasada(filtros)
+    context['operadores'] = operadores_all('producao')
 
     return render(request, 'solicitacoes/solicitacao-producao.html', context)
 
@@ -143,6 +144,7 @@ def solicitacoes_producao(request):
     status = request.GET.get('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
+    responsavel = request.GET.get('responsavel')
 
     base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='producao')
 
@@ -194,6 +196,9 @@ def solicitacoes_producao(request):
         solicitacoes = solicitacoes.filter(
             programacao__lt= now().date(),
         ).exclude(status_andamento='finalizada')
+
+    if responsavel:
+        solicitacoes = solicitacoes.filter(atribuido_id=responsavel)
 
     # Paginação
     paginator = Paginator(solicitacoes, 10)

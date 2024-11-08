@@ -63,6 +63,15 @@
                     <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
                 </div>
                 <div class="col-md-3">
+                    <label for="responsavel" class="form-label">Responsável</label>
+                    <select class="form-select" id="responsavel" name="responsavel">
+                        <option value="">Todos</option>
+                        {% for operador in operadores %}
+                            <option value="{{operador.pk}}">{{operador.nome}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
                             {% if planejada == '1' %}checked{% endif %}>
@@ -78,7 +87,7 @@
                 {% endif %}
                 <div class="col-12 text-end">
                     <button id="btnFilter" type="submit" class="btn btn-primary">Filtrar</button>
-                    <a href="{% url 'home_producao' %}" class="btn btn-secondary">Limpar Filtros</a>
+                    <button id="btnLimparFiltro" type="submit" class="btn btn-secondary">Limpar Filtros</button>
                 </div>
             </form>
         </div>
@@ -274,8 +283,6 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {      
 
-
-
         $(document).ready(function() {
             $('.js-example-basic-multiple').select2();
         });
@@ -285,7 +292,15 @@
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Coleta os dados do formulário e converte para parâmetros de URL
+            // Identifica qual botão foi clicado
+            const clickedButtonId = e.submitter.id;
+            
+            if (clickedButtonId === 'btnLimparFiltro') {
+                // Lógica para o botão 'Limpar Filtros'
+                filterForm.reset(); // Limpa todos os campos do formulário
+            }
+
+            // Lógica para o botão 'Filtrar'
             var formData = new FormData(filterForm);
             var params = new URLSearchParams(formData).toString();
 
@@ -307,8 +322,7 @@
                     [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
                 );
             }
-
-
+            
         });
 
         function fetchSolicitacoes(url, container, loadMoreButtonId, params, callbacks = []) {

@@ -1,7 +1,7 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
-<div class="col-md-6">
+<div class="col-md-12">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
@@ -23,10 +23,10 @@
             <h6 class="card-title d-flex justify-content-between align-items-center">
                 <div class="d-flex flex-column">
                     <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
+                    <span class="fw-bold">{{ solicitacao.solicitante.nome }}</span>
                     <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
                     <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
                 </div>
-            
                 <div class="d-flex flex-column align-items-end">
                     {% if solicitacao.maq_parada %}
                         <div class="d-flex align-items-center text-danger mb-1">
