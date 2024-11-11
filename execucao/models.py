@@ -44,9 +44,16 @@ class Execucao(models.Model):
     exec_maq_parada = models.BooleanField(default=False)
     apos_exec_maq_parada = models.BooleanField(default=False)
     status = models.CharField(max_length=40, choices=STATUS_CHOICES, default='em_espera')
+    
+    #### Campos exclusivo ETE
+    pvlye = models.FloatField(null=True, blank=True)
+    paplus = models.FloatField(null=True, blank=True)
+    tratamento_ete = models.CharField(max_length=3, null=True, blank=True)
+    ph_agua = models.FloatField(null=True, blank=True)
+    #### Fim campos ETE    
+    
     ultima_atualizacao = models.DateTimeField(auto_now=True)
-    peca_utilizada = models.ManyToManyField(PecaUtilizada, blank=True)
-    quantidade = models.FloatField(null=True, blank=True)
+
 
     class Meta:
         unique_together = ('ordem', 'n_execucao')

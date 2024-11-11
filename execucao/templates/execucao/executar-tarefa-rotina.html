@@ -15,17 +15,12 @@
             
             <input type="hidden" value="predial" name="tipo_solicitacao" id="tipo_solicitacao">
 
-            <div class="mb-3">
-                {{ form.setor.label_tag }}
-                {{ form.setor }}
-            </div>
-        
             <div id="maquina-geral" class="mb-3">
-                <label for="id_maquina">Local</label>
+                <label for="id_maquina">Tarefa</label>
                 <select name="maquina" class="form-select" required="" id="id_maquina">
                     <option value="" selected="">---------</option>
                     {% for maquina in maquinas_predial %}
-                    <option value="{{maquina.id}}">{{maquina.codigo}} - {{maquina.descricao}}</option>
+                    <option value="{{maquina.id}}">{{maquina.nome}}</option>
                     {% endfor %}
                 </select>
             </div>

@@ -106,8 +106,9 @@ def criar_solicitacao_predial(request):
 
 @login_required
 def criar_execucao_rotina(request):
-    maquinas_predial = Maquina.objects.filter(area='predial')
+    # maquinas_predial = Maquina.objects.filter(area='predial')
     operadores = Operador.objects.filter(area='predial')
+    tipo_tarefas = TipoTarefas.objects.all()
 
     if request.method == 'POST':
         form = SolicitacaoPredialForm(request.POST)
@@ -164,7 +165,8 @@ def criar_execucao_rotina(request):
     return render(request, 'execucao/executar-tarefa-rotina.html', {
         'form': form,
         # 'form2': form2,
-        'maquinas_predial': maquinas_predial,
+        # 'maquinas_predial': maquinas_predial,
+        'maquinas_predial': tipo_tarefas,
         'operadores': operadores
     })
 

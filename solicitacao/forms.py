@@ -30,6 +30,16 @@ class SolicitacaoPredialForm(forms.ModelForm):
             'video': forms.Textarea(attrs={'class': 'form-control'}),
         }
 
+class TarefaRotinaPredialForm(forms.ModelForm):
+    class Meta:
+        model = Solicitacao
+        fields = ['tarefa','descricao','impacto_producao','video']
+        widgets = {
+            'tarefa': forms.Select(attrs={'class': 'form-select'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control','placeholder':'Descreva o motivo da sua solicitação.'}),
+        }
+
+
 class MultipleFileInput(forms.FileInput):
     def __init__(self, attrs=None):
         super().__init__(attrs)

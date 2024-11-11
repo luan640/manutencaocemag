@@ -509,6 +509,17 @@
 
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
+                    
+                    document.getElementById('pvlye').addEventListener('input', function() {
+                        this.value = this.value.replace(',', '.');
+                    });
+                    document.getElementById('paplus').addEventListener('input', function() {
+                        this.value = this.value.replace(',', '.');
+                    });
+                    document.getElementById('phagua').addEventListener('input', function() {
+                        this.value = this.value.replace(',', '.');
+                    });
+
                     // Verificar se algum radio button foi selecionado
                     const radioGroups = form.querySelectorAll('input[type="radio"][name]');
                     let allRadioGroupsChecked = true;

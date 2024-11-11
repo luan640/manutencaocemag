@@ -214,7 +214,7 @@ def editar_plano_preventiva(request, pk):
     else:
         plano_form = PlanoPreventivaForm(instance=plano)
         tarefas = TarefaPreventiva.objects.filter(plano=plano)
-
+    
     return render(request, 'plano/edit.html', {
         'plano_form': plano_form,
         'tarefas': tarefas,

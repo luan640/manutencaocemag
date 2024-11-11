@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 
 from . import views
 from execucao.views import criar_execucao, criar_execucao_predial, editar_solicitacao
-from solicitacao.views import tarefa_rotina, pagina_satisfacao, processar_satisfacao, get_planos_preventiva
+from solicitacao.views import get_planos_preventiva
 
 urlpatterns = [
     path('criar-solicitacao/', views.criar_solicitacao, name='criar_solicitacao'),
