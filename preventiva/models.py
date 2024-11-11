@@ -15,6 +15,7 @@ class PlanoPreventiva(models.Model):
     dias_antecedencia = models.IntegerField(help_text="Com quantos dias antes deverá abrir?", blank=True, null=True)
     area = models.CharField(max_length=20,choices=CHOICES_AREA)
     ativo = models.BooleanField(default=True)
+    data_base = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f'{self.maquina} {self.nome}'

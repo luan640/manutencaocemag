@@ -118,6 +118,10 @@
                             {% endif %}
                         </a>
                     {% endif %}
+                    <!-- <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+                        data-bs-target="#executarModal{{ solicitacao.pk }}">
+                        Histórico
+                    </a> -->
                 </ul>
             </div>
         </div>
@@ -177,10 +181,41 @@
                         </div>
                     </div>
                     <hr>
-
                     {% if not request.user.tipo_acesso == 'solicitante' %}
                         <!-- Collapse para Detalhes sobre máquina de solda -->
-                        {% if solicitacao.setor.nome == 'Solda' %}
+                        {% if solicitacao.maquina.codigo == 'ETE' %}
+                        <h2>
+                            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseEte" role="button"
+                                aria-expanded="false" aria-controls="collapseEte">
+                                ETE
+                            </a>
+                        </h2>
+                        <div class="collapse" id="collapseDetalheSetorSolda">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="pvlye" class="form-label">PVLYE</label>
+                                    <input class="form-control" type="text" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="paplus" class="form-label">PA PLUS</label>
+                                    <input class="form-control" type="text" required>
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="tratamento_ete" class="form-label">Tratamento</label>
+                                    <input class="form-control" type="text" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="phagua" class="form-label">PH ÁGUA</label>
+                                    <input class="form-control" type="text" required>
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                        {% elif solicitacao.setor.nome == 'Solda' %}
                         <h2>
                             <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
                                 aria-expanded="false" aria-controls="collapseDetalheSetorSolda">

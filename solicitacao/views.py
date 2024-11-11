@@ -26,7 +26,6 @@ def criar_solicitacao(request):
     if request.method == 'POST':
         form = SolicitacaoForm(request.POST)
         form2 = FotoForm(request.POST, request.FILES)
-        print(request.POST)
 
         if form.is_valid() and form2.is_valid():
             try:

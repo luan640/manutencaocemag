@@ -3,6 +3,9 @@ from django.conf import settings
 
 from cadastro.models import Setor, Maquina, TipoTarefas, Operador
 
+import uuid
+import os
+
 class Solicitacao(models.Model):
     
     EQUIPAMENTO_EM_FALHA_CHOICES = (('maquina_de_solda','Máquina de Solda'),
@@ -75,6 +78,15 @@ class Solicitacao(models.Model):
 class Foto(models.Model):
     solicitacao = models.ForeignKey(Solicitacao, on_delete=models.CASCADE, related_name='fotos')
     imagem = models.ImageField(upload_to='fotos/')
+
+    def save(self, *args, **kwargs):
+        # Verifica se a imagem foi fornecida e renomeia com um identificador único
+        if self.imagem and not self.pk:  # Garante que a renomeação ocorra apenas na primeira vez que é salva
+            extensao = os.path.splitext(self.imagem.name)[1]  # Obtém a extensão do arquivo
+            novo_nome = f"{os.path.splitext(self.imagem.name)[0]}_{uuid.uuid4()}{extensao}"
+            self.imagem.name = novo_nome  # Define o novo nome da imagem
+
+        super(Foto, self).save(*args, **kwargs)  # Chama o método save() original
 
     def __str__(self):
         return f'Foto {self.pk} for Solicitacao {self.solicitacao.pk}'
