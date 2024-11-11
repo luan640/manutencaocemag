@@ -510,15 +510,28 @@
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
                     
-                    document.getElementById('pvlye').addEventListener('input', function() {
-                        this.value = this.value.replace(',', '.');
-                    });
-                    document.getElementById('paplus').addEventListener('input', function() {
-                        this.value = this.value.replace(',', '.');
-                    });
-                    document.getElementById('phagua').addEventListener('input', function() {
-                        this.value = this.value.replace(',', '.');
-                    });
+                    var campoPvlye,campoPaplus, campoPhagua;
+                    
+                    var campoPvlye = document.getElementById('pvlye');
+                    var campoPaplus = document.getElementById('paplus');
+                    var campoPhagua = document.getElementById('phagua');
+                    
+                    if (campoPvlye){
+                        campoPvlye.addEventListener('input', function() {
+                            this.value = this.value.replace(',', '.');
+                        });
+                    }
+                    if (campoPaplus){
+                        campoPaplus.addEventListener('input', function() {
+                            this.value = this.value.replace(',', '.');
+                        });
+                    }
+                    
+                    if (campoPhagua){
+                        campoPhagua.addEventListener('input', function() {
+                            this.value = this.value.replace(',', '.');
+                        });
+                    }
 
                     // Verificar se algum radio button foi selecionado
                     const radioGroups = form.querySelectorAll('input[type="radio"][name]');
@@ -725,14 +738,17 @@
 
                     const containerReabrirOrdem = document.querySelector(`#executarModal${modalId} #container-reabrir-ordem`)
                     const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
-                    // const checkbox3 = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada`);
+                    const checkboxSim = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada_sim`);
+                    const checkboxNao = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada_nao`);
 
                     if (isFinalizada) {
-                        // checkbox3.disabled = true;
+                        checkboxNao.checked = true;
+                        checkboxSim.disabled = true;
                         containerReabrirOrdem.style.display = 'block';
                         solicitarAberturaNovaOrdem.setAttribute('required', 'required');
                     } else {
-                        // checkbox3.disabled = false;
+                        checkboxNao.checked = false;
+                        checkboxSim.disabled = false;
                         containerReabrirOrdem.style.display = 'none';
                         solicitarAberturaNovaOrdem.removeAttribute('required');
                     }
