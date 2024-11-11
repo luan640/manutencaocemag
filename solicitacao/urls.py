@@ -25,7 +25,7 @@ urlpatterns = [
 
     path('filtrar-maquinas/', views.filtrar_maquinas_por_setor, name='filtrar_maquinas_por_setor'),
 
-    path('solicitacao-sucesso/<str:area>/', views.solicitacao_sucesso, name='solicitacao_sucesso'),
+    path('solicitacao-sucesso/<str:area>/<str:rotina>/', views.solicitacao_sucesso, name='solicitacao_sucesso'),
 
     path('editar-ordem-inicial/<int:solicitacao_id>/', editar_solicitacao, name='editar_solicitacao'),
 

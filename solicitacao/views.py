@@ -47,7 +47,7 @@ def criar_solicitacao(request):
                         solicitacao.save()
 
                     # Adiciona mensagem de sucesso e redireciona
-                    return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'producao'}))
+                    return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'producao', 'rotina':False}))
 
             except Exception as e:
                 # Captura erros durante a transação
@@ -87,7 +87,7 @@ def criar_solicitacao_predial(request):
                     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
 
                 # Redireciona para a página de sucesso
-                return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'predial'}))
+                return redirect(reverse('solicitacao_sucesso', kwargs={'area':'predial', 'rotina':False}))
 
             else:
                 return render(request, 'erro.html', {'mensagem': 'Usuário inválido.'})
@@ -111,8 +111,6 @@ def criar_execucao_rotina(request):
     tipo_tarefas = TipoTarefas.objects.all()
 
     if request.method == 'POST':
-        form = SolicitacaoPredialForm(request.POST)
-        # form2 = FotoForm(request.POST, request.FILES)
 
         operadores_ids = request.POST.getlist('operador')  # Usar getlist para campos ManyToMany
         observacao = request.POST.get('obs')
@@ -122,56 +120,54 @@ def criar_execucao_rotina(request):
             data_inicio = data_inicio.split('T')[0]
         data_fim = request.POST.get('data_fim')
 
+        tarefa_rotina = request.POST.get('tarefa_rotina')
+        tarefa = get_object_or_404(TipoTarefas, pk=tarefa_rotina)
+
         with transaction.atomic():
-            if form.is_valid(): #and form2.is_valid():
-                solicitacao = form.save(commit=False)
+            
+            if isinstance(request.user, User):
                 
-                if isinstance(request.user, User):
-                    solicitacao.solicitante = request.user
-                    solicitacao.area = 'predial'
-                    solicitacao.impacto_producao = 'baixo'
-                    solicitacao.descricao = 'Tarefa de rotina'
-                    solicitacao.status = 'aprovar'
-                    solicitacao.status_andamento = 'finalizada'
-                    solicitacao.programacao = data_inicio
-                    solicitacao.save()
+                solicitacao = Solicitacao.objects.create(
+                    solicitante = request.user,
+                    area = 'predial',
+                    impacto_producao = 'baixo',
+                    descricao = 'Tarefa de rotina',
+                    status = 'aprovar',
+                    status_andamento = 'finalizada',
+                    programacao = data_inicio,
+                    tarefa = tarefa,
+                    setor = get_object_or_404(Setor, pk=2), # Setor "administrativo"
+                    maquina = get_object_or_404(Maquina, pk=190) # Máquina "outro"
+                )
 
-                    # for imagem in request.FILES.getlist('imagens'):
-                    #     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
+                # for imagem in request.FILES.getlist('imagens'):
+                #     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
 
-                    execucao = Execucao.objects.create(
-                                ordem=solicitacao,
-                                n_execucao=0,
-                                data_inicio=data_inicio,
-                                data_fim=data_fim,
-                                observacao=observacao,
-                                status='finalizada',
-                            )
-                    execucao.operador.set(operadores_ids)  # Usar o .set() para ManyToMany
-                    execucao.save()
+                execucao = Execucao.objects.create(
+                    ordem=solicitacao,
+                    n_execucao=0,
+                    data_inicio=data_inicio,
+                    data_fim=data_fim,
+                    observacao=observacao,
+                    status='finalizada',
+                )
+                
+                execucao.operador.set(operadores_ids)  # Usar o .set() para ManyToMany
+                execucao.save()
 
-                    # Redireciona para a página de sucesso
-                    return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'predial'}))
+                # Redireciona para a página de sucesso
+                return redirect(reverse('solicitacao_sucesso', kwargs={'area': 'predial', 'rotina': True}))
 
-                else:
-                    return render(request, 'erro.html', {'mensagem': 'Usuário inválido.'})
             else:
-                print(form.errors)
-                # print(form2.errors)
-    else:
-        form = SolicitacaoForm()
-        # form2 = FotoForm()
+                return render(request, 'erro.html', {'mensagem': 'Usuário inválido.'})
 
     return render(request, 'execucao/executar-tarefa-rotina.html', {
-        'form': form,
-        # 'form2': form2,
-        # 'maquinas_predial': maquinas_predial,
-        'maquinas_predial': tipo_tarefas,
+        'tarefas': tipo_tarefas,
         'operadores': operadores
     })
 
-def solicitacao_sucesso(request, area):
-    return render(request, 'solicitacao/sucesso.html', {'area':area})
+def solicitacao_sucesso(request, area, rotina):
+    return render(request, 'solicitacao/sucesso.html', {'area':area,'rotina':rotina})
 
 @csrf_exempt
 def atualizar_status_maq_parada(request):

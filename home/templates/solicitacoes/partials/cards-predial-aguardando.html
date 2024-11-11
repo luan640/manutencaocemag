@@ -1,7 +1,7 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
-<div class="col-md-6">
+<div class="col-md-12">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
@@ -23,8 +23,9 @@
             <h6 class="card-title d-flex justify-content-between align-items-center">
                 <div class="d-flex flex-column">
                     <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
+                    <span class="fw-bold">{{ solicitacao.solicitante.nome }}</span>
                     <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
-                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
+                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:20 }}</span></small>
                 </div>
             
                 <div class="d-flex flex-column align-items-end">
@@ -78,7 +79,7 @@
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% if not solicitacao.status_andamento == 'finalizada' %}
                     <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Aguardando programação</a>
+                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">Programar</a>
                     {% endif %}
                 </ul>
             </div>
@@ -148,18 +149,18 @@
                         <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseInformacoesGerais" role="button" aria-expanded="false" aria-controls="collapseInformacoesGerais">
                             Informações gerais
                         </a>
-                        <div class="form-check form-switch">
+                        <!-- <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="flagMaqParada" id="maqParadaToggle{{ solicitacao.id }}" {% if solicitacao.maq_parada %} checked {% endif %}>
-                            <div class="text-danger">
+                            <div class="text-danger"> -->
                                 <!-- Ícone SVG de Exclamação -->
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                                <!-- <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
                                     class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
                                     <path
                                         d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
                                 </svg>
                                 <small>Parada</small>
                             </div>
-                        </div>
+                        </div> -->
                     </h2>
                     <div class="collapse show" id="collapseInformacoesGerais">
                         <div class="row mb-3">

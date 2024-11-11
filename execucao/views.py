@@ -32,8 +32,6 @@ def criar_execucao(request, solicitacao_id):
     ultima_execucao = Execucao.objects.filter(ordem=solicitacao).order_by('n_execucao').last()
     n_execucao = ultima_execucao.n_execucao + 1 if ultima_execucao else 0
     
-    print(request.POST)
-
     if request.method == 'POST':
         
         with transaction.atomic():

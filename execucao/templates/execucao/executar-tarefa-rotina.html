@@ -15,16 +15,18 @@
             
             <input type="hidden" value="predial" name="tipo_solicitacao" id="tipo_solicitacao">
 
-            <div id="maquina-geral" class="mb-3">
-                <label for="id_maquina">Tarefa</label>
-                <select name="maquina" class="form-select" required="" id="id_maquina">
-                    <option value="" selected="">---------</option>
-                    {% for maquina in maquinas_predial %}
-                    <option value="{{maquina.id}}">{{maquina.nome}}</option>
-                    {% endfor %}
-                </select>
+            <div class="mb-3">
+                <div id="tarefa_rotina" class="mb-3">
+                    <label for="tarefa_rotina">Tarefa</label>
+                    <select name="tarefa_rotina" class="form-control js-example-basic-multiple" id="tarefa_rotina" required>
+                        <option value="">------------</option>
+                        {% for tarefa in tarefas %}
+                        <option value="{{tarefa.id}}">{{tarefa.nome}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        
+
             <!-- <div class="mb-3">
                 <label for="id_imagens" class="form-label">Upload de Fotos:</label>
                 {{ form2.as_p }}
@@ -84,43 +86,8 @@
         $(document).ready(function() {
             $('.js-example-basic-multiple').select2();
         });
+        
 
-        var setorSelect = document.getElementById('id_setor');
-        var maquinaSelect = document.getElementById('id_maquina');
-        var tipoSolicitacao = document.getElementById('tipo_solicitacao').value;
-
-        setorSelect.addEventListener('change', function () {
-            var setorId = this.value;
-
-            maquinaSelect.innerHTML = '<option value="">Carregando...</option>';
-            maquinaSelect.disabled = true;
-
-            if (setorId) {
-                // Faz a requisição para buscar as máquinas com base no setor selecionado
-                fetch("{% url 'filtrar_maquinas_por_setor' %}?setor_id=" + setorId + "&tipo_solicitacao=" + tipoSolicitacao)
-                .then(function (response) {
-                    return response.json();  // Converte a resposta em JSON
-                })
-                .then(function (data) {
-                    maquinaSelect.disabled = false;
-                    maquinaSelect.innerHTML = '';
-
-                    // Adiciona as novas opções com base nas máquinas retornadas
-                    data.maquinas.forEach(function (maquina) {
-                        var option = document.createElement('option');
-                        option.value = maquina.id;
-                        option.textContent = maquina.codigo + ' - ' + maquina.descricao;
-                        maquinaSelect.appendChild(option);
-                    });
-                })
-                .catch(function (error) {
-                    console.error('Erro ao buscar as máquinas:', error);
-                });
-            } else {
-                // Se nenhum setor for selecionado, limpa o campo de seleção de máquinas
-                maquinaSelect.innerHTML = '<option value="">---------</option>';
-            }
-        });
     });
 
     const form = document.getElementById('abrirOrdemServico');

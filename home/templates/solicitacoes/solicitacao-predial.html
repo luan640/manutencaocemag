@@ -725,7 +725,7 @@
             // Exibe o modal de carregamento
             Swal.fire({
                 title: 'Processando...',
-                text: 'Aguarde enquanto processamos sua solicitação.',
+                text: 'Aguarde enquanto a confirmação é reenviada.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading(); // Exibe o spinner de carregamento
@@ -746,14 +746,14 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'Sucesso',
-                        text: 'Ordem executada com sucesso!',
+                        text: 'Confirmação reenviada com sucesso!',
                         confirmButtonText: 'OK'
                     });
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Erro',
-                        text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                        text: 'Erro ao reenviar a mensagem. Tente novamente.',
                         confirmButtonText: 'OK'
                     });
                 }

@@ -23,7 +23,11 @@
         <p>Sua solicitação foi enviada com sucesso.</p>
         <hr>
         {% if area == 'predial' %}
-        <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao_predial' %}">enviar outra solicitação</a>?</p>
+            {% if rotina == True %}
+                <p class="mb-0">Deseja <a href="{% url 'criar_execucao_rotina' %}">executar outra tarefa de rotina</a>?</p>
+            {% else %}
+                <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao_predial' %}">enviar outra solicitação</a>?</p>
+            {% endif %}
         <p class="mb-0">Voltar para <a href="{% url 'home_predial' %}">página inicial</a></p>
         {% else %}
         <p class="mb-0">Deseja <a href="{% url 'criar_solicitacao' %}">enviar outra solicitação</a>?</p>
