@@ -255,8 +255,6 @@ def aguardando_primeiro_atendimento_producao(request):
     status = request.GET.get('ultimo_status')
     planejada = request.GET.get('planejada')
 
-    # Se o usuário for solicitante, adicionar filtro adicional
-    
     # Inicia o queryset base
     aguardando_primeiro_atendimento = Solicitacao.objects.filter(
         Q(status__isnull=True) | Q(status='aprovar'), 
@@ -266,7 +264,6 @@ def aguardando_primeiro_atendimento_producao(request):
 
     if numero_ordem:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(pk=numero_ordem)
-
 
     if request.user.tipo_acesso == 'solicitante':
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante=request.user)

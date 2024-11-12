@@ -127,6 +127,7 @@ def editar_solicitacao(request, solicitacao_id):
 
     if request.method == 'POST':
         try:
+            print(request.POST)
             # Obtém os dados do formulário
             maquina = request.POST.get('id_maquina')
             setor = request.POST.get('id_setor')
@@ -191,9 +192,9 @@ def editar_solicitacao(request, solicitacao_id):
                 solicitacao.status_andamento = 'em_espera'
 
                 if maquina:
-                    solicitacao.maquina = maquina
+                    solicitacao.maquina = get_object_or_404(Maquina, pk=maquina)
                 if setor:
-                    solicitacao.setor = setor
+                    solicitacao.setor = get_object_or_404(Setor, pk=setor)
 
                 solicitacao.save()
 
