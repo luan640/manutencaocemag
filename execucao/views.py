@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.db import transaction
 
 from solicitacao.models import Solicitacao
-from execucao.models import Execucao, InfoSolicitacao
+from execucao.models import Execucao, InfoSolicitacao, MaquinaParada
 from cadastro.models import Maquina, Setor, Operador
 from funcionario.models import Funcionario
 from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
@@ -127,7 +127,7 @@ def editar_solicitacao(request, solicitacao_id):
 
     if request.method == 'POST':
         try:
-            print(request.POST)
+
             # Obtém os dados do formulário
             maquina = request.POST.get('id_maquina')
             setor = request.POST.get('id_setor')
@@ -166,23 +166,26 @@ def editar_solicitacao(request, solicitacao_id):
                         defaults={'area_manutencao': area_manutencao, 'tipo_manutencao': tipo_manutencao}
                     )
 
-                    Execucao.objects.create(
+                    execucao = Execucao.objects.create(
                         ordem=solicitacao,
-                        n_execucao=0,
+                        # n_execucao=0,
                         data_inicio=data_inicio,
                         data_fim=data_fim,
                         status='em_espera',
-                        che_maq_parada=request.POST.get('flagMaqParada') == 'true',
-                        exec_maq_parada=request.POST.get('flagMaqParada') == 'true',
-                        apos_exec_maq_parada=request.POST.get('flagMaqParada') == 'true',
+                        che_maq_parada=request.POST.get('che_maq_parada') == 'sim',
+                        exec_maq_parada=request.POST.get('exec_maq_parada') == 'sim',
+                        apos_exec_maq_parada=True if request.POST.get('flagMaqParada') == 'on' else False
                     )
+
+                    execucao.save()
 
                     solicitacao.programacao = programacao
                     solicitacao.atribuido = responsavel_object
                     solicitacao.prioridade = nivel_prioridade
 
-                    if request.POST.get('flagMaqParada') == 'true':
+                    if request.POST.get('flagMaqParada') == 'on':
                         solicitacao.maq_parada = True
+
                     if tipo_manutencao == 'preventiva_programada':
                         solicitacao.planejada = True
 

@@ -297,7 +297,6 @@ def get_setores(request):
         return JsonResponse({'results': setores_serializadas}, safe=False)
     return JsonResponse({'error': 'Nenhum setor encontrado'}, status=404)
 
-
 def pagina_satisfacao(request, ordem_id):
     # Buscar a ordem pelo ID
     ordem = get_object_or_404(Solicitacao, pk=ordem_id)

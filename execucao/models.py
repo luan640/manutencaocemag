@@ -67,6 +67,8 @@ class Execucao(models.Model):
 
         super().save(*args, **kwargs)
 
+        print(self.apos_exec_maq_parada)
+
         # Se a execução é nova (número de execução é 1) ou se há uma condição para atualizar MaquinaParada
         if creating:
             if self.n_execucao == 0:

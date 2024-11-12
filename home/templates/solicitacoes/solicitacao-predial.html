@@ -22,6 +22,10 @@
             <form method="GET" class="row g-3" id="filter-form">
                 {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
                 <div class="col-md-3">
+                    <label for="ordem" class="form-label">#OS</label>
+                    <input type="text" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
+                </div>
+                <div class="col-md-3">
                     <label for="solicitante" class="form-label">Solicitante</label>
                     <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
                 </div>
@@ -74,8 +78,8 @@
                 </div>
                 {% endif %}
                 <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Filtrar</button>
-                    <a href="{% url 'home_predial' %}" class="btn btn-secondary">Limpar Filtros</a>
+                    <button id="btnFilter" type="submit" class="btn btn-primary">Filtrar</button>
+                    <button id="btnLimparFiltro" type="submit" class="btn btn-secondary">Limpar Filtros</button>
                 </div>
             </form>
         </div>
@@ -256,6 +260,14 @@
 
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            // Identifica qual botão foi clicado
+            const clickedButtonId = e.submitter.id;
+            
+            if (clickedButtonId === 'btnLimparFiltro') {
+                // Lógica para o botão 'Limpar Filtros'
+                filterForm.reset(); // Limpa todos os campos do formulário
+            }
 
             // Coleta os dados do formulário e converte para parâmetros de URL
             var formData = new FormData(filterForm);
