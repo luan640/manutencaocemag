@@ -4,8 +4,8 @@
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
 <style>
-    .modal-open .select2-container {
-        z-index: 9999;
+    .select2-container .select2-dropdown {
+        z-index: 1055 !important; /* Certifique-se de que esteja acima do modal */
     }
 </style>
 {% endblock %}
@@ -533,6 +533,19 @@
                         });
                     }
 
+                    var data_inicio = new Date(document.getElementById('id_data_inicio'));
+                    var data_fim = new Date(document.getElementById('id_data_fim'));
+
+                    if (dataFim <= dataInicio) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Atenção',
+                            text: 'A data final deve ser menor que a data início.',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+
                     // Verificar se algum radio button foi selecionado
                     const radioGroups = form.querySelectorAll('input[type="radio"][name]');
                     let allRadioGroupsChecked = true;
@@ -1005,7 +1018,7 @@
                                     placeholder: "Selecione o operador",
                                     allowClear: true,
                                     width: '100%',
-                                    dropdownParent: $(modalId) // Garante que o dropdown esteja contido no modal
+                                    dropdownParent: $('body') // Garante que o dropdown esteja contido no modal
                                 });
                                 console.log("Select2 inicializado com sucesso para:", selectId);
                             } else {
@@ -1047,8 +1060,6 @@
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
         ]).then(() => {
-
-            
 
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);

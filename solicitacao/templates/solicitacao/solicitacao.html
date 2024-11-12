@@ -214,7 +214,7 @@
 
                 // Faz a requisição AJAX para buscar máquinas pelo setor
                 ajax(
-                    '{% url "get_maquina_by_setor" %}?setor=' + encodeURIComponent(setorSelecionado),
+                    '{% url "get_maquina_by_setor" %}?setor=' + encodeURIComponent(setorSelecionado) + '&area=producao',
                     function (data) {
                         if (data.maquinas) {
                             updateSelectElement('id_maquina', JSON.parse(data.maquinas), function (optionData) {

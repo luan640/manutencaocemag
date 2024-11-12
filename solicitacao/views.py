@@ -22,6 +22,7 @@ User = get_user_model()
 @login_required
 def criar_solicitacao(request):
     maquinas_producao = Maquina.objects.filter(area='producao')
+    print(maquinas_producao)
 
     if request.method == 'POST':
         form = SolicitacaoForm(request.POST)
@@ -253,9 +254,10 @@ def tarefa_rotina(request):
 
 def get_maquina_by_setor(request):
     setor = request.GET.get('setor')
+    area = request.GET.get('area')
 
     # Filtrar as máquinas pelo setor
-    maquinas = Maquina.objects.filter(setor=setor)
+    maquinas = Maquina.objects.filter(setor=setor, area=area)
 
     if maquinas.exists():
         # Serializar os dados das máquinas para JSON

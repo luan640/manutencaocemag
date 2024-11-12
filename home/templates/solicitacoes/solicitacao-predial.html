@@ -4,6 +4,11 @@
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
+<style>
+    .select2-container .select2-dropdown {
+        z-index: 1055 !important; /* Certifique-se de que esteja acima do modal */
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -273,24 +278,65 @@
             var formData = new FormData(filterForm);
             var params = new URLSearchParams(formData).toString();
 
-            // Chama a função fetchSolicitacoes passando os parâmetros
             fetchSolicitacoes(
                 "solicitacoes/",                  // URL base
                 "solicitacoes-container",         // ID do container onde os dados serão inseridos
                 "loadMoreSolicitacoes",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
-                [attachExecutarOrdemEventListeners] // Callback após carregar as solicitações
+                [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp, attachSelect2Operador] // Callback após carregar as solicitações
             );
 
-            fetchSolicitacoes(
-                "aguardando-primeiro-atendimento/",                  // URL base
-                "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
-                "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
-                params,                           // Parâmetros do filtro
-                [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva] // Callback após carregar as solicitações
-            );
+            if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
+                fetchSolicitacoes(
+                    "aguardando-primeiro-atendimento/",             // URL base
+                    "aguardando-primeiro-atendimento-container",    // ID do container onde os dados serão inseridos
+                    "loadMoreAguardandoPrimeiroAtendimento",        // ID do botão de 'load more'
+                    params,                                         // Parâmetros do filtro
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
+                );
+            }
+
 
         });
+
+        function attachSelect2Operador() {
+            // Seleciona todos os elementos <a> com o id que começa com "btnVisualizarOrdem_"
+            const buttons = document.querySelectorAll('[id^="btnVisualizarOrdem_"]');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Extrai o número da chave primária (pk) do ID do botão
+                    const pk = this.id.split('_')[1];
+                    const selectId = `#id_operador_${pk}`;
+                    const modalId = `#executarModal${pk}`;
+
+                    console.log(pk)
+
+                    // Verifica se o modal já tem o evento registrado para evitar múltiplas anexações
+                    if (!$(modalId).data('select2-attached')) {
+                        $(modalId).on('shown.bs.modal', function() {
+                            console.log("Tentando inicializar o select2 para:", selectId);
+
+                            if ($(selectId).length) {
+                                // Inicializa o select2
+                                $(selectId).select2({
+                                    placeholder: "Selecione o operador",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $('body') // Use 'body' temporariamente para testar
+                                });
+                                console.log("Select2 inicializado com sucesso para:", selectId);
+                            } else {
+                                console.log("Elemento select não encontrado:", selectId);
+                            }
+                        });
+
+                        // Marca o modal como tendo o evento registrado
+                        $(modalId).data('select2-attached', true);
+                    }
+                });
+            });
+        }
 
         function fetchSolicitacoes(url, container, loadMoreButtonId, params, callbacks = []) {
 
@@ -690,6 +736,87 @@
 
         };
         
+        function attachModalEventListeners() {
+            document.querySelectorAll('#habilitarEdicaoMaquina').forEach(function(editLink) {
+                editLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    const container = editLink.closest('div[id^="editarMaquina_"]');
+                    const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
+                    
+                    // Remove o campo de texto e adiciona um <select> no lugar
+                    container.innerHTML = `
+                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" required>
+                            <option value="">Carregando máquinas...</option>
+                        </select>
+                    `;
+
+                    // Faz a requisição AJAX para carregar as máquinas
+                    fetch('/solicitacao/ajax/get-all-maquinas/')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.results) {
+                                updateSelectElement(`id_maquina_${solicitacaoPk}`, data.results, function(optionData) {
+                                    return optionData.text;  // Exibe o nome da máquina
+                                });
+
+                                // Inicializa o Select2 após adicionar as opções
+                                $(`#id_maquina_${solicitacaoPk}`).select2({
+                                    placeholder: "Selecione a máquina",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                                });
+                            } else {
+                                console.error('Nenhuma máquina encontrada.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar as máquinas:', error);
+                        });
+                });
+            });
+            document.querySelectorAll('#habilitarEdicaoSetor').forEach(function(editLink) {
+                editLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    const container = editLink.closest('div[id^="editarSetor_"]');
+                    const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
+                    
+                    // Remove o campo de texto e adiciona um <select> no lugar
+                    container.innerHTML = `
+                        <select class="form-control select2_setor" name="id_setor" id="id_setor_${solicitacaoPk}" required>
+                            <option value="">Carregando setores...</option>
+                        </select>
+                    `;
+
+                    // Faz a requisição AJAX para carregar as máquinas
+                    fetch('/solicitacao/ajax/get-all-setores/')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.results) {
+                                updateSelectElement(`id_setor_${solicitacaoPk}`, data.results, function(optionData) {
+                                    return optionData.text;  // Exibe o nome da máquina
+                                });
+
+                                // Inicializa o Select2 após adicionar as opções
+                                $(`#id_setor_${solicitacaoPk}`).select2({
+                                    placeholder: "Selecione a máquina",
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $(`#editarSetor_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                                });
+                            } else {
+                                console.error('Nenhuma máquina encontrada.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar as máquinas:', error);
+                        });
+                });
+            });
+        }
+
         function escolherPlanoPreventiva(){
             document.querySelectorAll('[id^="tipo_manutencao_"]').forEach(selectElement => {
                 selectElement.addEventListener('change', function() {
@@ -774,19 +901,20 @@
         }
 
         Promise.all([
-            // Verifica se o elemento existe antes de adicionar a função ao array de Promises
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp,attachModalEventListeners,attachSelect2Operador]),
+
             document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva])
+                ? fetchSolicitacoes(
+                    "aguardando-primeiro-atendimento/",                  // URL base
+                    "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
+                    "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
+                    params,                           // Parâmetros do filtro
+                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
+                )
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp])
-
         ]).then(() => {
-            // Executa fetchSolicitacoes para cada seção que foi carregada
-            // if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
-            //     fetchSolicitacoes("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", "loadMoreAguardandoPrimeiroAtendimento", params='', [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva]);
-            // }
-            // fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]);
+
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);
         });

@@ -172,7 +172,7 @@ def importar_csv_maquina(request):
                 continue
             
             # Se não existir, cria a nova máquina
-            setor, created = Setor.objects.get_or_create(pk=row['setor_id'])
+            setor, created = Setor.objects.get_or_create(pk=row['setor'])
 
             Maquina.objects.create(
                 codigo=row['codigo'],
@@ -180,8 +180,8 @@ def importar_csv_maquina(request):
                 apelido=row['apelido'],
                 tombamento=row['tombamento'] if not pd.isnull(row['tombamento']) else '',
                 setor=setor,
-                area='producao',
-                criticidade='c'   
+                area=row['area'],
+                criticidade=row['criticidade']   
             )
 
         return redirect('list_maquina')

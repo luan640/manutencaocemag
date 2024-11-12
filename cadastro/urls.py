@@ -8,7 +8,6 @@ urlpatterns = [
     path('maquina/processar', processar_maquina, name='processar_maquina'),
     path('maquina/add-carga/', importar_csv_maquina, name='importar_csv_maquina'),
     
-
     path('operador/list', list_operador, name='list_operador'),
     path('operador/add', add_operador, name='add_operador'),
     path('operador/edit/<int:pk>', edit_operador, name='edit_operador'),

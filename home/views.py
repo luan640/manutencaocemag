@@ -262,11 +262,11 @@ def aguardando_primeiro_atendimento_producao(request):
         status_andamento='aguardando_atendimento'
     ).select_related('solicitante', 'setor').prefetch_related('fotos', 'info_solicitacao').order_by('-data_abertura')
 
-    if numero_ordem:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(pk=numero_ordem)
-
     if request.user.tipo_acesso == 'solicitante':
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante=request.user)
+
+    if numero_ordem:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(pk=numero_ordem)
 
     if solicitante:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante__nome__icontains=solicitante)
@@ -338,6 +338,7 @@ def maquinas_paradas_producao(request):
 @login_required
 def solicitacoes_predial(request):
 
+    ordem = request.GET.get('ordem')
     solicitante = request.GET.get('solicitante')
     setor_id = request.GET.get('setor')
     # maq_parada = request.GET.get('maq_parada')
@@ -370,6 +371,9 @@ def solicitacoes_predial(request):
         ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1])
 
     )
+
+    if ordem:
+        solicitacoes = solicitacoes.filter(pk=ordem)
 
     if solicitante:
         solicitacoes = solicitacoes.filter(solicitante__nome__icontains=solicitante)
@@ -436,6 +440,7 @@ def solicitacoes_predial(request):
 @login_required
 def aguardando_primeiro_atendimento_predial(request):
     
+    ordem = request.GET.get('ordem')
     solicitante = request.GET.get('solicitante')
     setor_id = request.GET.get('setor')
     # maq_parada = request.GET.get('maq_parada')
@@ -449,6 +454,9 @@ def aguardando_primeiro_atendimento_predial(request):
         area='predial',
         status_andamento='aguardando_atendimento'
     ).select_related('solicitante', 'setor').prefetch_related('fotos', 'info_solicitacao')
+
+    if ordem:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(pk=ordem)
 
     if solicitante:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante__nome__icontains=solicitante)
