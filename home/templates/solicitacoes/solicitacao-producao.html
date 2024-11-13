@@ -533,18 +533,6 @@
                         });
                     }
 
-                    var data_inicio = new Date(document.getElementById('id_data_inicio'));
-                    var data_fim = new Date(document.getElementById('id_data_fim'));
-
-                    if (dataFim <= dataInicio) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Atenção',
-                            text: 'A data final deve ser menor que a data início.',
-                            confirmButtonText: 'OK'
-                        });
-                        return;
-                    }
 
                     // Verificar se algum radio button foi selecionado
                     const radioGroups = form.querySelectorAll('input[type="radio"][name]');
@@ -1033,6 +1021,30 @@
             });
         }
 
+        function attachVerificarData() {
+            const dataInicioElement = document.getElementById('id_data_inicio');
+            const dataFimElement = document.getElementById('id_data_fim');
+
+            // Verifique se os elementos existem antes de adicionar os event listeners
+            if (dataInicioElement && dataFimElement) {
+                dataFimElement.addEventListener('change', function() {
+                    console.log("Verificando datas...");
+
+                    const dataInicio = new Date(dataInicioElement.value);
+                    const dataFim = new Date(this.value);
+
+                    // Verifica se os campos de data têm valores válidos antes de fazer a comparação
+                    if (dataInicioElement.value && this.value) {
+                        if (dataFim <= dataInicio) {
+                            alert('A data de fim deve ser maior que a data de início.');
+                            this.value = ''; // Limpa o campo de data_fim se a validação falhar
+                        }
+                    }
+                });
+            } else {
+                console.error("Os elementos de data de início e/ou data de fim não foram encontrados.");
+            }
+        }
 
         Promise.all([
             
@@ -1047,7 +1059,7 @@
                 
             // loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
             
-            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp,attachModalEventListeners,attachSelect2Operador]),
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp,attachModalEventListeners,attachSelect2Operador,attachVerificarData]),
 
             document.getElementById('headingAguardandoPrimeiroAtendimento') 
                 ? fetchSolicitacoes(
