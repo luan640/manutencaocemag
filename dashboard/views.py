@@ -452,7 +452,7 @@ def quantidade_atrasada(filtros):
     solicitacoes = Solicitacao.objects.filter(
         **filtros,
         programacao__isnull=False,
-        programacao__lte=data_limite
+        programacao__lt=data_limite
     ).exclude(
         Q(status='rejeitar') | Q(status_andamento='finalizada')
     ).count()

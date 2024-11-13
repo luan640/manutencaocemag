@@ -373,7 +373,10 @@
             
             const loadMoreButton = document.getElementById(loadMoreButtonId);
 
-            document.getElementById(container).innerHTML = 'Carregando...';
+            // document.getElementById(container).innerHTML = 'Carregando...';
+            document.getElementById(container).innerHTML = `<div class="loading-overlay" id="loading-historico">
+                                                            <div class="spinner"></div>
+                                                            </div>`
             loadMoreButton.style.display = 'none';
 
             let fetchUrl = `${url}?page=1`;

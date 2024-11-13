@@ -28,7 +28,7 @@
                 <div class="d-flex flex-column">
                     <span title="{{ solicitacao.setor.nome }}" class="fw-bold">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
                     <span class="text-secondary">{{ solicitacao.solicitante.nome }}</span>
-                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }}</span>
+                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }} impacto na produção</span>
                     <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
                 </div>
                 
