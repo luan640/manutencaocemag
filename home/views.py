@@ -1,14 +1,15 @@
 from django.shortcuts import render, get_object_or_404
-from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Count
+from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Count, F
 from django.core.paginator import Paginator
 from django.db.models.functions import Coalesce
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.utils.timezone import now, timedelta
 from django.urls import reverse
+from django.core.serializers import serialize
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
@@ -545,3 +546,22 @@ def reenviar_mensagem(request, ordem_id):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+def historico_ordem(request, pk):
+    # Consulta para buscar execuções com operadores relacionados
+    data = (
+        Execucao.objects
+        .filter(ordem_id=pk)
+        .prefetch_related('operador')  # Carrega operadores relacionados
+        .values('id', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
+                'che_maq_parada', 'exec_maq_parada', 'apos_exec_maq_parada', 'status')
+    ).order_by('n_execucao')
+
+    data_list = []
+    for execucao in data:
+        execucao_dict = execucao
+        operadores = Execucao.objects.get(pk=execucao['id']).operador.all().values_list('nome', flat=True)
+        execucao_dict['operadores'] = list(operadores)
+        data_list.append(execucao_dict)
+
+    return JsonResponse({'historico': data_list})

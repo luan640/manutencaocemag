@@ -1,6 +1,6 @@
 from django.http import JsonResponse
-from django.db.models import Sum, Count, F, ExpressionWrapper, DurationField, Avg, Min, Max, Q
-from django.db.models.functions import TruncMonth
+from django.db.models import Sum, Count, F, ExpressionWrapper, DurationField, Avg, Min, Max, Q, Value
+from django.db.models.functions import Coalesce
 from django.shortcuts import render
 from django.utils.timezone import now, timedelta
 from django.db.models import Sum, F, ExpressionWrapper, DurationField, OuterRef, Subquery
@@ -309,7 +309,6 @@ def relacao_por_tipo_ordem(request):
     return JsonResponse({'data': data})
 
 def maquina_parada(request):
-
     data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
@@ -317,19 +316,23 @@ def maquina_parada(request):
 
     filtros = {
         'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
         'ordem__area': area
     }
+
+    # Adiciona o filtro para data_fim, mas permite que ela seja NULL para o cálculo posterior
+    filtros['data_fim__lte'] = data_fim
+
     if setor:
         filtros['ordem__setor_id'] = int(setor)
 
-    # Calcular a duração (diferença entre início e fim)
+    # Calcular a duração (diferença entre início e fim), usando Coalesce para lidar com valores nulos em data_fim
     total_por_maquina = (
         MaquinaParada.objects
         .filter(**filtros)
         .annotate(
+            data_fim_real=Coalesce('data_fim', Value(timezone.now())),  # Substitui NULL por a data e hora atual
             duracao=ExpressionWrapper(
-                F('data_fim') - F('data_inicio'), output_field=DurationField()
+                F('data_fim_real') - F('data_inicio'), output_field=DurationField()
             )
         )
         .values('ordem__maquina__codigo')  # Agrupa pelo código da máquina

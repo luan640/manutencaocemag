@@ -7,6 +7,38 @@
     .select2-container .select2-dropdown {
         z-index: 1055 !important; /* Certifique-se de que esteja acima do modal */
     }
+
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8); /* Fundo semitransparente */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1; /* Garantir que fique acima do conteúdo do card */
+    }
+
+    .spinner {
+        border: 6px solid #f3f3f3; /* Fundo claro */
+        border-top: 6px solid #3498db; /* Cor principal do spinner */
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .position-relative {
+        position: relative; /* Garante que o overlay se posicione corretamente */
+    }
+
 </style>
 {% endblock %}
 
@@ -310,7 +342,14 @@
                 "solicitacoes-container",         // ID do container onde os dados serão inseridos
                 "loadMoreSolicitacoes",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
-                [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp, attachSelect2Operador] // Callback após carregar as solicitações
+                [
+                    attachExecutarOrdemEventListeners,
+                    mudancaStatusFinalizada,
+                    attachStatusReenviarWpp,
+                    attachSelect2Operador,
+                    attachVerificarData,
+                    attachHistorico
+                ] // Callback após carregar as solicitações
             );
 
             if (document.getElementById('headingAguardandoPrimeiroAtendimento')) {
@@ -319,7 +358,12 @@
                     "aguardando-primeiro-atendimento-container",    // ID do container onde os dados serão inseridos
                     "loadMoreAguardandoPrimeiroAtendimento",        // ID do botão de 'load more'
                     params,                                         // Parâmetros do filtro
-                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
+                    [
+                        attachExecutar1OrdemEventListeners,
+                        attachStatusChangeListeners,
+                        escolherPlanoPreventiva,
+                        attachModalEventListeners
+                    ] // Callback após carregar as solicitações
                 );
             }
             
@@ -598,14 +642,26 @@
                         if (data.success) {
                             Promise.all([
                                 document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners])
+                                    ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [
+                                        attachExecutar1OrdemEventListeners,
+                                        attachStatusChangeListeners,
+                                        escolherPlanoPreventiva,
+                                        attachModalEventListeners
+                                    ])
                                     : Promise.resolve(),
 
                                 document.getElementById('headingMaquinasParadas') 
                                     ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                     : Promise.resolve(),
 
-                                loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp,attachSelect2Operador])
+                                loadSection("solicitacoes/", "solicitacoes-container", [
+                                    attachExecutarOrdemEventListeners,
+                                    mudancaStatusFinalizada,
+                                    attachStatusReenviarWpp,
+                                    attachSelect2Operador,
+                                    attachVerificarData,
+                                    attachHistorico
+                                ])
 
                             ]).then(() => {
 
@@ -686,14 +742,27 @@
                             Promise.all([
 
                             document.getElementById('headingAguardandoPrimeiroAtendimento') 
-                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners])
+                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [
+                                    attachExecutar1OrdemEventListeners,
+                                    attachStatusChangeListeners,
+                                    escolherPlanoPreventiva,
+                                    attachModalEventListeners,
+                                    
+                                ])
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
                             
                             document.getElementById('headingMaquinasParadas') 
                                 ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
-                            loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada,attachStatusReenviarWpp,attachSelect2Operador]),
+                            loadSection("solicitacoes/", "solicitacoes-container", [
+                                attachExecutarOrdemEventListeners,
+                                mudancaStatusFinalizada,
+                                attachStatusReenviarWpp,
+                                attachSelect2Operador,
+                                attachVerificarData,
+                                attachHistorico
+                            ]),
 
 
 
@@ -1046,6 +1115,65 @@
             }
         }
 
+        function attachHistorico() {
+            // Seleciona todos os elementos <a> com o id que começa com "btnHistorico_"
+            const buttons = document.querySelectorAll('[id^="btnHistorico_"]');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Extrai o número da chave primária (pk) do ID do botão
+                    const pk = this.id.split('_')[1];
+
+                    // Elemento onde o histórico será exibido
+                    const bodyHistorico = document.getElementById(`bodyHistorico_${pk}`);
+                    bodyHistorico.innerHTML = `<div class="loading-overlay" id="loading-historico">
+                    <div class="spinner"></div>
+                    </div>`
+                    // bodyHistorico.innerHTML = ''; // Limpa o conteúdo atual
+
+                    // Envia uma solicitação fetch para buscar os dados do histórico no backend
+                    fetch(`/home/historico/${pk}/`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Erro ao buscar histórico');
+                            }
+                            return response.json(); // Converte a resposta em JSON
+                        })
+                        .then(data => {
+                            if (data && data.historico.length > 0) {
+                                bodyHistorico.innerHTML = '';
+                                data.historico.forEach(item => {
+                                    // Cria um card para cada item do histórico
+                                    const card = `
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <strong>Status:</strong> ${item.status}
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <p><strong>Início:</strong> ${new Date(item.data_inicio).toLocaleString('pt-BR')}</p>
+                                                    <p><strong>Fim:</strong> ${item.data_fim ? new Date(item.data_fim).toLocaleString('pt-BR') : 'Em andamento'}</p>
+                                                    <p><strong>Atualização:</strong> ${new Date(item.ultima_atualizacao).toLocaleString('pt-BR')}</p>
+                                                </div>
+                                                <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
+                                                <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                    bodyHistorico.innerHTML += card;
+                                });
+                            } else {
+                                bodyHistorico.innerHTML = '<p class="text-center">Nenhum histórico disponível para esta ordem.</p>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            bodyHistorico.innerHTML = '<p class="text-center text-danger">Erro ao carregar o histórico.</p>';
+                        });
+                });
+            });
+        }
+
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
@@ -1059,7 +1187,15 @@
                 
             // loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
             
-            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp,attachModalEventListeners,attachSelect2Operador,attachVerificarData]),
+            fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [
+                attachExecutarOrdemEventListeners,
+                mudancaStatusFinalizada,
+                attachStatusReenviarWpp,
+                attachModalEventListeners,
+                attachSelect2Operador,
+                attachVerificarData,
+                attachHistorico
+            ]),
 
             document.getElementById('headingAguardandoPrimeiroAtendimento') 
                 ? fetchSolicitacoes(
@@ -1067,7 +1203,11 @@
                     "aguardando-primeiro-atendimento-container",         // ID do container onde os dados serão inseridos
                     "loadMoreAguardandoPrimeiroAtendimento",           // ID do botão de 'load more'
                     params,                           // Parâmetros do filtro
-                    [attachExecutar1OrdemEventListeners, attachStatusChangeListeners, escolherPlanoPreventiva, attachModalEventListeners] // Callback após carregar as solicitações
+                    [attachExecutar1OrdemEventListeners,
+                     attachStatusChangeListeners,
+                     escolherPlanoPreventiva,
+                     attachModalEventListeners
+                    ] // Callback após carregar as solicitações
                 )
                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 

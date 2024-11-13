@@ -41,7 +41,7 @@
                     {% if form.telefone.errors %}
                         <div class="text-danger">{{ form.telefone.errors }}</div>
                     {% endif %}
-                    <div id="telefoneError" class="text-danger mt-2" style="display: none;">Formato: (99)9 9999-9999</div>
+                    <div id="telefoneError" class="text-danger mt-2" style="display: none;">Formato: 8599999999</div>
                 </div>
 
                 <!-- Senha -->
@@ -85,17 +85,18 @@
             const telefoneInput = document.getElementById('{{ form.telefone.id_for_label }}');
             const telefoneError = document.getElementById('telefoneError');
             const form = document.getElementById('formPrimeiroAcesso');
+            const submitButton = document.getElementById('btnSubmit');
 
             telefoneInput.addEventListener('input', function () {
                 const numeroTelefone = telefoneInput.value.replace(/\D/g, '');  // Remove caracteres não numéricos
 
-                // Verifica se o número contém exatamente 11 dígitos
-                if (numeroTelefone.length === 11) {
+                // Verifica se o número contém exatamente 11 dígitos (ex: DDD + número)
+                if (numeroTelefone.length <= 11) {
                     telefoneError.style.display = 'none';  // Esconde a mensagem de erro
                     telefoneInput.setCustomValidity('');  // Limpa a mensagem de erro para permitir o envio
                 } else {
                     telefoneError.style.display = 'block';  // Mostra a mensagem de erro
-                    telefoneInput.setCustomValidity('Informe no formato correto.');  // Define uma mensagem de erro para impedir o envio
+                    telefoneInput.setCustomValidity('Informe um número de telefone válido sem espaços.');  // Define uma mensagem de erro para impedir o envio
                 }
             });
 
@@ -103,8 +104,10 @@
             form.addEventListener('submit', function(event) {
                 if (!telefoneInput.checkValidity()) {
                     event.preventDefault();  // Impede o envio do formulário
-                    document.getElementById('btnSubmit').innerHTML = 'Carregando...';
-                    document.getElementById('btnSubmit').disabled = true;
+                } else {
+                    // Apenas desabilita o botão e altera o texto se o formulário for válido
+                    submitButton.innerHTML = 'Carregando...';
+                    submitButton.disabled = true;
                 }
             });
         });

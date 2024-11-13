@@ -118,10 +118,10 @@
                             {% endif %}
                         </a>
                     {% endif %}
-                    <!-- <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#executarModal{{ solicitacao.pk }}">
+                    <a id="btnHistorico_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+                        data-bs-target="#historicoModal{{ solicitacao.pk }}">
                         Histórico
-                    </a> -->
+                    </a>
                 </ul>
             </div>
         </div>
@@ -419,6 +419,21 @@
                     </div>
                     {% endif %}
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal histórico -->
+<div class="modal fade" id="historicoModal{{ solicitacao.pk }}" tabindex="-1" aria-labelledby="historicoModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historicoModalLabel{{ solicitacao.pk }}">Histórico ordem #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bodyHistorico_{{solicitacao.pk}}" style="min-height: 200px; max-height: 700px; overflow-y: auto;">
+
             </div>
         </div>
     </div>

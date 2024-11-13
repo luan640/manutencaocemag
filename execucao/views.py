@@ -108,11 +108,11 @@ def criar_execucao(request, solicitacao_id):
                         'link': link_satisfacao
                     }
 
-                    # Cria uma instância de OrdemServiceWpp
-                    ordem_service = OrdemServiceWpp()
-
-                    # Chamando o método mensagem_finalizar_ordem
-                    status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+                    try:
+                        ordem_service = OrdemServiceWpp()
+                        status_code, response_data = ordem_service.mensagem_finalizar_ordem(telefone, kwargs)
+                    except:
+                        pass
 
                 else:
                     print("Telefone não encontrado para o solicitante.")
@@ -219,8 +219,11 @@ def editar_solicitacao(request, solicitacao_id):
                             'prioridade': solicitacao.get_prioridade_display()  # Usando o display legível
                         }
 
-                        ordem_service = OrdemServiceWpp()
-                        status_code, response_data = ordem_service.mensagem_atribuir_ordem(telefone, kwargs)
+                        try:
+                            ordem_service = OrdemServiceWpp()
+                            status_code, response_data = ordem_service.mensagem_atribuir_ordem(telefone, kwargs)
+                        except:
+                            pass
 
                 return JsonResponse({'success': True})
 
