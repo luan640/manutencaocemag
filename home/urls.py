@@ -19,6 +19,7 @@ urlpatterns = [
     path('reenviar-mensagem/<int:ordem_id>/', views.reenviar_mensagem, name='reenviar_mensagem'),
 
     path('historico/<int:pk>/', views.historico_ordem, name='historico_ordem'),
+    path('mais-detalhes/<int:pk>/', views.mais_detalhes_ordem, name='mais_detalhes_ordem'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

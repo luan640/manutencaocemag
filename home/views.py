@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
-from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Count, F
+from django.db.models import OuterRef, Subquery, Value, Q, Count, F
+from django.db.models.functions import Concat
 from django.core.paginator import Paginator
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse,HttpResponse
@@ -565,3 +566,33 @@ def historico_ordem(request, pk):
         data_list.append(execucao_dict)
 
     return JsonResponse({'historico': data_list})
+
+def mais_detalhes_ordem(request, pk):
+    # Consulta para buscar execuções com operadores relacionados
+    solicitacoes = Solicitacao.objects.filter(pk=pk).select_related(
+        'atribuido',  # Relacionamento com Operador
+        'maquina',    # Relacionamento com Maquina
+        'setor',      # Relacionamento com Setor
+        'solicitante' # Relacionamento com Funcionario
+    ).annotate(
+        nome_solicitante=F('solicitante__nome'),
+        setor_nome=F('setor__nome'),
+        operador_responsavel=F('atribuido__nome'),
+        nome_maquina=Concat(F('maquina__codigo'), Value(' - '), F('maquina__descricao'))
+    ).values(
+        'nome_solicitante',
+        'setor_nome',
+        'codigo_ferramenta',
+        'tipo_ferramenta',
+        'equipamento_em_falha',
+        'setor_maq_solda',
+        'impacto_producao',
+        'descricao',
+        'data_abertura',
+        'status_andamento',
+        'programacao',
+        'operador_responsavel',
+        'nome_maquina'
+    )
+
+    return JsonResponse({'solicitacoes': list(solicitacoes)})

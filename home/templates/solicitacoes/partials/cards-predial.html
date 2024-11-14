@@ -355,4 +355,19 @@
     </div>
 </div>
 
+<!-- Modal mais detalhes -->
+<div class="modal fade" id="maisDetalhesModal{{ solicitacao.pk }}" tabindex="-1" aria-labelledby="maisDetalhesModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="maisDetalhesModalLabel{{ solicitacao.pk }}">Mais detalhes ordem #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bodyMaisDetalhes_{{solicitacao.pk}}" style="min-height: 200px; max-height: 700px; overflow-y: auto;">
+
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endfor %}    

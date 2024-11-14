@@ -155,6 +155,8 @@ def editar_solicitacao(request, solicitacao_id):
             responsavel_object = None
             if responsavel:
                 responsavel_object = get_object_or_404(Operador, id=responsavel)
+            
+            print(request.POST)
 
             with transaction.atomic():
                 if status_inicial == 'rejeitar':
@@ -165,7 +167,7 @@ def editar_solicitacao(request, solicitacao_id):
                         solicitacao=solicitacao,
                         defaults={'area_manutencao': area_manutencao, 'tipo_manutencao': tipo_manutencao}
                     )
-
+                        
                     execucao = Execucao.objects.create(
                         ordem=solicitacao,
                         # n_execucao=0,
