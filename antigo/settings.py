@@ -32,13 +32,13 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'  # Pode ser 'Strict', 'Lax' ou 'None'
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://b7e0-177-19-132-134.ngrok-free.app',
+    'https://73a4-177-19-132-134.ngrok-free.app',
     '127.0.0.1', 
 ]
 
 ALLOWED_HOSTS = [
     '127.0.0.1', 
-    'b7e0-177-19-132-134.ngrok-free.app',
+    '73a4-177-19-132-134.ngrok-free.app',
     '35.247.236.183',
     'localhost',
     '127.0.0.1'

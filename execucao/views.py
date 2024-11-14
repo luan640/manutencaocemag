@@ -208,22 +208,21 @@ def editar_solicitacao(request, solicitacao_id):
                             plano=get_object_or_404(PlanoPreventiva, id=plano),
                             data=timezone.now().date()
                         )
-
-                    if responsavel_object and hasattr(responsavel_object, 'telefone'):
-                        telefone = responsavel_object.telefone
-                        kwargs = {
-                            'ordem': solicitacao.pk,
-                            'solicitante': solicitacao.solicitante,
-                            'maquina': solicitacao.maquina.descricao,
-                            'motivo': solicitacao.descricao,
-                            'prioridade': solicitacao.get_prioridade_display()  # Usando o display legível
-                        }
-
-                        try:
+                    try:
+                        if responsavel_object and hasattr(responsavel_object, 'telefone'):
+                            telefone = responsavel_object.telefone
+                            kwargs = {
+                                'ordem': solicitacao.pk,
+                                'solicitante': solicitacao.solicitante,
+                                'maquina': solicitacao.maquina.descricao,
+                                'motivo': solicitacao.descricao,
+                                'prioridade': solicitacao.get_prioridade_display()  # Usando o display legível
+                            }
+                            
                             ordem_service = OrdemServiceWpp()
                             status_code, response_data = ordem_service.mensagem_atribuir_ordem(telefone, kwargs)
-                        except:
-                            pass
+                    except:
+                        pass
 
                 return JsonResponse({'success': True})
 

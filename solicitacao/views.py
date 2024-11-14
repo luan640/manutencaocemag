@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.core.serializers import serialize
 from django.db import transaction
+from django.core.files.base import ContentFile
 
 from .utils import criar_solicitacoes_aleatorias
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
@@ -16,6 +17,7 @@ from execucao.models import Execucao
 from preventiva.models import PlanoPreventiva
 
 import json
+import requests
 
 User = get_user_model()
 
@@ -360,10 +362,12 @@ def processar_satisfacao(request, ordem_id):
 
                 # Copiar as imagens associadas à solicitação original
                 for foto in ordem.fotos.all():
-                    Foto.objects.create(
-                        solicitacao=nova_ordem,
-                        imagem=foto.imagem
-                    )
+                    response = requests.get(foto.imagem.url)
+                    if response.status_code == 200:
+                        nova_foto = Foto.objects.create(
+                            solicitacao=nova_ordem,
+                        )
+                        nova_foto.imagem.save(foto.imagem.name, ContentFile(response.content), save=True)
 
                 print(f"Ordem {ordem_id}: Usuário respondeu Não. Nova solicitação criada com ID {nova_ordem.pk}.")
 
