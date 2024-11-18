@@ -146,7 +146,7 @@ def editar_solicitacao(request, solicitacao_id):
             if not nivel_prioridade:
                 nivel_prioridade = None
 
-            tipo_manutencao = request.POST.get('tipo_manutencao')
+            tipo_manutencao = request.POST.get('tipo_manutencao_display')
             area_manutencao = request.POST.get('area_manutencao')
             plano = request.POST.get('escolherPlanoPreventiva')
 
