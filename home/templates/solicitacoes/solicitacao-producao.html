@@ -1109,7 +1109,7 @@
 
                     // Verifica se os campos de data têm valores válidos antes de fazer a comparação
                     if (dataInicioElement.value && this.value) {
-                        if (dataFim <= dataInicio) {
+                        if (dataFim < dataInicio) {
                             alert('A data de fim deve ser maior que a data de início.');
                             this.value = ''; // Limpa o campo de data_fim se a validação falhar
                         }
