@@ -348,7 +348,7 @@
                     attachStatusReenviarWpp,
                     attachModalEventListeners,
                     attachSelect2Operador,
-                    attachVerificarData,
+                    // attachVerificarData,
                     attachHistorico,
                     attachMaisDetalhes
                 ] // Callback após carregar as solicitações
@@ -560,6 +560,28 @@
                 form.addEventListener('submit', function(event) {
                     
                     var campoPvlye,campoPaplus, campoPhagua;
+
+                    // Verificação de datas
+                    const dataInicioElement = document.getElementById('id_data_inicio');
+                    const dataFimElement = document.getElementById('id_data_fim');
+
+                    if (dataInicioElement && dataFimElement) {
+                        const dataInicio = new Date(dataInicioElement.value);
+                        const dataFim = new Date(dataFimElement.value);
+
+                        if (dataInicioElement.value && dataFimElement.value) {
+                            if (dataFim < dataInicio) {
+                                event.preventDefault(); // Impede o envio do formulário
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Atenção',
+                                    text: 'A data de fim deve ser maior que a data de início.',
+                                    confirmButtonText: 'OK'
+                                });
+                                return; // Impede a execução de outras ações
+                            }
+                        }
+                    }
                     
                     var campoPvlye = document.getElementById('pvlye');
                     var campoPaplus = document.getElementById('paplus');
@@ -574,14 +596,12 @@
                         campoPaplus.addEventListener('input', function() {
                             this.value = this.value.replace(',', '.');
                         });
-                    }
-                    
+                    }                    
                     if (campoPhagua){
                         campoPhagua.addEventListener('input', function() {
                             this.value = this.value.replace(',', '.');
                         });
                     }
-
 
                     // Verificar se algum radio button foi selecionado
                     const radioGroups = form.querySelectorAll('input[type="radio"][name]');
@@ -663,9 +683,11 @@
                                     attachExecutarOrdemEventListeners,
                                     mudancaStatusFinalizada,
                                     attachStatusReenviarWpp,
+                                    attachModalEventListeners,
                                     attachSelect2Operador,
-                                    attachVerificarData,
-                                    attachHistorico
+                                    // attachVerificarData,
+                                    attachHistorico,
+                                    attachMaisDetalhes
                                 ])
 
                             ]).then(() => {
@@ -764,9 +786,11 @@
                                 attachExecutarOrdemEventListeners,
                                 mudancaStatusFinalizada,
                                 attachStatusReenviarWpp,
+                                attachModalEventListeners,
                                 attachSelect2Operador,
-                                attachVerificarData,
-                                attachHistorico
+                                // attachVerificarData,
+                                attachHistorico,
+                                attachMaisDetalhes
                             ]),
 
 
@@ -1095,30 +1119,30 @@
             });
         }
 
-        function attachVerificarData() {
-            const dataInicioElement = document.getElementById('id_data_inicio');
-            const dataFimElement = document.getElementById('id_data_fim');
+        // function attachVerificarData() {
+        //     const dataInicioElement = document.getElementById('id_data_inicio');
+        //     const dataFimElement = document.getElementById('id_data_fim');
 
-            // Verifique se os elementos existem antes de adicionar os event listeners
-            if (dataInicioElement && dataFimElement) {
-                dataFimElement.addEventListener('change', function() {
-                    console.log("Verificando datas...");
+        //     // Verifique se os elementos existem antes de adicionar os event listeners
+        //     if (dataInicioElement && dataFimElement) {
+        //         dataFimElement.addEventListener('input', function() {
+        //             console.log("Verificando datas...");
 
-                    const dataInicio = new Date(dataInicioElement.value);
-                    const dataFim = new Date(this.value);
+        //             const dataInicio = new Date(dataInicioElement.value);
+        //             const dataFim = new Date(this.value);
 
-                    // Verifica se os campos de data têm valores válidos antes de fazer a comparação
-                    if (dataInicioElement.value && this.value) {
-                        if (dataFim < dataInicio) {
-                            alert('A data de fim deve ser maior que a data de início.');
-                            this.value = ''; // Limpa o campo de data_fim se a validação falhar
-                        }
-                    }
-                });
-            } else {
-                console.error("Os elementos de data de início e/ou data de fim não foram encontrados.");
-            }
-        }
+        //             // Verifica se os campos de data têm valores válidos antes de fazer a comparação
+        //             if (dataInicioElement.value && this.value) {
+        //                 if (dataFim < dataInicio) {
+        //                     alert('A data de fim deve ser maior que a data de início.');
+        //                     // this.value = ''; // Limpa o campo de data_fim se a validação falhar
+        //                 }
+        //             }
+        //         });
+        //     } else {
+        //         console.error("Os elementos de data de início e/ou data de fim não foram encontrados.");
+        //     }
+        // }
 
         function attachHistorico() {
             // Seleciona todos os elementos <a> com o id que começa com "btnHistorico_"
@@ -1266,7 +1290,6 @@
             });
         }
 
-
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
@@ -1286,7 +1309,7 @@
                 attachStatusReenviarWpp,
                 attachModalEventListeners,
                 attachSelect2Operador,
-                attachVerificarData,
+                // attachVerificarData,
                 attachHistorico,
                 attachMaisDetalhes
             ]),
