@@ -18,43 +18,50 @@
 {% endblock %}
 
 {% block content %}
-<div id="filters">
-    <select id="filterStatus">
-        <option value="">Todos os Status</option>
-        <option value="pendente">Pendente</option>
-        <option value="concluido">Concluído</option>
-    </select>
-    <select id="filterArea">
-        <option value="">Todas as Áreas</option>
-        <option value="area1">Área 1</option>
-        <option value="area2">Área 2</option>
-    </select>
-    <select id="filterSetor">
-        <option value="">Todos os Setores</option>
-        <option value="pintura">Pintura</option>
-        <option value="manutencao">Manutenção</option>
-    </select>
-</div>
 
-<div class="container mt-5">
+
+<div>
+    
     <h2>Histórico de Execuções</h2>
+    <div id="filters" class="mb-3">
+        <label for="filterStatus">Status:</label>
+        <select id="filterStatus" class="form-select d-inline w-auto">
+            <option value="">Todos</option>
+            <option value="em_espera">Em espera</option>
+            <option value="em_execucao">Em execuçao</option>
+            <option value="aguardando_material">Aguardando material</option>
+            <option value="finalizada">Finalizada</option>
+        </select>
+    
+        <label for="filterArea" class="ms-3">Setor:</label>
+        <select id="filterArea" class="form-select d-inline w-auto">
+            <option value="">Todas</option>
+            {% for setor in setores %}
+            <option value="{{setor.nome}}">{{setor.nome}}</option>
+            {% endfor %}
+        </select>
+    
+    </div>
     <div class="table-responsive">
         <table id="execucaoTable" class="table table-bordered table-striped table-sm">
             <thead>
                 <tr>
                     <th>OS</th>
-                    <th>Data início</th>
-                    <th>Data fim</th>
-                    <th>Solicitante</th>
-                    <th>Ao chegar maq. parada?</th>
-                    <th>Exec. feita com maq. parada?</th>
-                    <th>Após exec. maq. ficou parada?</th>
-                    <th>Descricao da exec.</th>
-                    <th>Última atualização</th>
+                    <th>Execução</th>
                     <th>Setor</th>
+                    <th>Solicitante</th>
                     <th>Máquina</th>
+                    <th>Comentário da manutenção</th>
+                    <th>Motivo</th>
+                    <th>Data de abertura</th>
+                    <th>Data de início</th>
+                    <th>Data de fim</th>
+                    <th>Obs do executante</th>
                     <th>Status</th>
-                    <th>Área</th>
+                    <th>Tipo da manutenção</th>
+                    <th>Área da manutenção</th>
+                    <th>Última atualização</th>
+                    <th>Horas executadas</th>
                 </tr>
             </thead>
             <tbody>

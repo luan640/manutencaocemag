@@ -21,6 +21,7 @@ urlpatterns = [
     path('historico/<int:pk>/', views.historico_ordem, name='historico_ordem'),
     path('dados-editar/<int:pk>/', views.dados_editar_execucao, name='dados_editar_execucao'),
     path('mais-detalhes/<int:pk>/', views.mais_detalhes_ordem, name='mais_detalhes_ordem'),
+    path('historico/<int:pk>/editar/', views.editar_execucao, name='editar_execucao'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

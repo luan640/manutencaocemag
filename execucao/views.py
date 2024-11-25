@@ -1,19 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.urls import reverse
-from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import F, Value, CharField, ExpressionWrapper, fields
+from django.db.models.functions import Concat
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao, MaquinaParada
 from cadastro.models import Maquina, Setor, Operador
-from funcionario.models import Funcionario
 from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
 
 from wpp.utils import OrdemServiceWpp
@@ -275,7 +275,10 @@ def criar_execucao_predial(request, solicitacao_id):
 
 @login_required
 def historico_execucao(request):
-    return render(request, 'execucao/historico.html')
+
+    setores = Setor.objects.all()
+
+    return render(request, 'execucao/historico.html', {'setores':setores})
 
 @csrf_exempt
 def execucao_data(request):
@@ -286,40 +289,76 @@ def execucao_data(request):
     # Ordenação
     order_column_index = int(request.POST.get('order[0][column]', 0))
     order_dir = request.POST.get('order[0][dir]', 'asc')
-    
+
     columns = [
-        'ordem__pk', 
+        'ordem__pk',
+        'n_execucao',
+        'ordem__setor__nome',
+        'ordem__solicitante__nome',
+        'ordem__maquina__codigo',
+        'ordem__comentario_manutencao',
+        'ordem__descricao',
+        'ordem__data_abertura',
         'data_inicio',
         'data_fim',
-        'ordem__solicitante__nome', 
-        'che_maq_parada',
-        'exec_maq_parada',
-        'apos_exec_maq_parada',
         'observacao',
-        'ultima_atualizacao',
-        'ordem__setor__nome', 
-        'ordem__maquina__codigo',
         'status',
-        'ordem__area'
-    ]
-            
+        'ordem__info_solicitacao__tipo_manutencao',
+        'ordem__info_solicitacao__area_manutencao',
+        'ultima_atualizacao',
+        'horas_executada'      
+    ] 
+
     order_column = columns[order_column_index]
 
     if order_dir == 'desc':
         order_column = '-' + order_column
 
-    # Filtrando as execuções (se houver busca)
-    search_value = request.POST.get('search[value]', '')
+    # Filtrando execuções
+    # search_value = request.POST.get('search[value]', '')
 
-    if request.user.is_staff:
-        execucoes = Execucao.objects.all()
-    else:
-        execucoes = Execucao.objects.filter(ordem__area=request.user.area)
+    execucoes = Execucao.objects.annotate(
+        solicitante=Concat(
+            F('ordem__solicitante__matricula'),
+            Value(' - '),
+            F('ordem__solicitante__nome'),
+            output_field=CharField()
+        ),
+        maquina=Concat(
+            F('ordem__maquina__codigo'),
+            Value(' - '),
+            F('ordem__maquina__descricao'),
+            output_field=CharField()
+        ),
+        horas_executada=ExpressionWrapper(
+            F('data_fim') - F('data_inicio'),
+            output_field=fields.DurationField()
+        ),
+        tipo_manutencao=F('ordem__info_solicitacao__tipo_manutencao'),  # Atualize o nome aqui
+        area_manutencao=F('ordem__info_solicitacao__area_manutencao')  # Atualize o nome aqui
+    ).filter(
+        ordem__status="aprovar",
+        ordem__area="producao"
+    )
 
-    if search_value:
-        execucoes = execucoes.filter(
-            ordem__pk__icontains=search_value
-        )
+    # if search_value:
+    #     execucoes = execucoes.filter(ordem__pk__icontains=search_value)
+
+    # Filtros personalizados
+    status = request.POST.get('status', '')
+    setor = request.POST.get('area', '')
+    print(setor)
+    solicitante = request.POST.get('solicitante', '')
+    data_inicio = request.POST.get('data_inicio', '')
+
+    if status:
+        execucoes = execucoes.filter(status=status)
+    if setor:
+        execucoes = execucoes.filter(ordem__setor__nome=setor)
+    if solicitante:
+        execucoes = execucoes.filter(solicitante__icontains=solicitante)
+    if data_inicio:
+        execucoes = execucoes.filter(data_inicio__date=data_inicio)
 
     # Aplicando ordenação
     execucoes = execucoes.order_by(order_column)
@@ -332,18 +371,21 @@ def execucao_data(request):
     for execucao in execucoes_page:
         data.append({
             'ordem': f"#{execucao.ordem.pk}",
+            'execucao': execucao.id,
+            'setor': str(execucao.ordem.setor.nome),
+            'solicitante': execucao.solicitante,
+            'maquina': execucao.maquina,
+            'comentario_manutencao': execucao.ordem.comentario_manutencao,
+            'motivo': execucao.ordem.descricao,
+            'data_abertura': execucao.ordem.data_abertura.strftime("%d/%m/%Y %H:%M"),
             'data_inicio': execucao.data_inicio.strftime("%d/%m/%Y %H:%M"),
             'data_fim': execucao.data_fim.strftime("%d/%m/%Y %H:%M") if execucao.data_fim else '',
-            'solicitante': str(execucao.ordem.solicitante),
-            'che_maq_parada': execucao.che_maq_parada,
-            'exec_maq_parada': execucao.exec_maq_parada,
-            'apos_exec_maq_parada': execucao.apos_exec_maq_parada,
             'observacao': execucao.observacao,
-            'ultima_atualizacao': execucao.ultima_atualizacao.strftime("%d/%m/%Y %H:%M"),
-            'setor': str(execucao.ordem.setor),
-            'maquina': f"{execucao.ordem.maquina.codigo} - {execucao.ordem.maquina.descricao}",
             'status': execucao.status,
-            'area': execucao.ordem.area
+            'tipo_manutencao': execucao.tipo_manutencao,
+            'area_manutencao': execucao.area_manutencao,
+            'ultima_atualizacao': execucao.ultima_atualizacao.strftime("%d/%m/%Y %H:%M"),
+            'horas_executada': str(execucao.horas_executada),
         })
 
     return JsonResponse({
@@ -352,4 +394,3 @@ def execucao_data(request):
         'recordsFiltered': paginator.count,
         'data': data,
     })
-

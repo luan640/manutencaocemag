@@ -2,15 +2,13 @@ from django.shortcuts import render, get_object_or_404
 from django.db.models import OuterRef, Subquery, Value, Q, Count, F
 from django.db.models.functions import Concat
 from django.core.paginator import Paginator
-from django.db.models.functions import Coalesce
-from django.http import JsonResponse,HttpResponse
+from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now
 from django.urls import reverse
-from django.core.serializers import serialize
+from django.db import transaction
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
@@ -20,6 +18,8 @@ from home.utils import buscar_telefone
 from dashboard.views import quantidade_atrasada
 
 from .utils import *
+
+import json
 
 ordem_service = OrdemServiceWpp()
 
@@ -128,7 +128,6 @@ def home_predial(request):
     context['setores'] = Setor.objects.all()
 
     return render(request, 'solicitacoes/solicitacao-predial.html', context)
-
 
 @login_required
 def home_solicitante(request):
@@ -624,3 +623,37 @@ def mais_detalhes_ordem(request, pk):
     )
 
     return JsonResponse({'solicitacoes': list(solicitacoes)})
+
+def editar_execucao(request, pk):
+    
+    if request.method == "POST":
+        
+        with transaction.atomic():
+            # Decodifica o corpo da requisição JSON
+            data = json.loads(request.body)
+
+            nova_data_inicio = data['data_inicio']
+            nova_data_fim = data['data_fim']
+            novos_operadores_id = data.get("operadores", [])
+            nova_observacao = data['observacao']
+
+            # Verifica se existe algum registro na base de máquina parada 
+            if MaquinaParada.objects.filter(execucao_id=pk).exists():
+                registro_maquina_parada = MaquinaParada.objects.filter(execucao_id=pk)
+                registro_maquina_parada.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio)
+
+            # Edita registro na tabela de execução
+            registro_execucao = Execucao.objects.filter(pk=pk)
+            registro_execucao.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio,observacao=nova_observacao,ultima_atualizacao=now())
+
+            # Verifica se a execução existe
+            execucao = get_object_or_404(Execucao, pk=pk)
+
+            # Atualiza os operadores
+            novos_operadores_ids = data.get("operadores", [])
+            novos_operadores = Operador.objects.filter(id__in=novos_operadores_ids)
+
+            # Define os novos operadores (substituindo os antigos)
+            execucao.operador.set(novos_operadores)
+            
+            return JsonResponse({"status": "sucesso", "ordem": execucao.ordem_id})

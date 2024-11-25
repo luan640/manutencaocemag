@@ -1,33 +1,47 @@
 $(document).ready(function () {
-  $('#execucaoTable').DataTable({
-    processing: true,   // Mostra o indicador de processamento enquanto carrega os dados
-    serverSide: true,    // Habilita o processamento no servidor
-    ajax: {
-      url: 'processa-historico/',  // A URL que vai retornar os dados
-      type: 'POST',  // Método de envio (GET ou POST)
-      data: function (d) {
-        // Aqui você pode adicionar parâmetros extras que quer enviar ao servidor
-        // Exemplo: d.extra_search = $('#extra').val();
+  const table = $('#execucaoTable').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+          url: 'processa-historico/',
+          type: 'POST',
+          data: function (d) {
+              // Adiciona os filtros personalizados aos dados enviados ao backend
+              d.status = $('#filterStatus').val();
+              d.area = $('#filterArea').val();
+              d.solicitante = $('#filterSolicitante').val();
+              d.data_inicio = $('#filterDataInicio').val();
+          }
+      },
+      columns: [
+          { data: 'ordem' },
+          { data: 'execucao' },
+          { data: 'setor' },
+          { data: 'solicitante' },
+          { data: 'maquina' },
+          { data: 'comentario_manutencao' },
+          { data: 'motivo' },
+          { data: 'data_abertura' },
+          { data: 'data_inicio' },
+          { data: 'data_fim' },
+          { data: 'observacao' },
+          { data: 'status' },
+          { data: 'tipo_manutencao' },
+          { data: 'area_manutencao' },
+          { data: 'ultima_atualizacao' },
+          { data: 'horas_executada' }
+      ],
+      language: {
+        lengthMenu: "Exibir _MENU_ registros por página",
+        zeroRecords: "Nenhuma execução encontrada",
+        info: "Exibindo _START_ a _END_ de _TOTAL_ registros",
+        infoEmpty: "Nenhum registro disponível",
+        infoFiltered: "(filtrado de _MAX_ registros no total)"
       }
-    },
-    columns: [
-      { data: 'ordem' },
-      { data: 'data_inicio' },
-      { data: 'data_fim' },
-      { data: 'solicitante' },
-      { data: 'che_maq_parada' },
-      { data: 'exec_maq_parada' },
-      { data: 'apos_exec_maq_parada' },
-      { data: 'observacao' },
-      { data: 'ultima_atualizacao' },
-      { data: 'setor' },
-      { data: 'maquina' },
-      { data: 'status' },
-      { data: 'area' }
-      
-    ],
-    language: {
-      search: "Procurar por número da ordem:"  // Aqui você define a label desejada
-    }
+  });
+
+  // Eventos para aplicar filtros
+  $('#filterStatus, #filterArea, #filterSolicitante, #filterDataInicio').on('change keyup', function () {
+      table.ajax.reload(); // Recarrega os dados da tabela
   });
 });
