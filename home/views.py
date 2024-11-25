@@ -567,6 +567,28 @@ def historico_ordem(request, pk):
 
     return JsonResponse({'historico': data_list})
 
+def dados_editar_execucao(request, pk):
+    # Consulta para buscar execuções com operadores relacionados
+    data = (
+        Execucao.objects
+        .filter(id=pk)
+        .prefetch_related('operador')  # Carrega operadores relacionados
+        .values('id', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
+                'che_maq_parada', 'exec_maq_parada', 'apos_exec_maq_parada', 'status')
+    ).order_by('n_execucao')
+
+    data_list = []
+    for execucao in data:
+        execucao_dict = execucao
+        operadores = Execucao.objects.get(pk=execucao['id']).operador.all().values_list('nome', flat=True)
+        execucao_dict['operadores'] = list(operadores)
+        data_list.append(execucao_dict)
+
+    todos_operadores = operadores_all('producao')
+    operadores = list(todos_operadores.values('id', 'nome'))  # Converte para uma lista de dicionários
+
+    return JsonResponse({'dados': data_list, 'operadores': operadores})
+
 def mais_detalhes_ordem(request, pk):
     # Consulta para buscar execuções com operadores relacionados
     solicitacoes = Solicitacao.objects.filter(pk=pk).select_related(

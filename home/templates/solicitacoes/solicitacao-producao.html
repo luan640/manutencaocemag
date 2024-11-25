@@ -1119,6 +1119,167 @@
             });
         }
 
+        function createEditModal(item, operadoresLista) {
+            // Verifique se o modal já existe no DOM
+            if (document.getElementById(`editModal${item.id}`)) {
+                $(`#editModal${item.id}`).modal('show');
+                return; // Não crie o modal novamente
+            }
+
+            // Monta o HTML do modal
+            const modalHtml = `
+                <div class="modal fade" id="editModal${item.id}" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editModalLabel">Editar Execução</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editForm${item.id}">
+                                    <div class="mb-3">
+                                        <label for="dataInicio${item.id}" class="form-label">Data Início</label>
+                                        <input type="datetime-local" class="form-control" id="dataInicio${item.id}" name="data_inicio" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dataFim${item.id}" class="form-label">Data Fim</label>
+                                        <input type="datetime-local" class="form-control" id="dataFim${item.id}" name="data_fim" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="observacao${item.id}" class="form-label">Observação</label>
+                                        <textarea class="form-control" id="observacao${item.id}" name="observacao" required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="operadores${item.id}" class="form-label">Operadores</label>
+                                        <select multiple="multiple" class="form-control" id="operadores${item.id}" name="operadores[]">
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                <button type="button" class="btn btn-primary" id="saveEdit_${item.id}">Salvar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Adiciona o modal ao body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Popula os campos do modal
+            $(`#dataInicio${item.id}`).val(new Date(item.data_inicio).toISOString().slice(0, -1));
+            $(`#dataFim${item.id}`).val(item.data_fim ? new Date(item.data_fim).toISOString().slice(0, -1) : '');
+            $(`#observacao${item.id}`).val(item.observacao || '');
+
+            // Preenche o select de operadores
+            const operadoresSelect = $(`#operadores${item.id}`);
+            operadoresLista.forEach(op => {
+                const isSelected = item.operadores.includes(op.nome); // Verifica se o operador já está selecionado
+                operadoresSelect.append(new Option(op.nome, op.id, isSelected, isSelected));
+            });
+
+            // Inicializa o Select2
+            operadoresSelect.select2({
+                placeholder: "Selecione os operadores",
+                allowClear: true,
+                dropdownParent: $(`#editModal${item.id}`),
+                width: '100%' // Configuração correta para ajustar a largura
+            });
+
+            $(`#editModal${item.id}`).modal('show');
+
+            // Configura o botão de salvar
+            attachSaveButton(item.id);
+        }
+        
+        function attachEditButtons() {
+            const editButtons = document.querySelectorAll('[id^="btnEdit_"]');
+
+            editButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const itemId = this.id.split('_')[1];
+                    if (document.getElementById(`editModal${itemId}`)) {
+                        $(`#editModal${itemId}`).modal('show');
+                        return; // Não crie o modal novamente
+                    }
+
+                    // Exibe o spinner de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Buscando informações',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
+
+                    // Fetch para buscar os dados do item no backend
+                    fetch(`/home/dados-editar/${itemId}/`)
+                        .then(response => response.json())
+                        .then(item => {
+                            // Fecha o modal de carregamento
+                            Swal.close();
+
+                            // Cria e exibe o modal de edição com os dados carregados
+                            createEditModal(item.dados[0], item.operadores);
+                        })
+                        .catch(error => {
+                            // Fecha o modal de carregamento em caso de erro
+                            Swal.close();
+
+                            console.error('Erro ao carregar dados para edição:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro',
+                                text: 'Erro ao carregar dados para edição.',
+                            });
+                        });
+                });
+            });
+        }
+
+        function attachSaveButton(itemId) {
+            document.getElementById(`saveEdit_${itemId}`).addEventListener('click', function() {
+                
+                const form = document.getElementById(`editForm${itemId}`);
+
+                // Verifica se o formulário é válido
+                if (!form.checkValidity()) {
+                    form.reportValidity(); // Exibe mensagens de erro nos campos obrigatórios
+                    return; // Interrompe o envio se houver campos inválidos
+                }
+
+                const formData = {
+                    data_inicio: document.getElementById(`dataInicio${itemId}`).value,
+                    data_fim: document.getElementById(`dataFim${itemId}`).value,
+                    observacao: document.getElementById(`observacao${itemId}`).value,
+                    operadores: $(`#operadores${itemId}`).val(),
+                };
+
+                // fetch(`/home/historico/${itemId}/editar/`, {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                //     },
+                //     body: JSON.stringify(formData),
+                // })
+                //     .then(response => {
+                //         if (!response.ok) throw new Error('Erro ao salvar alterações');
+                //         alert('Alterações salvas com sucesso!');
+                //         $(`#editModal${itemId}`).modal('hide');
+                //     })
+                //     .catch(() => alert('Erro ao salvar alterações.'));
+            });
+        }
+
+        // Função auxiliar para criar objetos Date seguros
+        function parseDate(input) {
+            return input ? new Date(input + 'Z') : null; // Adiciona 'Z' para forçar UTC
+        }
+
         // function attachVerificarData() {
         //     const dataInicioElement = document.getElementById('id_data_inicio');
         //     const dataFimElement = document.getElementById('id_data_fim');
@@ -1173,6 +1334,7 @@
                                 bodyHistorico.innerHTML = '';
                                 data.historico.forEach(item => {
                                     // Cria um card para cada item do histórico
+                                    console.log(item);
                                     const card = `
                                         <div class="card mb-3">
                                             <div class="card-header">
@@ -1187,10 +1349,17 @@
                                                 <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
                                                 <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
                                             </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}" style="display:none">Editar</button>
+                                            </div>
                                         </div>
                                     `;
                                     bodyHistorico.innerHTML += card;
                                 });
+                                
+                                // Após carregar o histórico, anexe eventos aos botões "Editar"
+                                attachEditButtons();
+
                             } else {
                                 bodyHistorico.innerHTML = '<p class="text-center">Nenhum histórico disponível para esta ordem.</p>';
                             }
@@ -1311,7 +1480,7 @@
                 attachSelect2Operador,
                 // attachVerificarData,
                 attachHistorico,
-                attachMaisDetalhes
+                attachMaisDetalhes,
             ]),
 
             document.getElementById('headingAguardandoPrimeiroAtendimento') 

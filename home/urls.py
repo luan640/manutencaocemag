@@ -19,6 +19,7 @@ urlpatterns = [
     path('reenviar-mensagem/<int:ordem_id>/', views.reenviar_mensagem, name='reenviar_mensagem'),
 
     path('historico/<int:pk>/', views.historico_ordem, name='historico_ordem'),
+    path('dados-editar/<int:pk>/', views.dados_editar_execucao, name='dados_editar_execucao'),
     path('mais-detalhes/<int:pk>/', views.mais_detalhes_ordem, name='mais_detalhes_ordem'),
 
 
