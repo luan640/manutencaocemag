@@ -347,6 +347,7 @@ def solicitacoes_predial(request):
     data_abertura = request.GET.get('data_abertura')
     status = request.GET.get('ultimo_status')
     planejada = request.GET.get('planejada')
+    atrasada = request.GET.get('atrasada')
 
     base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='predial')
 
@@ -394,6 +395,11 @@ def solicitacoes_predial(request):
 
     if status:
         solicitacoes = solicitacoes.filter(status_andamento=status)
+
+    if atrasada:
+        solicitacoes = solicitacoes.filter(
+            programacao__lt= now().date(),
+        ).exclude(status_andamento='finalizada')
 
     # Paginação
     paginator = Paginator(solicitacoes, 10)
