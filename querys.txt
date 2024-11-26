@@ -1,0 +1,25 @@
+SELECT 
+    ss.id as os, 
+    ee.n_execucao as execucao, 
+    cs.nome AS setor, 
+    CONCAT(ff.matricula, ' - ', ff.nome) AS solicitante, 
+    CONCAT(cm.codigo, ' - ', cm.descricao) AS maquina, 
+    ss.comentario_manutencao,
+    ss.descricao as motivo,
+    ss.data_abertura, 
+    ee.data_inicio AS data_inicio_execucao, 
+    ee.data_fim AS data_fim_execucao, 
+    ee.observacao as obs_executante,
+    ee.status, 
+    ei.tipo_manutencao,
+    ei.area_manutencao,
+    ee.ultima_atualizacao,
+    ee.data_fim - ee.data_inicio as horas_executada
+FROM manutencao_v3.execucao_execucao ee
+JOIN manutencao_v3.solicitacao_solicitacao ss ON ss.id = ee.ordem_id
+JOIN manutencao_v3.cadastro_setor cs ON cs.id = ss.setor_id
+JOIN manutencao_v3.funcionario_funcionario ff ON ff.id = ss.solicitante_id
+JOIN manutencao_v3.cadastro_maquina cm ON cm.id = ss.maquina_id
+join manutencao_v3.execucao_infosolicitacao ei on ei.solicitacao_id = ss.id
+where ss.status = 'aprovar' and ss.area = 'producao'
+order by horas_executada DESC
