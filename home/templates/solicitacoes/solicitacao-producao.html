@@ -44,6 +44,8 @@
 
 {% block content %}
 
+<input type="hidden" name="tipo-usuario" id="tipo-usuario" value="{{request.user.tipo_acesso}}">
+
 <div class="mb-3">
     <div class="mb-3">
         <!-- Botão para mostrar/ocultar filtros -->
@@ -1304,6 +1306,7 @@
             </div>`
             // bodyHistorico.innerHTML = ''; // Limpa o conteúdo atual
 
+
             // Envia uma solicitação fetch para buscar os dados do histórico no backend
             fetch(`/home/historico/${pk}/`)
                 .then(response => {
@@ -1314,10 +1317,10 @@
                 })
                 .then(data => {
                     if (data && data.historico.length > 0) {
+            
                         bodyHistorico.innerHTML = '';
                         data.historico.forEach(item => {
-                            // Cria um card para cada item do histórico
-                            console.log(item);
+
                             const card = `
                                 <div class="card mb-3">
                                     <div class="card-header">
@@ -1333,7 +1336,7 @@
                                         <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}" >Editar</button>
+                                        <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}">Editar</button>
                                     </div>
                                 </div>
                             `;
@@ -1398,6 +1401,9 @@
                     <div class="spinner"></div>
                     </div>`
                     // bodyHistorico.innerHTML = ''; // Limpa o conteúdo atual
+                    
+                    const isAdmin = document.getElementById('tipo-usuario').value;
+                    console.log(isAdmin)
 
                     // Envia uma solicitação fetch para buscar os dados do histórico no backend
                     fetch(`/home/historico/${pk}/`)
@@ -1412,7 +1418,7 @@
                                 bodyHistorico.innerHTML = '';
                                 data.historico.forEach(item => {
                                     // Cria um card para cada item do histórico
-                                    console.log(item);
+
                                     const card = `
                                         <div class="card mb-3">
                                             <div class="card-header">
@@ -1427,9 +1433,11 @@
                                                 <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
                                                 <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
                                             </div>
+                                            ${isAdmin === 'administrador' ? `
                                             <div class="modal-footer">
-                                                <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}" >Editar</button>
+                                                <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}">Editar</button>
                                             </div>
+                                            ` : ''}
                                         </div>
                                     `;
                                     bodyHistorico.innerHTML += card;
