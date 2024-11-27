@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block links %}
+
+{% endblock %}
+
+{% block content %}
+<h6 class="text-center mt-4">Cria tarefa de rotina</h6>
+<div class="container d-flex justify-content-center align-items-center">
+    <div class="col-12 col-md-8 col-lg-6 p-4 border rounded shadow">
+
+        <form id="criarTarefaRotina" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <div id="tarefa_rotina" class="mb-3">
+                    <label for="tarefa_rotina">Tarefa</label>
+                    <input type="text" name="nome_tarefa" class="form-control">
+                </div>
+            </div>
+                    
+            <button id="btnEnviar" type="submit" class="btn btn-primary w-100">Salvar</button>
+
+        </form>
+    
+    </div>
+</div>
+
+<h6 class="text-center mt-4">Tarefas já existentes</h6>
+<div class="container d-flex justify-content-center align-items-center">
+    <div class="col-12 col-md-8 col-lg-6 p-4 border rounded shadow">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nome da Tarefa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarefa in tarefas_existentes %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ tarefa.nome }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center">Nenhuma tarefa encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('criarTarefaRotina');
+    const btnEnviar = document.getElementById('btnEnviar');
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault(); // Impede o envio tradicional do formulário
+
+        // Prepara os dados do formulário
+        const formData = new FormData(form);
+
+        // Mostra o alerta de carregamento
+        Swal.fire({
+            title: 'Salvando...',
+            text: 'Por favor, aguarde enquanto salvamos sua tarefa.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Envia os dados via fetch
+        fetch("{% url 'criar_tarefa_rotina' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}', // Adiciona o CSRF Token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Habilita o botão novamente
+            btnEnviar.disabled = false;
+
+            // Lida com a resposta do servidor
+            if (data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sucesso!',
+                    text: data.message,
+                    confirmButtonText: 'Ok'
+                });
+                form.reset(); // Limpa o formulário
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro!',
+                    text: data.message,
+                    confirmButtonText: 'Ok'
+                });
+            }
+        })
+        .catch(error => {
+            btnEnviar.disabled = false;
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro!',
+                text: 'Erro ao criar tarefa. Tente novamente.',
+                confirmButtonText: 'Ok'
+            });
+
+            console.error('Erro:', error);
+        });
+    });
+</script>
+
+
+{% endblock %}
