@@ -16,7 +16,6 @@ urlpatterns = [
     path('api/planos-preventiva/<int:maquina_id>/', get_planos_preventiva, name='get_planos_preventiva'),
 
     path('criar-solicitacao-predial/', views.criar_solicitacao_predial, name='criar_solicitacao_predial'),
-    path('criar-tarefa-rotina/', views.tarefa_rotina, name='tarefa_rotina'),
 
     path('execucao/producao/<int:solicitacao_id>/', criar_execucao, name='criar_execucao'),
     path('execucao/predial/<int:solicitacao_id>/', criar_execucao_predial, name='criar_execucao_predial'),
@@ -35,6 +34,7 @@ urlpatterns = [
     path('gerar-solicitacoes/<int:qtd>/', views.gerar_solicitacoes, name='gerar_solicitacoes'),
 
     path('executar-tarefa-rotina/', views.criar_execucao_rotina, name='criar_execucao_rotina'),
+    path('criar-tarefa-rotina/', views.criar_tarefa_rotina, name='criar_tarefa_rotina'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

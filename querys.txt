@@ -1,3 +1,5 @@
+##### Query para buscar historico geral de execuções com tempo de execução #####
+
 SELECT 
     ss.id as os, 
     ee.n_execucao as execucao, 

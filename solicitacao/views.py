@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.core.serializers import serialize
 from django.db import transaction
 from django.core.files.base import ContentFile
+from django.db import IntegrityError
 
 from .utils import criar_solicitacoes_aleatorias
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
@@ -201,59 +202,6 @@ def filtrar_maquinas_por_setor(request):
 
     return JsonResponse({'maquinas': maquinas_data})
 
-@login_required
-def tarefa_rotina(request):
-    maquinas = Maquina.objects.filter(area='predial')
-    setores = Setor.objects.all()
-    operadores = Operador.objects.filter(area='predial')
-    tipo_tarefas = TipoTarefas.objects.all()
-
-    if request.method == 'POST':
-        id_setor = request.POST.get('setor')
-        id_maquina = request.POST.get('maquina')
-        id_tarefa = request.POST.get('tarefa')
-        descricao_tarefa = request.POST.get('descricao_tarefa')
-        data_inicio = request.POST.get('data_inicio')
-        data_fim = request.POST.get('data_fim')
-        operadores_ids = request.POST.getlist('operador')  # Usar getlist para campos ManyToMany
-        status = request.POST.get('status')
-
-        # Validar o setor, máquina, operador, tarefa, etc.
-        setor = Setor.objects.get(id=id_setor)
-        maquina = Maquina.objects.get(id=id_maquina)
-        tarefa = TipoTarefas.objects.get(id=id_tarefa)
-
-        # Criar o objeto Tarefa (ou outro modelo que esteja sendo usado)
-        nova_solicitacao = Solicitacao.objects.create(
-            setor=setor,
-            maquina=maquina,
-            solicitante=request.user,
-            descricao=descricao_tarefa,
-            area='predial',
-            tarefa=tarefa,
-        )
-
-        nova_execucao = Execucao.objects.create(
-            ordem=nova_solicitacao,
-            data_inicio=data_inicio,
-            data_fim=data_fim,
-            status=status,
-        )
-
-        nova_execucao.operador.set(operadores_ids)  # Usar o .set() para ManyToMany
-
-        messages.success(request, "Solicitação de tarefa criada com sucesso!")
-        return redirect('tarefa_rotina')  # Redireciona para a mesma página ou outra desejada
-
-    context = {
-        'maquinas': maquinas,
-        'setores': setores,
-        'operadores': operadores,
-        'tipo_tarefas': tipo_tarefas
-    }
-
-    return render(request, 'tarefa-rotina/solicitacao-tarefa.html', context)
-
 def get_maquina_by_setor(request):
     setor = request.GET.get('setor')
     area = request.GET.get('area')
@@ -388,3 +336,27 @@ def gerar_solicitacoes(request, qtd=10):
         return JsonResponse({'success': f'{qtd} solicitações geradas com sucesso.'}, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def criar_tarefa_rotina(request):
+    
+    if request.method == 'POST':
+        nome_tarefa = request.POST.get('nome_tarefa')
+
+        if nome_tarefa:
+            try:
+                # Salva a nova tarefa no banco de dados
+                TipoTarefas.objects.create(nome=nome_tarefa)
+
+                # Retorna uma resposta JSON indicando sucesso
+                return JsonResponse({'status': 'success', 'message': 'Tarefa criada com sucesso!'})
+            
+            except IntegrityError:
+                return JsonResponse({'status': 'error', 'message': 'Tarefa já existe!'})
+
+        # Retorna uma resposta JSON indicando falha
+        return JsonResponse({'status': 'error', 'message': 'O nome da tarefa é obrigatório!'})
+
+    tarefas_existentes = TipoTarefas.objects.all()
+
+    return render(request, "tarefa-rotina/add-tarefa.html", {"tarefas_existentes":tarefas_existentes}) 
