@@ -434,14 +434,14 @@ def quantidade_aguardando_material(request):
     area = request.GET.get('area')
 
     filtros = {
-        'status': 'aguardando_material',
-        'ordem__area': area
+        'status_andamento': 'aguardando_material',
+        'area': area
     }
 
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros['setor_id'] = int(setor)
 
-    ordens = Execucao.objects.filter(**filtros).count()
+    ordens = Solicitacao.objects.filter(**filtros).count()
 
     return JsonResponse({'data':ordens})
 
@@ -483,11 +483,11 @@ def quantidade_em_execucao(request):
     area = request.GET.get('area')
 
     # Define os filtros para a solicitação
-    filtros = {'ordem__area':area,'status': 'em_execucao'}
+    filtros = {'area':area,'status_andamento': 'em_execucao'}
     if setor:
-        filtros['ordem__setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
+        filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
 
-    ordens = Execucao.objects.filter(status='em_execucao').count()
+    ordens = Solicitacao.objects.filter(status_andamento='em_execucao').count()
 
     return JsonResponse({'data':ordens})
 
