@@ -487,7 +487,7 @@ def quantidade_em_execucao(request):
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
 
-    ordens = Solicitacao.objects.filter(status_andamento='em_execucao').count()
+    ordens = Solicitacao.objects.filter(status_andamento='em_execucao', status='aprovar').count()
 
     return JsonResponse({'data':ordens})
 
@@ -544,7 +544,8 @@ def tempo_medio_abertura(request):
     # Define os filtros para a solicitação
     filtros = {'data_abertura__gte': data_inicio,
                 'data_abertura__lte':data_fim,
-                'area':area
+                'area':area,
+                'status':'aprovar'
     }    
     
     if setor:
