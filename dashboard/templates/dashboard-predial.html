@@ -55,6 +55,8 @@
 {% block content %}
 <div class="container mt-3">
 
+    <input type="hidden" id="area" value="{{request.user.area}}">
+
     <!-- Filtros -->
     <div class="filter-container card shadow mb-3 p-3">
         <h5>Filtros</h5>
@@ -343,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => handleError(error, 'loading-mttr')),
 
-            fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
+            fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                 .then(handleResponse)
                 .then(data => {
                     
@@ -434,7 +436,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => handleError(error, 'loading-aguardando-material')),
 
-            fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
+            fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                 .then(handleResponse)
                 .then(data => {
                     document.getElementById('card-atrasada').innerHTML = data.data;

@@ -6,6 +6,7 @@ from django.utils.timezone import now, timedelta
 from django.db.models import Sum, F, ExpressionWrapper, DurationField, OuterRef, Subquery
 from django.utils.functional import SimpleLazyObject
 from django.utils import timezone
+from django.db.models.functions import TruncDate
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, MaquinaParada, InfoSolicitacao
@@ -235,17 +236,15 @@ def disponibilidade_maquina(request):
     return JsonResponse(resultados, safe=False)
 
 def ordens_prazo(request):
-
     """
     Retorna um indicador de ordens finalizadas dentro e fora do prazo.
     """
-
     setor = request.GET.get('setor')
     area = request.GET.get('area')
 
     filtros = {
         'status_andamento': 'finalizada',
-        'area':area
+        'area': area
     }
     if setor:
         filtros['setor_id'] = int(setor)
@@ -260,14 +259,19 @@ def ordens_prazo(request):
     # Filtra as solicitações que foram finalizadas
     solicitacoes = Solicitacao.objects.filter(**filtros).exclude(status='rejeitar')
 
-    # Anota a última data de execução para cada solicitação
+    # Anota a última data de execução (sem o tempo) para cada solicitação
     solicitacoes = solicitacoes.annotate(
-        ultima_data_fim=Subquery(ultima_execucao_subquery)
+        ultima_data_fim=TruncDate(Subquery(ultima_execucao_subquery)),  # Trunca para trabalhar só com a data
     )
 
     # Calcula as ordens dentro e fora do prazo
-    dentro_do_prazo = solicitacoes.filter(ultima_data_fim__lte=F('programacao')).count()
-    fora_do_prazo = solicitacoes.filter(ultima_data_fim__gt=F('programacao')).count()
+    dentro_do_prazo = solicitacoes.filter(
+        ultima_data_fim__lte=F('programacao')  # Inclui datas menores ou iguais
+    ).count()
+
+    fora_do_prazo = solicitacoes.filter(
+        ultima_data_fim__gt=F('programacao')  # Inclui somente datas maiores
+    ).count()
 
     return JsonResponse({
         'dentro_do_prazo': dentro_do_prazo,
