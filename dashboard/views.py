@@ -483,11 +483,12 @@ def quantidade_em_execucao(request):
     area = request.GET.get('area')
 
     # Define os filtros para a solicitação
-    filtros = {'area':area,'status_andamento': 'em_execucao'}
+    filtros = {'area': area, 'status_andamento': 'em_execucao', 'status': 'aprovar'}
+
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
 
-    ordens = Solicitacao.objects.filter(status_andamento='em_execucao', status='aprovar').count()
+    ordens = Solicitacao.objects.filter(**filtros).count()
 
     return JsonResponse({'data':ordens})
 
