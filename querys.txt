@@ -25,3 +25,24 @@ JOIN manutencao_v3.cadastro_maquina cm ON cm.id = ss.maquina_id
 join manutencao_v3.execucao_infosolicitacao ei on ei.solicitacao_id = ss.id
 where ss.status = 'aprovar' and ss.area = 'producao'
 order by horas_executada DESC
+
+############ Saber horários negativos de maquinas paradas ############
+
+SELECT 
+    ss.id AS os,
+    ss.data_abertura,
+    ss.status_andamento,
+    ee.n_execucao,
+    ee.data_inicio,
+    ee.data_fim,
+    ee.data_fim - ee.data_inicio AS diff_execucao,
+    em.data_inicio AS data_inicio_maq_parada,
+    em.data_fim AS data_fim_maq_parada,
+    em.data_fim - em.data_inicio AS diff_maq_parada,
+    em.id
+FROM manutencao_v3.execucao_execucao ee
+JOIN manutencao_v3.solicitacao_solicitacao ss ON ss.id = ee.ordem_id
+JOIN manutencao_v3.execucao_maquinaparada em ON em.execucao_id = ee.id AND em.ordem_id = ss.id
+WHERE ss.status = 'aprovar'
+  AND em.data_fim - em.data_inicio < INTERVAL '0' SECOND -- Filtro para diff_maq_parada < 0
+ORDER BY ss.id DESC, ee.n_execucao;
