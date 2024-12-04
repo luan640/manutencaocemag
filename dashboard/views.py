@@ -656,3 +656,46 @@ def horas_trabalhadas_tipo(request):
 
     # Retorna o resultado em formato JSON para o frontend
     return JsonResponse({'data': resultado_formatado})
+
+def disponibilidade_geral(request):
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no período
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'data_fim__lte': data_fim,
+        'ordem__area': area
+    }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    # Calcular total de tempo de paradas e reparos
+    paradas_total = (
+        MaquinaParada.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .aggregate(total_paradas=Sum('duracao'))['total_paradas']
+    ) or timedelta()
+
+    reparos_total = (
+        Execucao.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .aggregate(total_reparos=Sum('duracao'))['total_reparos']
+    ) or timedelta()
+
+    # Convertendo timedelta para horas
+    paradas_horas = paradas_total.total_seconds() / 3600
+    reparos_horas = reparos_total.total_seconds() / 3600
+
+    # Calcular disponibilidade geral média
+    tempo_disponivel = tempo_atividade_esperada - paradas_horas
+    disponibilidade_geral_media = (
+        (tempo_disponivel / (tempo_disponivel + reparos_horas)) * 100 if tempo_disponivel + reparos_horas > 0 else 0
+    )
+
+    return JsonResponse({'data': round(disponibilidade_geral_media, 2)})

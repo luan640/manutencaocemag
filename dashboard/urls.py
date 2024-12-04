@@ -21,5 +21,6 @@ urlpatterns = [
     path('tempo-medio-abertura/', views.tempo_medio_abertura, name='tempo_medio_abertura'),
     path('horas-trabalhadas-setor/', views.horas_trabalhadas_setor, name='horas_trabalhadas_setor'),
     path('horas-trabalhadas-tipo/', views.horas_trabalhadas_tipo, name='horas_trabalhadas_tipo'),
+    path('disponibilidade-geral/', views.disponibilidade_geral, name='disponibilidade_geral'),
 
 ]

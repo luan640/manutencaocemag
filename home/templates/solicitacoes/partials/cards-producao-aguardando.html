@@ -171,7 +171,11 @@
                                 <label for="setor_info">Setor</label>
                                 <div id="editarSetor_{{solicitacao.pk}}">
                                     <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
-                                    <small><a href="#" id="habilitarEdicaoSetor">Editar</a></small>
+                                    {% for info in solicitacao.info_solicitacao.all %}
+                                        {% if info.tipo_manutencao != 'preventiva_programada' %}
+                                        <small><a href="#" id="habilitarEdicaoSetor">Editar</a></small>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -186,7 +190,11 @@
                                 <label for="">Máquina</label>
                                 <div id="editarMaquina_{{solicitacao.pk}}">
                                     <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
-                                    <small><a href="#" id="habilitarEdicaoMaquina">Editar</a></small>
+                                    {% for info in solicitacao.info_solicitacao.all %}
+                                        {% if info.tipo_manutencao != 'preventiva_programada' %}
+                                        <small><a href="#" id="habilitarEdicaoMaquina">Editar</a></small>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
@@ -243,7 +251,6 @@
                                             {{ tipo.1 }}
                                         </option>
                                         {% endfor %}
-                                    
                                         
                                     </select>
                                 {% endwith %}

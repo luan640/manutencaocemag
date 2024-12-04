@@ -43,6 +43,12 @@ def criar_execucao(request, solicitacao_id):
             che_maq_parada = request.POST.get('che_maq_parada') == 'sim'
             exec_maq_parada = request.POST.get('exec_maq_parada') == 'sim'
             apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'sim'
+            
+            # Campos apenas para ETE
+            pvlye = float(request.POST.get('pvlye').replace(",",".")) if request.POST.get('pvlye') else None
+            paplus = float(request.POST.get('paplus').replace(",",".")) if request.POST.get('paplus') else None
+            tratamento_ete = request.POST.get('tratamento_ete', None)
+            phagua = float(request.POST.get('phagua').replace(",",".")) if request.POST.get('phagua') else None
 
             if not apos_exec_maq_parada:
                 solicitacao.maq_parada = False
@@ -61,6 +67,11 @@ def criar_execucao(request, solicitacao_id):
                 che_maq_parada=che_maq_parada,
                 exec_maq_parada=exec_maq_parada,
                 apos_exec_maq_parada=apos_exec_maq_parada,
+                paplus=paplus,
+                ph_agua=phagua,
+                pvlye=pvlye,
+                tratamento_ete=tratamento_ete,
+
             )
 
             execucao.operador.set(operadores)

@@ -217,6 +217,23 @@
                 </div>
             </div>
         </div>
+        <div class="col">
+            <div class="card custom-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <p class="mb-0">Disponibilidade Média</p>
+                            <h4 id="card-disp-media" class="my-1">
+                                <div class="loading-overlay" id="loading-mtbf">
+                                    <div class="spinner"></div>
+                                </div>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- MTBF e MTTR -->
@@ -453,6 +470,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
                     })
                     .catch(error => handleError(error, 'loading-disponibilidade')),
+                
+                // Cards
 
                 fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
@@ -493,6 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         hideLoader('loading-execucao');
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
+                
                 fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
                     .then(data => {
@@ -500,13 +520,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         hideLoader('loading-execucao');
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
+                
                 fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-tma').innerHTML = data.data;
                         hideLoader('loading-execucao');
                     })
-                    .catch(error => handleError(error, 'loading-execucao'))
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/disponibilidade-geral?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-disp-media').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+
             ]);
         } else {
             return Promise.all([

@@ -201,7 +201,7 @@
                             </a>
                         </h2>
                         <div class="collapse" id="collapseEte">
-                            <div class="row">
+                            <div class="row mb-3">
                                 <div class="col-sm-6">
                                     <label for="pvlye" class="form-label">PVLYE</label>
                                     <input id="pvlye" name="pvlye" class="form-control" type="number" step="0.01" required>
@@ -211,7 +211,7 @@
                                     <input id="paplus" name="paplus" class="form-control" type="number" step="0.01" required>
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="row mb-3">
                                 <div class="col-sm-6">
                                     <label for="tratamento_ete" class="form-label">Tratamento</label>
                                     <select class="form-control" name="tratamento_ete" id="tratamento_ete" step="0.01" required>
@@ -227,7 +227,7 @@
                                 
                             </div>
                         </div>
-
+                        <hr>
                         {% elif solicitacao.setor.nome == 'Solda' %}
                         <h2>
                             <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
@@ -303,8 +303,6 @@
                                 </select>
                             </div>
 
-                            {% if not solicitacao.maquina.codigo == 'ETE' %}
-
                             <!-- Check Máquina Parada -->
                             {% if solicitacao.ultima_execucao_n < 1 %} 
                                 <div class="mb-3">
@@ -346,8 +344,6 @@
                                 </div>
                             </div>
 
-                            {% endif %}
-                            
                             <!-- Status -->
                             <div class="mb-3">
                                 <label for="id_status_{{ solicitacao.pk }}" class="form-label">Status</label>

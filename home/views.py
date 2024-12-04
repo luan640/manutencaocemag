@@ -634,17 +634,22 @@ def editar_execucao(request, pk):
 
             nova_data_inicio = data['data_inicio']
             nova_data_fim = data['data_fim']
-            novos_operadores_id = data.get("operadores", [])
             nova_observacao = data['observacao']
 
             # Verifica se existe algum registro na base de máquina parada 
-            if MaquinaParada.objects.filter(execucao_id=pk).exists():
-                registro_maquina_parada = MaquinaParada.objects.filter(execucao_id=pk)
-                registro_maquina_parada.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio)
+            # if MaquinaParada.objects.filter(execucao_id=pk).exists():
+            #     registro_maquina_parada = MaquinaParada.objects.filter(execucao_id=pk)
+            #     registro_maquina_parada.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio)
+            atualizar_registros(pk,nova_data_inicio,nova_data_fim)
 
             # Edita registro na tabela de execução
             registro_execucao = Execucao.objects.filter(pk=pk)
-            registro_execucao.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio,observacao=nova_observacao,ultima_atualizacao=now())
+            registro_execucao.update(
+                data_fim=nova_data_fim,
+                data_inicio=nova_data_inicio,
+                observacao=nova_observacao,
+                ultima_atualizacao=now()
+            )
 
             # Verifica se a execução existe
             execucao = get_object_or_404(Execucao, pk=pk)
@@ -657,3 +662,30 @@ def editar_execucao(request, pk):
             execucao.operador.set(novos_operadores)
             
             return JsonResponse({"status": "sucesso", "ordem": execucao.ordem_id})
+
+def atualizar_registros(pk, nova_data_inicio, nova_data_fim):
+    # Obter o registro atual
+    registro_atual = MaquinaParada.objects.filter(execucao_id=pk).select_related('execucao').first()
+
+    if not registro_atual:
+        raise ValueError("Registro atual não encontrado")
+
+    # Atualizar o registro atual
+    registro_atual.data_inicio = nova_data_inicio
+    registro_atual.data_fim = nova_data_fim
+    registro_atual.save()
+
+    # Buscar o registro imediatamente anterior
+    registro_anterior = (
+        MaquinaParada.objects.filter(
+            ordem_id=registro_atual.ordem_id,
+            execucao__n_execucao__lt=registro_atual.execucao.n_execucao  # Apenas execuções anteriores
+        )
+        .order_by('-execucao__n_execucao')  # Ordenar decrescente por n_execucao para pegar o mais próximo
+        .first()
+    )
+
+    # Atualizar o registro anterior, caso exista
+    if registro_anterior:
+        registro_anterior.data_fim = nova_data_inicio
+        registro_anterior.save()
