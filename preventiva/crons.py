@@ -11,7 +11,7 @@ def verificar_abertura_solicitacoes_preventivas():
     hoje = timezone.now().date()
     solicitante = User.objects.get(matricula='0000')
     planos = PlanoPreventiva.objects.filter(ativo=True)
-
+    
     for plano in planos:
         # Verifica se a data_base está definida, caso contrário, usa a data de criação do plano
         data_base = plano.data_base if plano.data_base else plano.created_at.date()
@@ -30,8 +30,9 @@ def verificar_abertura_solicitacoes_preventivas():
         # Verifica se hoje é o dia de abertura e se não existe solicitação aberta hoje
         if hoje >= data_abertura:
             solicitacao_recente = SolicitacaoPreventiva.objects.filter(plano=plano, data=hoje).exists()
-
+            
             if not solicitacao_recente:
+
                 # Cria uma nova solicitação preventiva
                 nova_solicitacao = Solicitacao.objects.create(
                     impacto_producao='baixo',
