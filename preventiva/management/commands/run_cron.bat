@@ -1,3 +1,3 @@
 @echo off
-cd C:\Users\pcp2\manutencao_v2\projeto_exec
-C:\Users\pcp2\manutencao_v2\projeto_exec\env_manut\Scripts\python.exe manage.py run_cron
+cd C:\Users\TI DEV\manutencao_cron\manutencaocemag
+C:\Users\TI DEV\manutencao_cron\manutencaocemag\env_manut\Scripts\python.exe manage.py run_cron > log.txt 2>&1
