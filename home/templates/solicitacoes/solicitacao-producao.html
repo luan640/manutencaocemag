@@ -731,7 +731,34 @@
             forms.forEach(function(form) {
                 form.addEventListener('submit', function(event) {
                     event.preventDefault(); // Impede o envio tradicional do formulário
-                    
+
+                    const dataAberturaField = form.querySelector('#data_abertura_info');
+                    const dataProgramacaoField = form.querySelector('[name="data_programacao"]');
+
+                    if (dataAberturaField && dataProgramacaoField) {
+
+                        const [anoProgramacao, mesProgramacao, diaProgramacao] = dataProgramacaoField.value.split('-');
+
+                        // Extrair somente a data (ano, mês, dia)
+                        const dataAbertura = new Date(dataAberturaField.value);
+                        const dataProgramacao = new Date(anoProgramacao, mesProgramacao - 1, diaProgramacao);
+
+                        // Normalizar para apenas data (zerar hora, minuto, segundo, etc.)
+                        const dataAberturaNormalizada = new Date(dataAbertura.getFullYear(), dataAbertura.getMonth(), dataAbertura.getDate());
+                        const dataProgramacaoNormalizada = new Date(dataProgramacao.getFullYear(), dataProgramacao.getMonth(), dataProgramacao.getDate());
+
+                        // Verificar se a data de programação é menor que a data de abertura
+                        if (dataProgramacaoNormalizada < dataAberturaNormalizada) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro na validação',
+                                text: 'A data de programação não pode ser menor que a data de abertura.',
+                                confirmButtonText: 'OK'
+                            });
+                            return; // Impede o envio do formulário
+                        }
+                    }
+
                     // Obter a URL de envio
                     const url = form.getAttribute('action');
                     const modalId = form.dataset.modalId;

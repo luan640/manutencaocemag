@@ -157,7 +157,7 @@ def editar_solicitacao(request, solicitacao_id):
             if not nivel_prioridade:
                 nivel_prioridade = None
 
-            tipo_manutencao = request.POST.get('tipo_manutencao_display')
+            tipo_manutencao = request.POST.get('tipo_manutencao')
             area_manutencao = request.POST.get('area_manutencao')
             plano = request.POST.get('escolherPlanoPreventiva')
 
@@ -171,12 +171,10 @@ def editar_solicitacao(request, solicitacao_id):
                 if status_inicial == 'rejeitar':
                     solicitacao.status_andamento = 'rejeitado'
                 else:
-                    print('teste1')
                     InfoSolicitacao.objects.update_or_create(
                         solicitacao=solicitacao,
                         defaults={'area_manutencao': area_manutencao, 'tipo_manutencao': tipo_manutencao}
                     )
-                    print("teste2")
                         
                     execucao = Execucao.objects.create(
                         ordem=solicitacao,
