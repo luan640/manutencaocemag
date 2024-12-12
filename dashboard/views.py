@@ -663,10 +663,7 @@ def disponibilidade_geral(request):
     setor = request.GET.get('setor')
     area = request.GET.get('area')
 
-    # Tempo de atividade esperada: 9 horas por dia
-    dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no período
-
+    # Filtros básicos
     filtros = {
         'data_inicio__gte': data_inicio,
         'data_fim__lte': data_fim,
@@ -675,13 +672,25 @@ def disponibilidade_geral(request):
     if setor:
         filtros['ordem__setor_id'] = int(setor)
 
-    # Calcular total de tempo de paradas e reparos
+    # Obtém todas as máquinas e calcula o tempo de atividade esperada por máquina
+    maquinas = MaquinaParada.objects.filter(**filtros).values_list('ordem__maquina', flat=True).distinct()
+
+    tempo_atividade_esperada = 0
+    for maquina in maquinas:
+        dias_maquina = MaquinaParada.objects.filter(ordem__maquina=maquina, **filtros) \
+            .annotate(dias=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField())) \
+            .aggregate(total_dias=Sum('dias'))['total_dias']
+        if dias_maquina:
+            tempo_atividade_esperada += (dias_maquina.total_seconds() / 3600) * 9  # 9 horas por dia
+
+    # Calcular total de tempo de paradas
     paradas_total = (
         MaquinaParada.objects.filter(**filtros)
         .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
         .aggregate(total_paradas=Sum('duracao'))['total_paradas']
     ) or timedelta()
 
+    # Calcular total de tempo de reparos
     reparos_total = (
         Execucao.objects.filter(**filtros)
         .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
@@ -694,6 +703,10 @@ def disponibilidade_geral(request):
 
     # Calcular disponibilidade geral média
     tempo_disponivel = tempo_atividade_esperada - paradas_horas
+
+    print(tempo_atividade_esperada)
+    print(paradas_horas)
+
     disponibilidade_geral_media = (
         (tempo_disponivel / (tempo_disponivel + reparos_horas)) * 100 if tempo_disponivel + reparos_horas > 0 else 0
     )

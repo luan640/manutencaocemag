@@ -25,7 +25,6 @@ User = get_user_model()
 @login_required
 def criar_solicitacao(request):
     maquinas_producao = Maquina.objects.filter(area='producao')
-    print(maquinas_producao)
 
     if request.method == 'POST':
         form = SolicitacaoForm(request.POST)
