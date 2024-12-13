@@ -704,9 +704,6 @@ def disponibilidade_geral(request):
     # Calcular disponibilidade geral média
     tempo_disponivel = tempo_atividade_esperada - paradas_horas
 
-    print(tempo_atividade_esperada)
-    print(paradas_horas)
-
     disponibilidade_geral_media = (
         (tempo_disponivel / (tempo_disponivel + reparos_horas)) * 100 if tempo_disponivel + reparos_horas > 0 else 0
     )

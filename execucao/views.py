@@ -139,8 +139,6 @@ def editar_solicitacao(request, solicitacao_id):
     if request.method == 'POST':
         try:
 
-            print(request.POST)
-
             # Obtém os dados do formulário
             maquina = request.POST.get('id_maquina')
             setor = request.POST.get('id_setor')
@@ -173,11 +171,12 @@ def editar_solicitacao(request, solicitacao_id):
                 if status_inicial == 'rejeitar':
                     solicitacao.status_andamento = 'rejeitado'
                 else:
+                    print("teste1")
                     InfoSolicitacao.objects.update_or_create(
                         solicitacao=solicitacao,
                         defaults={'area_manutencao': area_manutencao, 'tipo_manutencao': tipo_manutencao}
                     )
-                        
+                    print("teste2")
                     execucao = Execucao.objects.create(
                         ordem=solicitacao,
                         # n_execucao=0,

@@ -232,21 +232,20 @@
                                 <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
                             
                                 {% with info=solicitacao.info_solicitacao.first %}
-                                    <select class="form-control" name="tipo_manutencao" id="tipo_manutencao_{{solicitacao.pk}}" 
-                                        {% if info and info.tipo_manutencao %}disabled{% else %}required{% endif %}>
-                                        
-                                        <option value=""></option>
-                                        
-                                        {% for tipo in tipo_manutencao %}
-                                        <option value="{{ tipo.0 }}" 
-                                            {% if info and tipo.0 == info.tipo_manutencao %}selected{% endif %}>
-                                            {{ tipo.1 }}
-                                        </option>
-                                        {% endfor %}
-                                        
-                                    </select>
-                                    <!-- <input type="hidden" name="tipo_manutencao" value="{{ info.tipo_manutencao }}"> -->
-                                {% endwith %}
+                                <select class="form-control" name="tipo_manutencao_display" id="tipo_manutencao_{{solicitacao.pk}}" 
+                                    {% if info and info.tipo_manutencao %}disabled{% else %}required{% endif %}>
+                                    <option value=""></option>
+                                    {% for tipo in tipo_manutencao %}
+                                    <option value="{{ tipo.0 }}" 
+                                        {% if info and tipo.0 == info.tipo_manutencao %}selected{% endif %}>
+                                        {{ tipo.1 }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if info and info.tipo_manutencao %}
+                                <input type="hidden" name="tipo_manutencao" value="{{ info.tipo_manutencao }}">
+                                {% endif %}
+                            {% endwith %}
                             </div>
                             <div class="col-sm-6">
                                 <label for="area_manutencao" class="form-label">Área de manutenção</label>
