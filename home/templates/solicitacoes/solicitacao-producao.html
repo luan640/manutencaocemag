@@ -1547,7 +1547,13 @@
                                                             <strong>Data de Abertura:</strong> ${new Date(item.data_abertura).toLocaleString('pt-BR') || 'N/A'}
                                                         </div>
                                                         <div class="col-md-6 mb-2">
-                                                            <strong>Programação:</strong> ${new Date(item.programacao).toLocaleDateString('pt-BR') || 'N/A'}
+                                                            <strong>Programação:</strong> ${
+                                                                (() => {
+                                                                    const date = new Date(item.programacao);
+                                                                    date.setDate(date.getDate() + 1); // Adiciona 1 dia
+                                                                    return date.toLocaleDateString('pt-BR') || 'N/A';
+                                                                })()
+                                                            }                                                        
                                                         </div>
                                                     </div>
                                                     <div class="row">
