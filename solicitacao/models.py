@@ -23,7 +23,9 @@ class Solicitacao(models.Model):
         ('chassi','Chassi'),
         ('tanque','Tanque'),
         ('cacamba','Caçamba'),
-        ('serralheria','Serralheria')
+        ('serralheria','Serralheria'),
+        ('fueiro','Fueiro')
+
     )
 
     IMPACTO_PRODUCAO_CHOICES = (('alto','Alto'),
