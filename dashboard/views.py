@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpResponse
 from django.db.models import Sum, Count, F, ExpressionWrapper, DurationField, Avg, Min, Max, Q, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import render
@@ -12,7 +12,9 @@ from solicitacao.models import Solicitacao
 from execucao.models import Execucao, MaquinaParada, InfoSolicitacao
 from cadastro.models import Maquina, Setor
 
+from io import BytesIO
 from datetime import datetime
+import pandas as pd
 
 def dashboard(request):
 
@@ -99,6 +101,67 @@ def mtbf_maquina(request):
 
     return JsonResponse(resultados, safe=False)
 
+def exportar_mtbf_maquina(request):
+
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    filtros = {
+            'data_inicio__gte': data_inicio,
+            'data_fim__lte': data_fim,
+            'ordem__area': area,
+        }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    # Buscar as paradas do mês atual e calcular a duração de cada uma
+    paradas = (
+        MaquinaParada.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')  # Agrupa pelo codigo da máquina
+        .annotate(
+            total_paradas=Sum('duracao'),  # Soma das durações das paradas
+            quantidade_paradas=Count('id')  # Contagem de paradas
+        )
+    )
+
+    # Preparar os dados para o JSON
+    resultados = []
+    for parada in paradas:
+        tempo_total_paradas_horas = parada['total_paradas'].total_seconds() / 3600  # Converter para horas
+        quantidade_paradas = parada['quantidade_paradas']
+
+        # Cálculo do MTBF
+        mtbf = (tempo_atividade_esperada - tempo_total_paradas_horas) / quantidade_paradas
+
+        resultados.append({
+            'maquina': parada['ordem__maquina__codigo'],
+            'mtbf': round(mtbf, 2)
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['mtbf'], reverse=True)
+
+    df = pd.DataFrame(resultados)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Mtbf Máquina')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="mtbf_maquina.xlsx"'
+    return response
+
 def mttr_maquina(request):
     """
     Calcula o MTTR (Mean Time to Repair) para cada máquina no mês atual.
@@ -169,6 +232,67 @@ def mttr_maquina(request):
 
     return JsonResponse(resultados, safe=False)
 
+def exportar_mttr_maquina(request):
+    
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'data_fim__lte': data_fim,
+        'ordem__area': area
+    }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    # Buscar execuções finalizadas no mês atual
+    execucoes = (
+        Execucao.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(
+            total_tempo_reparo=Sum('duracao'),  # Soma das durações
+            quantidade_reparos=Count('id')  # Contagem de execuções
+        )
+    )
+
+    # Preparar os dados para o JSON
+    resultados = []
+    for execucao in execucoes:
+        tempo_total_reparo_horas = execucao['total_tempo_reparo'].total_seconds() / 3600  # Converter para horas
+        quantidade_reparos = execucao['quantidade_reparos']
+
+        # Verificar se há reparos para evitar divisão por zero
+        if quantidade_reparos > 0:
+            mttr = tempo_total_reparo_horas / quantidade_reparos
+        else:
+            mttr = None  # Não há execuções para calcular o MTTR
+
+        # Adicionar no resultado
+        resultados.append({
+            'maquina': execucao['ordem__maquina__codigo'],
+            'mttr': round(mttr, 2) if mttr is not None else 'Sem dados'
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['mttr'], reverse=True)
+
+    df = pd.DataFrame(resultados)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Mttr Máquina')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="mttr_maquina.xlsx"'
+    return response
+
 def disponibilidade_maquina(request):
 
     data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
@@ -234,6 +358,85 @@ def disponibilidade_maquina(request):
     resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
 
     return JsonResponse(resultados, safe=False)
+
+def exportar_disponibilidade_maquina(request):
+
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'data_fim__lte': data_fim,
+        'ordem__area': area
+
+    }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    # Buscar e calcular MTBF
+    paradas = (
+        MaquinaParada.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
+    )
+
+    # Buscar e calcular MTTR
+    execucoes = (
+        Execucao.objects.filter(**filtros)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
+    )
+
+    # Organizar os dados em dicionários para fácil acesso
+    mtbf_dict = {
+        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
+        for parada in paradas
+    }
+    mttr_dict = {
+        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
+        for execucao in execucoes
+    }
+
+    # Calcular a disponibilidade para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
+        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
+
+        if mtbf + mttr > 0:
+            disponibilidade = (mtbf / (mtbf + mttr)) * 100
+        else:
+            disponibilidade = 0
+
+        resultados.append({
+            'maquina': maquina,
+            'disponibilidade': round(disponibilidade, 2)
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
+    
+    df = pd.DataFrame(resultados)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Disponibilidade Máquina')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="disponibilidade_maquina.xlsx"'
+    return response
 
 def ordens_prazo(request):
     """
@@ -341,6 +544,7 @@ def maquina_parada(request):
         )
         .values('ordem__maquina__codigo')  # Agrupa pelo código da máquina
         .annotate(total_duracao=Sum('duracao'))  # Soma a duração por máquina
+        .order_by('-total_duracao')
     )
 
     # Converter o resultado para uma lista de dicionários com as durações em horas
@@ -353,6 +557,60 @@ def maquina_parada(request):
     ]
 
     return JsonResponse({'data': resultado })
+
+def exportar_maquina_parada_excel(request):
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'ordem__area': area
+    }
+
+    filtros['data_fim__lte'] = data_fim
+
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    # Obter os dados
+    total_por_maquina = (
+        MaquinaParada.objects
+        .filter(**filtros)
+        .annotate(
+            data_fim_real=Coalesce('data_fim', Value(timezone.now())),
+            duracao=ExpressionWrapper(
+                F('data_fim_real') - F('data_inicio'), output_field=DurationField()
+            )
+        )
+        .values('ordem__maquina__codigo')
+        .annotate(total_duracao=Sum('duracao'))
+        .order_by('-total_duracao')
+    )
+
+    # Converter os dados em um DataFrame do pandas
+    dados = [
+        {
+            'Máquina': item['ordem__maquina__codigo'],
+            'Total de Horas': round(item['total_duracao'].total_seconds() / 3600, 2) if item['total_duracao'] else 0
+        }
+        for item in total_por_maquina
+    ]
+    df = pd.DataFrame(dados)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Máquinas Paradas')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="maquinas_paradas.xlsx"'
+    return response
 
 def solicitacao_setor(request):
 
@@ -384,6 +642,50 @@ def solicitacao_setor(request):
     data = sorted(data, key=lambda x: x['total'], reverse=True)
 
     return JsonResponse({'data': data})
+
+def exportar_solicitacao_setor(request):
+    
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    filtros = {
+        'data_abertura__gte': data_inicio,
+        'data_abertura__lte': data_fim,
+        'status':'aprovar',
+        'area':area
+    }
+    if setor:
+        filtros['setor_id'] = int(setor)
+
+    resultado = (
+        Solicitacao.objects
+        .filter(**filtros)
+        .values('setor__nome')  # Agrupar pelo nome do setor
+        .annotate(total=Count('id'))  # Contar as solicitações por setor
+        .order_by('setor__nome')  # Ordenar por nome do setor (opcional)
+
+    )
+
+    data = list(resultado)  # Converte o QuerySet em uma lista de dicionários
+
+    data = sorted(data, key=lambda x: x['total'], reverse=True)
+
+    df = pd.DataFrame(data)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Solicitação por setor')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="solicitacao_setor.xlsx"'
+    return response
 
 def quantidade_abertura_ordens(request):
 
@@ -617,6 +919,54 @@ def horas_trabalhadas_setor(request):
     # Retorna o resultado em formato JSON para o frontend
     return JsonResponse({'data': resultado_formatado})
 
+def exportar_horas_trabalhadas_setor(request):
+    
+    area = request.GET.get('area')
+
+    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area).annotate(
+        dif_tempo=ExpressionWrapper(
+            F('data_fim') - F('data_inicio'), 
+            output_field=DurationField()
+        )
+    ).values('ordem__setor__nome').annotate(
+        total_horas=Sum('dif_tempo')
+    ).order_by('ordem__setor__nome')
+
+    # Converte `total_horas` para horas decimais
+    resultado_formatado = []
+    for item in resultado:
+        setor = item['ordem__setor__nome']
+        total_horas = item['total_horas']
+        
+        if total_horas:
+            # Converte para timedelta e depois para horas decimais
+            duracao = timedelta(seconds=total_horas.total_seconds())
+            horas_decimais = duracao.total_seconds() / 3600  # Total de horas em formato decimal
+        else:
+            horas_decimais = 0
+        
+        resultado_formatado.append({
+            'setor': setor,
+            'total_horas': horas_decimais
+        })
+
+    resultado_formatado = sorted(resultado_formatado, key=lambda x: x.get('total_horas', 0), reverse=True)
+
+    df = pd.DataFrame(resultado_formatado)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Horas trabalhadas por setor')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="horas_trabalhadas_setor.xlsx"'
+    return response
+
 def horas_trabalhadas_tipo(request):
 
     area = request.GET.get('area')
@@ -656,6 +1006,58 @@ def horas_trabalhadas_tipo(request):
 
     # Retorna o resultado em formato JSON para o frontend
     return JsonResponse({'data': resultado_formatado})
+
+def exportar_horas_trabalhadas_tipo(request):
+    
+    area = request.GET.get('area')
+
+    resultado = Execucao.objects.filter(
+        data_fim__isnull=False,
+        ordem__info_solicitacao__tipo_manutencao__isnull=False,
+        ordem__area=area
+    ).annotate(
+        dif_tempo=ExpressionWrapper(
+            F('data_fim') - F('data_inicio'), 
+            output_field=DurationField()
+        )
+    ).values('ordem__info_solicitacao__tipo_manutencao').annotate(
+        total_horas=Sum('dif_tempo')
+    ).order_by('ordem__info_solicitacao__tipo_manutencao')
+
+    # Converte `total_horas` para horas decimais
+    resultado_formatado = []
+    for item in resultado:
+        tipo_manutencao = item['ordem__info_solicitacao__tipo_manutencao']
+        total_horas = item['total_horas']
+        
+        if total_horas:
+            # Converte para timedelta e depois para horas decimais
+            duracao = timedelta(seconds=total_horas.total_seconds())
+            horas_decimais = duracao.total_seconds() / 3600  # Total de horas em formato decimal
+        else:
+            horas_decimais = 0
+        
+        resultado_formatado.append({
+            'tipo_manutencao': tipo_manutencao,
+            'total_horas': horas_decimais
+        })
+
+    resultado_formatado = sorted(resultado_formatado, key=lambda x: x.get('total_horas', 0), reverse=True)
+
+    df = pd.DataFrame(resultado_formatado)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Horas trabalhadas por tipo')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="horas_trabalhadas_tipo.xlsx"'
+    return response
 
 def disponibilidade_geral(request):
     data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')

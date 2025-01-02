@@ -50,6 +50,16 @@ def criar_execucao(request, solicitacao_id):
             tratamento_ete = request.POST.get('tratamento_ete', None)
             phagua = float(request.POST.get('phagua').replace(",",".")) if request.POST.get('phagua') else None
 
+            if ultima_execucao:
+                if data_inicio < ultima_execucao.data_fim:
+                    return JsonResponse({
+                        'error': 'A data de início deve ser posterior à data final da última execução.'
+                    }, status=400)
+                if data_fim < data_inicio:
+                    return JsonResponse({
+                        'error': 'A data de fim deve ser posterior à data de início.'
+                    }, status=400)
+
             if not apos_exec_maq_parada:
                 solicitacao.maq_parada = False
                 

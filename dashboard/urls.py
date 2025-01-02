@@ -12,6 +12,14 @@ urlpatterns = [
     path('tempo-maquina-parada/', views.maquina_parada, name='maquina_parada'),
     path('solicitacao-por-setor/', views.solicitacao_setor, name='solicitacao_setor'),
 
+    path('exportar-maquina-parada/', views.exportar_maquina_parada_excel, name='exportar_maquina_parada_excel'),
+    path('exportar-solicitacao-setor/', views.exportar_solicitacao_setor, name='exportar_solicitacao_setor'),
+    path('exportar-mtbf-maquina/', views.exportar_mtbf_maquina, name='exportar_mtbf_maquina'),
+    path('exportar-mttr-maquina/', views.exportar_mttr_maquina, name='exportar_mttr_maquina'),
+    path('exportar-disponibilidade-maquina/', views.exportar_disponibilidade_maquina, name='exportar_disponibilidade_maquina'),
+    path('exportar-horas-trabalhadas-setor/', views.exportar_horas_trabalhadas_setor, name='exportar_horas_trabalhadas_setor'),
+    path('exportar-horas-trabalhadas-tipo/', views.exportar_horas_trabalhadas_tipo, name='exportar_horas_trabalhadas_tipo'),
+
     path('ordens-abertas/', views.quantidade_abertura_ordens, name='quantidade_abertura_ordens'),
     path('ordens-finalizada/', views.quantidade_finalizada, name='quantidade_finalizada'),
     path('ordens-aguardando-material/', views.quantidade_aguardando_material, name='quantidade_aguardando_material'),

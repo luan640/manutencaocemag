@@ -6,9 +6,10 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.utils.timezone import now
+from django.utils.timezone import now, is_naive, make_naive, make_aware
 from django.urls import reverse
 from django.db import transaction
+from django.utils.dateparse import parse_datetime
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
@@ -559,7 +560,7 @@ def historico_ordem(request, pk):
         Execucao.objects
         .filter(ordem_id=pk)
         .prefetch_related('operador')  # Carrega operadores relacionados
-        .values('id', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
+        .values('id','n_execucao', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
                 'che_maq_parada', 'exec_maq_parada', 'apos_exec_maq_parada', 'status')
     ).order_by('n_execucao')
 
@@ -625,44 +626,75 @@ def mais_detalhes_ordem(request, pk):
     return JsonResponse({'solicitacoes': list(solicitacoes)})
 
 def editar_execucao(request, pk):
-    
     if request.method == "POST":
-        
         with transaction.atomic():
-            # Decodifica o corpo da requisição JSON
-            data = json.loads(request.body)
+            try:
+                # Decodifica o corpo da requisição JSON
+                data = json.loads(request.body)
 
-            nova_data_inicio = data['data_inicio']
-            nova_data_fim = data['data_fim']
-            nova_observacao = data['observacao']
+                nova_data_inicio = parse_datetime(data['data_inicio'])
+                nova_data_fim = parse_datetime(data['data_fim'])
+                nova_observacao = data['observacao']
 
-            # Verifica se existe algum registro na base de máquina parada 
-            # if MaquinaParada.objects.filter(execucao_id=pk).exists():
-            #     registro_maquina_parada = MaquinaParada.objects.filter(execucao_id=pk)
-            #     registro_maquina_parada.update(data_fim=nova_data_fim, data_inicio=nova_data_inicio)
-            atualizar_registros(pk,nova_data_inicio,nova_data_fim)
+                # Obter a execução atual
+                execucao = get_object_or_404(Execucao, pk=pk)
 
-            # Edita registro na tabela de execução
-            registro_execucao = Execucao.objects.filter(pk=pk)
-            registro_execucao.update(
-                data_fim=nova_data_fim,
-                data_inicio=nova_data_inicio,
-                observacao=nova_observacao,
-                ultima_atualizacao=now()
-            )
+                # Obter a última execução anterior, se existir
+                ultima_execucao_anterior = (
+                    Execucao.objects.filter(
+                        ordem=execucao.ordem,
+                        n_execucao__lt=execucao.n_execucao
+                    )
+                    .order_by('-n_execucao')
+                    .first()
+                )
 
-            # Verifica se a execução existe
-            execucao = get_object_or_404(Execucao, pk=pk)
+                # Validar as novas datas em relação à última execução anterior
+                if ultima_execucao_anterior:
+                    # Normalizar as datas (remover ou adicionar fuso horário conforme necessário)
+                    if is_naive(nova_data_inicio):
+                        nova_data_inicio = make_aware(nova_data_inicio)
+                    if is_naive(ultima_execucao_anterior.data_fim):
+                        ultima_execucao_anterior.data_fim = make_aware(ultima_execucao_anterior.data_fim)
 
-            # Atualiza os operadores
-            novos_operadores_ids = data.get("operadores", [])
-            novos_operadores = Operador.objects.filter(id__in=novos_operadores_ids)
+                    # Verificação de datas
+                    print(nova_data_inicio)
+                    print(ultima_execucao_anterior.data_fim)
 
-            # Define os novos operadores (substituindo os antigos)
-            execucao.operador.set(novos_operadores)
+                    if nova_data_inicio <= ultima_execucao_anterior.data_fim:
+                        return JsonResponse({
+                            "error": "A nova data de início deve ser posterior à data final da última execução anterior."
+                        }, status=400)
+
+                # Validar que a nova data de fim seja posterior à data de início
+                if nova_data_fim <= nova_data_inicio:
+                    return JsonResponse({
+                        "error": "A nova data de fim deve ser posterior à nova data de início."
+                    }, status=400)
+
+                # Atualizar registros na tabela `MaquinaParada`, se aplicável
+                atualizar_registros(pk, nova_data_inicio, nova_data_fim)
+
+                # Editar o registro na tabela `Execucao`
+                Execucao.objects.filter(pk=pk).update(
+                    data_fim=nova_data_fim,
+                    data_inicio=nova_data_inicio,
+                    observacao=nova_observacao,
+                    ultima_atualizacao=now()
+                )
+
+                # Atualizar operadores
+                novos_operadores_ids = data.get("operadores", [])
+                novos_operadores = Operador.objects.filter(id__in=novos_operadores_ids)
+                execucao.operador.set(novos_operadores)
+
+                return JsonResponse({"status": "sucesso", "ordem": execucao.ordem_id})
             
-            return JsonResponse({"status": "sucesso", "ordem": execucao.ordem_id})
-
+            except Exception as e:
+                return JsonResponse({
+                    "error": f"Ocorreu um erro ao editar a execução: {str(e)}"
+                }, status=500)
+            
 def atualizar_registros(pk, nova_data_inicio, nova_data_fim):
     # Obter o registro atual
     registro_atual = MaquinaParada.objects.filter(execucao_id=pk).select_related('execucao').first()
@@ -672,7 +704,9 @@ def atualizar_registros(pk, nova_data_inicio, nova_data_fim):
     
     # Atualizar o registro atual
     registro_atual.data_inicio = nova_data_inicio
-    registro_atual.data_fim = nova_data_fim
+    if registro_atual.data_fim:
+        registro_atual.data_fim = nova_data_fim
+    
     registro_atual.save()
 
     # Buscar o registro imediatamente anterior

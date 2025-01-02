@@ -2,8 +2,10 @@
 {% load static %}
 
 {% block links %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
 
 <style>
     .chart-container {
@@ -55,6 +57,31 @@
     .position-relative {
         position: relative; /* Garante que o overlay se posicione corretamente */
     }
+
+    .scroll-container {
+        width: 100%; /* Largura do contêiner */
+        height: 400px; /* Altura visível do contêiner */
+        overflow-y: auto; /* Scroll vertical para gráficos horizontais */
+        overflow-x: hidden; /* Sem scroll horizontal */
+        padding: 10px;
+    }
+
+    .btn-download {
+        position: absolute;
+        top: 10px; /* Ajuste conforme necessário */
+        right: 10px; /* Ajuste conforme necessário */
+        background-color: transparent;
+        border: none;
+        font-size: 18px; /* Tamanho do ícone */
+        color: #007bff; /* Cor do ícone */
+        cursor: pointer;
+        z-index: 10; /* Garante que o botão fique sobre o gráfico */
+    }
+
+    .btn-download:hover {
+        color: #0056b3; /* Cor ao passar o mouse */
+    }
+
 </style>
 {% endblock %}
 
@@ -246,11 +273,21 @@
             <div class="row">
                 <div class="col-sm-6">
                     <h5>MTBF (Horas)</h5>
-                    <canvas id="graficoMtbf"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoMtbf"></canvas>
+                        <button id="dadosMtbfMaquina" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-sm-6">
                     <h5>MTTR (Horas)</h5>
-                    <canvas id="graficoMttr"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoMttr"></canvas>
+                        <button id="dadosMttrMaquina" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -273,10 +310,20 @@
             </div>
             <div class="row text-center">
                 <div class="col-sm-6 d-flex flex-column align-items-center">
-                    <canvas id="graficoHorasTrabalhadasSetor" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoHorasTrabalhadasSetor"></canvas>
+                        <button id="dadosHorasTrabSetor" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-sm-6 d-flex flex-column align-items-center">
-                    <canvas id="graficoHorasTrabalhadasTipo" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoHorasTrabalhadasTipo"></canvas>
+                        <button id="dadosHorasTrabTipo" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -290,10 +337,21 @@
         <div class="card-body" style="height: 450px">
             <div class="row">
                 <div class="col-sm-6">
-                    <canvas id="graficoSolicitacaoSetor" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoSolicitacaoSetor" style="height: 400px; width: 100%;"></canvas>
+                        <button id="dadosSolicitacaoSetor" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+
                 </div>
                 <div class="col-sm-6">
-                    <canvas id="graficoMaquinasParadas" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoMaquinasParadas" style="height: 400px; width: 100%;"></canvas>
+                        <button id="dadosMaqParada" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -306,7 +364,12 @@
             Disponibilidade por Máquina
         </div>
         <div class="card-body">
-            <canvas id="graficoDisponibilidadeMaquina"></canvas>
+            <div class="scroll-container" style="position: relative;">
+                <canvas id="graficoDisponibilidadeMaquina"></canvas>
+                <button id="dadosDispMaquina" class="btn btn-download" title="Download Excel">
+                    <i class="fa fa-download"></i>
+                </button>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -411,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const labels = data.data.map(item => item.tipo_manutencao);
                         const valores = data.data.map(item => item.total_horas);
 
-                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por setor', valores, labels);
+                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por tipo', valores, labels);
 
                     })
                     .catch(error => handleError(error, 'loading-ordens-prazo')),
@@ -470,8 +533,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
                     })
                     .catch(error => handleError(error, 'loading-disponibilidade')),
-                
-                // Cards
 
                 fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
@@ -579,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const labels = data.data.map(item => item.tipo_manutencao);
                         const valores = data.data.map(item => item.total_horas);
 
-                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por setor', valores, labels);
+                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por tipo', valores, labels);
 
                     })
                     .catch(error => handleError(error, 'loading-ordens-prazo')),
@@ -695,12 +756,41 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // Permite que o gráfico se ajuste ao contêiner
                 scales: {
                     y: {
                         beginAtZero: true,
                         title: {
                             display: true,
                             text: label
+                        },
+                        ticks: {
+                            autoSkip: false // Não pula as labels
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: false // Não pula as labels
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true, // Permite arrastar o gráfico (pan)
+                            mode: 'x' // Apenas no eixo X
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true // Permite zoom com a roda do mouse
+                            },
+                            pinch: {
+                                enabled: true // Permite zoom com gestos de pinça
+                            },
+                            mode: 'x' // Apenas no eixo X
                         }
                     }
                 }
@@ -754,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Para permitir que o gráfico se ajuste ao tamanho do container
+                maintainAspectRatio: false,
                 indexAxis: 'y',
                 scales: {
                     x: {
@@ -770,9 +860,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: 'Máquinas'
                         },
                         ticks: {
-                            autoSkip: false, // Evita que as labels sejam puladas
+                            autoSkip: false,
                             font: {
-                                size: 12 // Ajuste o tamanho da fonte conforme necessário
+                                size: 12
                             }
                         }
                     }
@@ -784,14 +874,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: {
                         display: true,
                         text: titulo
-                    }
-                },
-                layout: {
-                    padding: {
-                        top: 20,
-                        bottom: 20,
-                        left: 20,
-                        right: 20
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true, // Pan (arrastar para navegar)
+                            mode: 'y' // Somente no eixo Y
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true // Zoom com a roda do mouse
+                            },
+                            pinch: {
+                                enabled: true // Zoom com gesto de pinça (touch)
+                            },
+                            mode: 'y' // Apenas no eixo Y
+                        }
                     }
                 }
             }
@@ -830,6 +927,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
         btnFilter.innerHTML = 'Aplicar Filtros';
         btnFilter.disabled = false;
+    });
+
+    function exportar(urlBase) {
+
+        const dataInicial = document.getElementById('startDate').value;
+        const dataFinal = document.getElementById('endDate').value;
+        const setorSelect = document.getElementById('setorSelect').value;
+        const area = document.getElementById('area').value;
+
+        const params = new URLSearchParams({
+            'data-inicial': dataInicial,
+            'data-final': dataFinal,
+            'setor': setorSelect,
+            'area': area,
+        });
+
+        const url = `${urlBase}?${params.toString()}`;
+        window.open(url, '_blank'); // Abre o download em uma nova aba
+
+    }
+
+    document.getElementById('dadosMaqParada').addEventListener('click', () => {
+        exportar('/exportar-maquina-parada/')
+    });
+
+    document.getElementById('dadosSolicitacaoSetor').addEventListener('click', () => {
+        exportar('/exportar-solicitacao-setor/')
+    });
+
+    document.getElementById('dadosMtbfMaquina').addEventListener('click', () => {
+        exportar('/exportar-mtbf-maquina/')
+    });
+
+    document.getElementById('dadosMttrMaquina').addEventListener('click', () => {
+        exportar('/exportar-mttr-maquina/')
+    });
+
+    document.getElementById('dadosDispMaquina').addEventListener('click', () => {
+        exportar('/exportar-disponibilidade-maquina/')
+    });
+
+    document.getElementById('dadosHorasTrabSetor').addEventListener('click', () => {
+        exportar('/exportar-horas-trabalhadas-setor/')
+    });
+
+    document.getElementById('dadosHorasTrabTipo').addEventListener('click', () => {
+        exportar('/exportar-horas-trabalhadas-tipo/')
     });
 
 });

@@ -713,11 +713,11 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Erro:', error);
+                        console.error('Erro:', error.message);
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            text: error.message || 'Ocorreu um erro ao executar a ordem. Tente novamente.',
                             confirmButtonText: 'OK'
                         });
                     });
@@ -1125,7 +1125,6 @@
                     // Verifica se o modal já tem o evento registrado para evitar múltiplas anexações
                     if (!$(modalId).data('select2-attached')) {
                         $(modalId).on('shown.bs.modal', function() {
-                            console.log("Tentando inicializar o select2 para:", selectId);
 
                             if ($(selectId).length) {
                                 // Inicializa o select2
@@ -1135,7 +1134,6 @@
                                     width: '100%',
                                     dropdownParent: $('body') // Garante que o dropdown esteja contido no modal
                                 });
-                                console.log("Select2 inicializado com sucesso para:", selectId);
                             } else {
                                 console.log("Elemento select não encontrado:", selectId);
                             }
@@ -1318,11 +1316,19 @@
 
                     })
                     .then(data => {
-                        detalhesHistorico(data.ordem);
-                        $(`#editModal${itemId}`).modal('hide');
-                        Swal.close();
+                        detalhesHistorico(data.ordem); // Atualiza os detalhes do histórico
+                        $(`#editModal${itemId}`).modal('hide'); // Fecha o modal de edição
+                        Swal.close(); // Fecha o carregamento, se aplicado
                     })
-                    .catch(() => alert('Erro ao salvar alterações.'));
+                    .catch(error => {
+                        console.error('Erro ao salvar alterações:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: error.responseJSON?.error || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
             });
         }
 
@@ -1332,7 +1338,6 @@
             <div class="spinner"></div>
             </div>`
             // bodyHistorico.innerHTML = ''; // Limpa o conteúdo atual
-
 
             // Envia uma solicitação fetch para buscar os dados do histórico no backend
             fetch(`/home/historico/${pk}/`)
@@ -1344,10 +1349,8 @@
                 })
                 .then(data => {
                     if (data && data.historico.length > 0) {
-            
                         bodyHistorico.innerHTML = '';
                         data.historico.forEach(item => {
-
                             const card = `
                                 <div class="card mb-3">
                                     <div class="card-header">
@@ -1430,7 +1433,6 @@
                     // bodyHistorico.innerHTML = ''; // Limpa o conteúdo atual
                     
                     const isAdmin = document.getElementById('tipo-usuario').value;
-                    console.log(isAdmin)
 
                     // Envia uma solicitação fetch para buscar os dados do histórico no backend
                     fetch(`/home/historico/${pk}/`)
@@ -1447,25 +1449,27 @@
                                     // Cria um card para cada item do histórico
 
                                     const card = `
-                                        <div class="card mb-3">
-                                            <div class="card-header">
-                                                <strong>Status:</strong> ${item.status}
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <strong>Status:</strong> ${item.status}
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <p><strong>Início:</strong> ${new Date(item.data_inicio).toLocaleString('pt-BR')}</p>
+                                                <p><strong>Fim:</strong> ${item.data_fim ? new Date(item.data_fim).toLocaleString('pt-BR') : 'Em andamento'}</p>
+                                                <p><strong>Atualização:</strong> ${new Date(item.ultima_atualizacao).toLocaleString('pt-BR')}</p>
                                             </div>
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <p><strong>Início:</strong> ${new Date(item.data_inicio).toLocaleString('pt-BR')}</p>
-                                                    <p><strong>Fim:</strong> ${item.data_fim ? new Date(item.data_fim).toLocaleString('pt-BR') : 'Em andamento'}</p>
-                                                    <p><strong>Atualização:</strong> ${new Date(item.ultima_atualizacao).toLocaleString('pt-BR')}</p>
-                                                </div>
-                                                <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
-                                                <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
-                                            </div>
-                                            ${isAdmin === 'administrador' ? `
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}">Editar</button>
-                                            </div>
+                                            <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
+                                            <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
+                                        </div>
+                                        ${isAdmin === 'administrador' ? `
+                                        <div class="modal-footer">
+                                            ${item.n_execucao !== 0 ? `
+                                            <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}">Editar</button>
                                             ` : ''}
                                         </div>
+                                        ` : ''}
+                                    </div>
                                     `;
                                     bodyHistorico.innerHTML += card;
                                 });
@@ -1513,7 +1517,7 @@
                             if (data && data.solicitacoes.length > 0) {
                                 bodyDetalhes.innerHTML = '';
                                 data.solicitacoes.forEach(item => {
-                                    console.log(item)
+
                                     bodyDetalhes.innerHTML = `
                                         <div class="card">
                                             <div class="card-body">
