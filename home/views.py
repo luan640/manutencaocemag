@@ -668,8 +668,8 @@ def atualizar_registros(pk, nova_data_inicio, nova_data_fim):
     registro_atual = MaquinaParada.objects.filter(execucao_id=pk).select_related('execucao').first()
 
     if not registro_atual:
-        raise ValueError("Registro atual não encontrado")
-
+        return 'Não teve registro de máquina parada'
+    
     # Atualizar o registro atual
     registro_atual.data_inicio = nova_data_inicio
     registro_atual.data_fim = nova_data_fim
