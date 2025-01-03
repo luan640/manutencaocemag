@@ -12,7 +12,7 @@ def ultima_execucao(id_solicitacao):
 
 def operadores_all(area):
 
-    operadores = Operador.objects.filter(area=area)
+    operadores = Operador.objects.filter(area=area, status='ativo')
 
     return operadores
 

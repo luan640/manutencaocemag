@@ -302,7 +302,7 @@ def aguardando_primeiro_atendimento_producao(request):
         'area_manutencao': InfoSolicitacao.AREA_CHOICES,
         'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
         'today': timezone.now().date(),  # Data atual sem hora
-        'operadores': Operador.objects.filter(area='producao'),
+        'operadores': Operador.objects.filter(area='producao', status='ativo'),
         'request':request
     }
 
@@ -315,7 +315,7 @@ def aguardando_primeiro_atendimento_producao(request):
             'area_manutencao': InfoSolicitacao.AREA_CHOICES,
             'tipo_manutencao': InfoSolicitacao.TIPO_CHOICES,
             'today': timezone.now().date(),  # Data atual sem hora
-            'operadores': Operador.objects.filter(area='producao'),
+            'operadores': Operador.objects.filter(area='producao', status='ativo'),
             'request':request
         }
 
@@ -567,7 +567,7 @@ def historico_ordem(request, pk):
     data_list = []
     for execucao in data:
         execucao_dict = execucao
-        operadores = Execucao.objects.get(pk=execucao['id']).operador.all().values_list('nome', flat=True)
+        operadores = Execucao.objects.get(pk=execucao['id']).operador.filter(status='ativo').values_list('nome', flat=True)
         execucao_dict['operadores'] = list(operadores)
         data_list.append(execucao_dict)
 
@@ -586,7 +586,7 @@ def dados_editar_execucao(request, pk):
     data_list = []
     for execucao in data:
         execucao_dict = execucao
-        operadores = Execucao.objects.get(pk=execucao['id']).operador.all().values_list('nome', flat=True)
+        operadores = Execucao.objects.get(pk=execucao['id']).operador.filter(status='ativo').values_list('nome', flat=True)
         execucao_dict['operadores'] = list(operadores)
         data_list.append(execucao_dict)
 
