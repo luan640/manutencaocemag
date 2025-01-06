@@ -27,11 +27,12 @@ User = get_user_model()
 @login_required
 @csrf_exempt
 def criar_execucao(request, solicitacao_id):
+    
     solicitacao = get_object_or_404(Solicitacao, pk=solicitacao_id)
 
     ultima_execucao = Execucao.objects.filter(ordem=solicitacao).order_by('n_execucao').last()
     n_execucao = ultima_execucao.n_execucao + 1 if ultima_execucao else 0
-    
+
     if request.method == 'POST':
         
         with transaction.atomic():

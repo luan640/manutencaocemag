@@ -353,8 +353,6 @@
                     const selectId = `#id_operador_${pk}`;
                     const modalId = `#executarModal${pk}`;
 
-                    console.log(pk)
-
                     // Verifica se o modal já tem o evento registrado para evitar múltiplas anexações
                     if (!$(modalId).data('select2-attached')) {
                         $(modalId).on('shown.bs.modal', function() {
@@ -586,27 +584,26 @@
                         }
                     })
                     .then(response => {
-
                         if (response.ok) {
-                            return response.json();
+                            return response.json(); // Retorna o JSON se a resposta for bem-sucedida
                         } else {
-                            throw new Error('Erro ao executar a ordem.');
+                            // Tenta extrair a mensagem de erro do corpo da resposta
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error || 'Erro desconhecido no backend.'); // Lança o erro capturado do backend
+                            });
                         }
                     })
                     .then(data => {
-
                         if (data.success) {
                             Promise.all([
-
-                                document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                document.getElementById('headingAguardandoPrimeiroAtendimento')
                                     ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [
                                         attachExecutar1OrdemEventListeners,
                                         attachStatusChangeListeners,
                                         escolherPlanoPreventiva,
                                         attachModalEventListeners
                                     ])
-                                    : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
-
+                                    : Promise.resolve(), // Garante que o array de Promises sempre receba um valor
                                 loadSection("solicitacoes/", "solicitacoes-container", [
                                     attachExecutarOrdemEventListeners,
                                     mudancaStatusFinalizada,
@@ -616,18 +613,20 @@
                                     attachHistorico,
                                     attachMaisDetalhes
                                 ]),
-
-                            ]).then(() => {
-
-                            }).catch(error => {
-                                console.error("Erro ao carregar as seções:", error);
-                            });
-                            // Atualizar as seções necessárias
+                            ])
+                                .then(() => {
+                                    // Se necessário, insira lógica adicional aqui após carregar as seções
+                                })
+                                .catch(error => {
+                                    console.error("Erro ao carregar as seções:", error);
+                                });
 
                             // Fechar o modal
                             const modal = document.getElementById(modalId);
-                            const modalInstance = bootstrap.Modal.getInstance(modal);
-                            modalInstance.hide();
+                            if (modal) {
+                                const modalInstance = bootstrap.Modal.getInstance(modal);
+                                modalInstance?.hide();
+                            }
 
                             // Mostrar o popup de sucesso
                             Swal.fire({
@@ -639,13 +638,14 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Erro:', error);
+                        // Exibe o erro no SweetAlert
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            text: error.message || 'Ocorreu um erro ao executar a ordem. Tente novamente.',
                             confirmButtonText: 'OK'
                         });
+                        console.error('Erro:', error);
                     });
                 });
             });
