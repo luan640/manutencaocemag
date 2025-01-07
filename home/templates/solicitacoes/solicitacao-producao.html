@@ -1172,15 +1172,17 @@
                                         <label for="dataFim${item.id}" class="form-label">Data Fim</label>
                                         <input type="datetime-local" class="form-control" id="dataFim${item.id}" name="data_fim" required>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="observacao${item.id}" class="form-label">Observação</label>
-                                        <textarea class="form-control" id="observacao${item.id}" name="observacao" required></textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="operadores${item.id}" class="form-label">Operadores</label>
-                                        <select multiple="multiple" class="form-control" id="operadores${item.id}" name="operadores[]" required>
-                                        </select>
-                                    </div>
+                                    ${item.n_execucao > 0 ? `
+                                        <div class="mb-3">
+                                            <label for="observacao${item.id}" class="form-label">Observação</label>
+                                            <textarea class="form-control" id="observacao${item.id}" name="observacao" required></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="operadores${item.id}" class="form-label">Operadores</label>
+                                            <select multiple="multiple" class="form-control" id="operadores${item.id}" name="operadores[]" required>
+                                            </select>
+                                        </div>
+                                    ` : ''}
                                 </form>
                             </div>
                             <div class="modal-footer">
@@ -1256,7 +1258,7 @@
                         .then(item => {
                             // Fecha o modal de carregamento
                             Swal.close();
-
+                            console.log(item);
                             // Cria e exibe o modal de edição com os dados carregados
                             createEditModal(item.dados[0], item.operadores);
                         })
@@ -1277,15 +1279,6 @@
 
         function attachSaveButton(itemId) {
             document.getElementById(`saveEdit_${itemId}`).addEventListener('click', function() {
-                
-                Swal.fire({
-                    title: 'Processando...',
-                    text: 'Aguarde enquanto processamos a edição.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading(); // Exibe o spinner de carregamento
-                    }
-                });
 
                 const form = document.getElementById(`editForm${itemId}`);
 
@@ -1301,6 +1294,15 @@
                     observacao: document.getElementById(`observacao${itemId}`).value,
                     operadores: $(`#operadores${itemId}`).val(),
                 };
+
+                Swal.fire({
+                    title: 'Processando...',
+                    text: 'Aguarde enquanto processamos a edição.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading(); // Exibe o spinner de carregamento
+                    }
+                });
 
                 fetch(`/home/historico/${itemId}/editar/`, {
                     method: 'POST',
@@ -1462,13 +1464,9 @@
                                             <p><strong>Observação:</strong> ${item.observacao ? item.observacao : 'N/A'}</p>
                                             <p><strong>Operadores:</strong> ${item.operadores.length > 0 ? item.operadores.join(', ') : 'Nenhum operador registrado'}</p>
                                         </div>
-                                        ${isAdmin === 'administrador' ? `
                                         <div class="modal-footer">
-                                            ${item.n_execucao !== 0 ? `
                                             <button type="button" class="btn badge btn-primary" id="btnEdit_${item.id}">Editar</button>
-                                            ` : ''}
                                         </div>
-                                        ` : ''}
                                     </div>
                                     `;
                                     bodyHistorico.innerHTML += card;

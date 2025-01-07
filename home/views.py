@@ -579,7 +579,7 @@ def dados_editar_execucao(request, pk):
         Execucao.objects
         .filter(id=pk)
         .prefetch_related('operador')  # Carrega operadores relacionados
-        .values('id', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
+        .values('id','n_execucao','data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
                 'che_maq_parada', 'exec_maq_parada', 'apos_exec_maq_parada', 'status')
     ).order_by('n_execucao')
 

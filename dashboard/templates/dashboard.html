@@ -956,17 +956,21 @@ document.addEventListener('DOMContentLoaded', function () {
         exportar('/exportar-solicitacao-setor/')
     });
 
-    document.getElementById('dadosMtbfMaquina').addEventListener('click', () => {
-        exportar('/exportar-mtbf-maquina/')
-    });
+    if (area === 'producao'){
 
-    document.getElementById('dadosMttrMaquina').addEventListener('click', () => {
-        exportar('/exportar-mttr-maquina/')
-    });
+        document.getElementById('dadosMtbfMaquina').addEventListener('click', () => {
+            exportar('/exportar-mtbf-maquina/')
+        });
 
-    document.getElementById('dadosDispMaquina').addEventListener('click', () => {
-        exportar('/exportar-disponibilidade-maquina/')
-    });
+        document.getElementById('dadosMttrMaquina').addEventListener('click', () => {
+            exportar('/exportar-mttr-maquina/')
+        });
+
+        document.getElementById('dadosDispMaquina').addEventListener('click', () => {
+            exportar('/exportar-disponibilidade-maquina/')
+        });
+
+    }
 
     document.getElementById('dadosHorasTrabSetor').addEventListener('click', () => {
         exportar('/exportar-horas-trabalhadas-setor/')
