@@ -373,6 +373,15 @@
             event.preventDefault();
             const itemId = $(this).data('id'); // Armazena o ID do item
 
+            Swal.fire({
+                title: 'Processando...',
+                text: 'Aguarde enquanto o histórico é carregado.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Exibe o spinner de carregamento
+                }
+            });
+
             // Faz a requisição para buscar o histórico
             fetch(`/buscar-historico?id=${itemId}`, {
                 method: 'GET',
@@ -393,6 +402,7 @@
                 // Abre o modal
                 const modalVerHistorico = new bootstrap.Modal(document.getElementById('modalVerHistorico'));
                 modalVerHistorico.show();
+                Swal.close();
             })
             .catch(error => console.error('Erro ao buscar dados:', error));
         });
