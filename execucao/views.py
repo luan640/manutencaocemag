@@ -160,8 +160,8 @@ def editar_solicitacao(request, solicitacao_id):
             programacao = parse_datetime(request.POST.get('data_programacao'))
             programacao = programacao if programacao else None
 
-            data_inicio = programacao
-            data_fim = programacao
+            data_inicio = data_abertura
+            data_fim = data_abertura
             status_inicial = request.POST.get('status_inicial')
             nivel_prioridade = request.POST.get('prioridade')
             if not nivel_prioridade:

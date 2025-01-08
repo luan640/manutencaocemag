@@ -24,7 +24,7 @@ DATABASES = {
         'HOST': env('DB_HOST'),
         'PORT': env('DB_PORT'),
         'OPTIONS': {
-            'options': '-c search_path=manutencao_v3',
+            'options': '-c search_path=manutencao_testes',
         },
     }
 }
