@@ -11,6 +11,7 @@ from django.db.models.functions import TruncDate
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, MaquinaParada, InfoSolicitacao
 from cadastro.models import Maquina, Setor
+from preventiva.models import PlanoPreventiva
 
 from io import BytesIO
 from datetime import datetime
@@ -21,6 +22,8 @@ def dashboard(request):
     setores = Setor.objects.all()
 
     return render(request, 'dashboard.html', {'setores':setores})
+
+# Gráficos
 
 def mtbf_maquina(request):
     
@@ -438,6 +441,157 @@ def exportar_disponibilidade_maquina(request):
     response['Content-Disposition'] = 'attachment; filename="disponibilidade_maquina.xlsx"'
     return response
 
+def disponibilidade_maquinas_criticas(request):
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'data_fim__lte': data_fim,
+        'ordem__area': area
+
+    }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    maquinas_criticas = PlanoPreventiva.objects.filter(
+        ativo=True
+    ).values_list('maquina__id', flat=True).distinct().exclude(maquina__codigo='ETE')
+
+    # Buscar e calcular MTBF
+    paradas = (
+        MaquinaParada.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
+    )
+
+    # Buscar e calcular MTTR
+    execucoes = (
+        Execucao.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
+    )
+
+    # Organizar os dados em dicionários para fácil acesso
+    mtbf_dict = {
+        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
+        for parada in paradas
+    }
+    mttr_dict = {
+        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
+        for execucao in execucoes
+    }
+
+    # Calcular a disponibilidade para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
+        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
+
+        if mtbf + mttr > 0:
+            disponibilidade = (mtbf / (mtbf + mttr)) * 100
+        else:
+            disponibilidade = 0
+
+        resultados.append({
+            'maquina': maquina,
+            'disponibilidade': round(disponibilidade, 2)
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
+
+    return JsonResponse(resultados, safe=False)
+
+def exportar_disponibilidade_maquina_criticas(request):
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
+    setor = request.GET.get('setor')
+    area = request.GET.get('area')
+
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    filtros = {
+        'data_inicio__gte': data_inicio,
+        'data_fim__lte': data_fim,
+        'ordem__area': area
+
+    }
+    if setor:
+        filtros['ordem__setor_id'] = int(setor)
+
+    maquinas_criticas = PlanoPreventiva.objects.filter(
+        ativo=True
+    ).values_list('maquina__id', flat=True).distinct().exclude(maquina__codigo='ETE')
+
+    # Buscar e calcular MTBF
+    paradas = (
+        MaquinaParada.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
+    )
+
+    # Buscar e calcular MTTR
+    execucoes = (
+        Execucao.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
+        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+        .values('ordem__maquina__codigo')
+        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
+    )
+
+    # Organizar os dados em dicionários para fácil acesso
+    mtbf_dict = {
+        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
+        for parada in paradas
+    }
+    mttr_dict = {
+        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
+        for execucao in execucoes
+    }
+
+    # Calcular a disponibilidade para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
+        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
+
+        if mtbf + mttr > 0:
+            disponibilidade = (mtbf / (mtbf + mttr)) * 100
+        else:
+            disponibilidade = 0
+
+        resultados.append({
+            'maquina': maquina,
+            'disponibilidade': round(disponibilidade, 2)
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
+
+    df = pd.DataFrame(resultados)
+
+    # Criar o arquivo Excel na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Disponibilidade Máquina Crítica')
+
+    # Configurar a resposta para download
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="disponibilidade_maquina.xlsx"'
+    return response
+
 def ordens_prazo(request):
     """
     Retorna um indicador de ordens finalizadas dentro e fora do prazo.
@@ -686,6 +840,8 @@ def exportar_solicitacao_setor(request):
     )
     response['Content-Disposition'] = 'attachment; filename="solicitacao_setor.xlsx"'
     return response
+
+# Cards
 
 def quantidade_abertura_ordens(request):
 

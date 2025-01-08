@@ -372,6 +372,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Disponibilidade maquinas críticas -->
+    <div class="card shadow mb-3">
+        <div class="card-header">
+            Disponibilidade por Máquina Crítica
+        </div>
+        <div class="card-body">
+            <div class="scroll-container" style="position: relative;">
+                <canvas id="graficoDisponibilidadeMaquinaCritica"></canvas>
+                <button id="dadosDispMaquinaCritica" class="btn btn-download" title="Download Excel">
+                    <i class="fa fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     {% endif %}
     
 </div>
@@ -385,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function () {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    let graficoMtbf, graficoMttr, graficoOrdensPrazo,graficoHorasTrabalhadasSetor,graficoHorasTrabalhadasTipo,graficoOrdensPrazo2, graficoTipoOrdem, graficoMaquinasParadas, graficoSolicitacaoSetor, graficoDisponibilidadeMaquina;
+    let graficoMtbf, graficoMttr, graficoOrdensPrazo,graficoHorasTrabalhadasSetor,graficoHorasTrabalhadasTipo,graficoOrdensPrazo2, graficoTipoOrdem, graficoMaquinasParadas, graficoSolicitacaoSetor, graficoDisponibilidadeMaquina, graficoDisponibilidadeMaquinaCritica;
 
     const area = document.getElementById('area').value;
 
@@ -533,6 +549,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
                     })
                     .catch(error => handleError(error, 'loading-disponibilidade')),
+                
+                fetch(`/disponibilidade-maq-criticas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        if (graficoDisponibilidadeMaquinaCritica) {
+                            graficoDisponibilidadeMaquinaCritica.destroy();
+                        }
+                        
+                        const maquinas = data.map(item => item.maquina);
+                        const disponibilidade = data.map(item => item.disponibilidade);
+                        graficoDisponibilidadeMaquinaCritica = criarGraficoBar('graficoDisponibilidadeMaquinaCritica', 'Disponibilidade %', disponibilidade, maquinas);
+                    })
+                    .catch(error => handleError(error, 'loading-disponibilidade-criticas')),
 
                 fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
@@ -601,6 +630,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ]);
         } else {
             return Promise.all([
+                
                 fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
                     .then(data => {
@@ -712,6 +742,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         hideLoader('loading-execucao');
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
+                
                 fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
                     .then(data => {
@@ -719,6 +750,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         hideLoader('loading-execucao');
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
+                
                 fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
                     .then(handleResponse)
                     .then(data => {
@@ -968,6 +1000,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.getElementById('dadosDispMaquina').addEventListener('click', () => {
             exportar('/exportar-disponibilidade-maquina/')
+        });
+
+        document.getElementById('dadosDispMaquinaCritica').addEventListener('click', () => {
+            exportar('/exportar-disponibilidade-maq-criticas/')
         });
 
     }

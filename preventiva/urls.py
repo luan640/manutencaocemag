@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import excluir_plano_preventiva,preventivas_em_aberto,ultimas_preventivas,calcular_manutencoes_semanais,planejamento_anual,programacao,ordens_programadas,criar_plano_preventiva,criar_tarefa_preventiva,criar_solicitacao_preventiva,list_preventivas,editar_plano_preventiva
+from . import views
 
 urlpatterns = [
     path('preventiva/', list_preventivas, name='list_preventivas'),
@@ -20,5 +21,7 @@ urlpatterns = [
     path('ultimas-preventivas/', ultimas_preventivas, name='ultimas_preventivas'),
     path('preventivas-aberto/', preventivas_em_aberto, name='preventivas_em_aberto'),
 
+    path('get-maquinas-preventiva/', views.get_maquinas_preventiva, name='get_maquinas_preventiva'),
+    path('buscar-historico/', views.buscar_historico, name='buscar_historico')
 
 ]

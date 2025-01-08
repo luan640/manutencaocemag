@@ -660,11 +660,18 @@
                     })
                     .then(response => {
                         if (response.ok) {
-                            return response.json();
+                            return response.json(); // Continua para o próximo .then com os dados do JSON
                         } else {
-                            throw new Error('Erro ao executar a ordem.');
+                            // Tenta capturar a mensagem de erro do backend no formato JSON
+                            return response.json()
+                                .then(errorData => {
+                                    throw new Error(errorData.error || 'Erro ao executar a ordem.'); // Lança o erro com a mensagem específica do backend
+                                })
+                                .catch(() => {
+                                    throw new Error('Erro ao executar a ordem.'); // Lança uma mensagem genérica se o JSON falhar
+                                });
                         }
-                    })
+                    })    
                     .then(data => {
                         if (data.success) {
                             Promise.all([

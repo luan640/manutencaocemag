@@ -5,11 +5,13 @@ from django.forms import formset_factory
 from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Count
 from django.utils.timezone import datetime, timedelta, now
 
-from .models import PlanoPreventiva, TarefaPreventiva
+from .models import PlanoPreventiva, TarefaPreventiva, SolicitacaoPreventiva
 from .forms import PlanoPreventivaForm, TarefaPreventivaForm, SolicitacaoPreventivaForm, TarefaPreventivaFormSet
 from cadastro.models import Maquina
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao
+
+from datetime import date, timedelta
 
 def criar_plano_preventiva(request, pk_maquina):
     maquina = get_object_or_404(Maquina, pk=pk_maquina)  # Obtém a máquina específica
@@ -83,6 +85,8 @@ def criar_solicitacao_preventiva(request):
 
 def list_preventivas(request):
     area = request.GET.get('area')  # Obtém o parâmetro 'area' da query string
+    maquina = request.GET.get('maquina')  # Captura o filtro de Máquina
+    plano = request.GET.get('plano')  # Captura o filtro de Plano
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         draw = int(request.GET.get('draw', 0))
@@ -113,6 +117,14 @@ def list_preventivas(request):
         search_value = request.GET.get('search[value]', '')
 
         preventivas = PlanoPreventiva.objects.filter(area=area, ativo=True)
+
+        # Filtros por Máquina e Plano
+        if maquina:
+            preventivas = preventivas.filter(maquina__codigo=maquina)
+        if plano:
+            preventivas = preventivas.filter(nome__icontains=plano)
+
+        # Busca global (campo de pesquisa do DataTables)
         if search_value:
             preventivas = preventivas.filter(
                 nome__icontains=search_value
@@ -136,12 +148,12 @@ def list_preventivas(request):
                 'abertura_automatica': 'Sim' if preventiva.abertura_automatica else 'Não',
             })
         
-        maquinas=[]
-        for maquina in maquinas_queryset:
+        maquinas = []
+        for maquina_obj in maquinas_queryset:
             maquinas.append({
-                'id': maquina.pk,
-                'codigo': maquina.codigo,
-                'nome': maquina.descricao,
+                'id': maquina_obj.pk,
+                'codigo': maquina_obj.codigo,
+                'nome': maquina_obj.descricao,
             })
 
         return JsonResponse({
@@ -150,10 +162,47 @@ def list_preventivas(request):
             'recordsFiltered': paginator.count,
             'data': data,
             'maquinas': maquinas,
-
         })
 
     return render(request, 'visualizacao/list.html')
+
+def get_maquinas_preventiva(request):
+    """
+    Retorna uma lista paginada de máquinas associadas a planos de preventiva ativos,
+    com suporte a busca por código ou descrição.
+    """
+
+    # Obtém os parâmetros da requisição
+    search = request.GET.get('search', '').strip()  # Termo de busca
+    page = int(request.GET.get('page', 1))  # Página atual (padrão é 1)
+    per_page = int(request.GET.get('per_page', 10))  # Itens por página (padrão é 10)
+
+    # Filtra as máquinas que possuem planos de preventiva ativos
+    maquinas_query = Maquina.objects.filter(
+        planos_preventiva__ativo=True  # Apenas máquinas com planos de preventiva ativos
+    ).distinct()  # Remove duplicatas caso uma máquina esteja associada a múltiplos planos
+
+    # Aplica o filtro de busca, se necessário
+    if search:
+        maquinas_query = maquinas_query.filter(
+            Q(codigo__icontains=search) | Q(descricao__icontains=search)
+        ).order_by('codigo')
+
+    # Paginação
+    paginator = Paginator(maquinas_query, per_page)
+    maquinas_page = paginator.get_page(page)
+
+    # Monta os resultados paginados no formato esperado pelo Select2
+    data = {
+        'results': [
+            {'id': maquina.codigo, 'text': f"{maquina.codigo} - {maquina.descricao}"} for maquina in maquinas_page
+        ],
+        'pagination': {
+            'more': maquinas_page.has_next()  # Indica se há mais páginas disponíveis
+        },
+    }
+
+    return JsonResponse(data)
 
 def editar_plano_preventiva(request, pk):
     plano = get_object_or_404(PlanoPreventiva, pk=pk)
@@ -301,7 +350,7 @@ def ultimas_preventivas(request):
     area = request.GET.get('area')
 
     # Filtra as solicitações planejadas e finalizadas
-    solicitacoes = Solicitacao.objects.filter(planejada=True, area=area, status_andamento='finalizada')
+    solicitacoes = Solicitacao.objects.filter(planejada=True, area=area, status_andamento='finalizada').exclude(maquina__codigo='ETE')
 
     # Subquery para encontrar a última execução de cada solicitação
     ultima_execucao_subquery = Execucao.objects.filter(
@@ -321,27 +370,40 @@ def ultimas_preventivas(request):
 
 def preventivas_em_aberto(request):
     """
-    Retorna uma lista de preventivas em aberto.
+    Retorna uma lista de preventivas em aberto, mostrando apenas o maior n_execucao
+    (última execução) para cada ordem em aberto, limitado ao top 5.
     """
+
     area = request.GET.get('area')
 
-    # Filtra as solicitações planejadas e finalizadas
-    solicitacoes = Solicitacao.objects.filter(planejada=True,area=area).exclude(status_andamento='finalizada')
+    # Filtra as solicitações planejadas e abertas
+    solicitacoes = Solicitacao.objects.filter(
+        planejada=True,
+        area=area
+    ).filter(
+        ~Q(maquina__codigo='ETE'),  # Máquina diferente de 'ETE'
+        ~Q(status_andamento='finalizada')  # Status diferente de 'finalizada'
+    )
 
-    # Subquery para encontrar a última execução de cada solicitação
+    # Subquery para encontrar a maior execução para cada ordem
     ultima_execucao_subquery = Execucao.objects.filter(
         ordem=OuterRef('pk')
     ).order_by('-n_execucao')
 
-    # Anota o número e a última atualização da execução
-    data = solicitacoes.annotate(
+    # Anota o número da maior execução e a última atualização para cada ordem
+    solicitacoes_anotadas = solicitacoes.annotate(
         ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1]),
         ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1])
-    ).values(
-        'id', 'ultima_execucao_n', 'ultima_atualizacao', 'maquina__codigo', 'descricao'
-    ).order_by('-ultima_atualizacao')[:5]
+    ).order_by('-ultima_execucao_n')  # Ordena pelas maiores execuções
 
-    # Retorna a resposta JSON com os dados serializáveis
+    # Limita o resultado ao top 5
+    top_5_solicitacoes = solicitacoes_anotadas[:5]
+
+    # Serializa os dados para JSON
+    data = top_5_solicitacoes.values(
+        'id', 'maquina__codigo', 'descricao', 'ultima_execucao_n', 'ultima_atualizacao'
+    )
+
     return JsonResponse({'data': list(data)})
 
 def excluir_plano_preventiva(request, pk):
@@ -352,3 +414,93 @@ def excluir_plano_preventiva(request, pk):
     plano.save()
     
     return JsonResponse({'success': 'success'})
+
+def calcular_proximas_preventivas(plano):
+    """
+    Calcula as próximas preventivas com base na última execução e na periodicidade do plano.
+    Retorna apenas datas dentro do ano atual.
+    """
+    # Obtém a última execução do plano
+    ultima_solicitacao = SolicitacaoPreventiva.objects.filter(
+        plano=plano, finalizada=True
+    ).order_by('-data').first()
+
+    # Se não houver última execução, usa a data_base do plano
+    data_base = ultima_solicitacao.data if ultima_solicitacao else plano.data_base
+
+    if not data_base:
+        # Se nenhuma data_base ou última execução estiver definida, não há como calcular
+        return []
+
+    # Lista para armazenar as próximas preventivas
+    proximas_preventivas = []
+
+    # Calcula as próximas preventivas dentro do ano atual
+    data_atual = date.today()
+    ano_atual = data_atual.year
+
+    # Começa a partir da data base
+    proxima_data = data_base + timedelta(days=plano.periodicidade)
+
+    while proxima_data.year == ano_atual:
+        proximas_preventivas.append(proxima_data.strftime('%d/%m/%Y'))
+        proxima_data += timedelta(days=plano.periodicidade)
+
+    return proximas_preventivas
+
+
+def buscar_historico(request):
+    item_id = request.GET.get('id')  # ID da máquina ou do item
+
+    if not item_id:
+        return JsonResponse({'error': 'ID não fornecido'}, status=400)
+
+    try:
+        # Obter o plano preventivo específico
+        plano = PlanoPreventiva.objects.get(pk=item_id)
+
+        # Calcula as próximas preventivas
+        proximas_preventivas = calcular_proximas_preventivas(plano)
+
+        # Filtra as solicitações planejadas para a máquina do plano, excluindo 'ETE'
+        solicitacoes = Solicitacao.objects.filter(
+            planejada=True,
+            maquina__codigo=plano.maquina.codigo,
+            status='aprovar'
+        ).exclude(
+            maquina__codigo='ETE'
+        )
+
+        # Subquery para encontrar a última execução de cada solicitação
+        ultima_execucao_subquery = Execucao.objects.filter(
+            ordem=OuterRef('pk')
+        ).order_by('-n_execucao')
+
+        # Anota o número da última execução e sua última atualização
+        solicitacoes_anotadas = solicitacoes.annotate(
+            ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1]),
+            ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1]),
+            data_fim=Subquery(ultima_execucao_subquery.values('data_fim')[:1])    
+        ).values(
+            'id', 'ultima_execucao_n', 'ultima_atualizacao','data_fim', 'maquina__codigo', 'descricao', 'status_andamento'
+        ).order_by('-data_fim')
+
+        # Prepara os dados do histórico das preventivas realizadas
+        historico_preventivas = []
+        for solicitacao in solicitacoes_anotadas:
+            historico_preventivas.append({
+                "os": solicitacao['id'],
+                "data": solicitacao['data_fim'],
+                "descricao": solicitacao['descricao'],
+                "status": solicitacao['status_andamento'] if solicitacao['status_andamento'] else "Sem execução"
+            })
+
+        # Retornar os dados como JSON
+        return JsonResponse({
+            "proximas_preventivas": proximas_preventivas,
+            "historico_preventivas": historico_preventivas,
+        })
+
+    except PlanoPreventiva.DoesNotExist:
+        return JsonResponse({'error': 'Item não encontrado'}, status=404)
+

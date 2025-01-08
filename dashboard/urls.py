@@ -19,6 +19,7 @@ urlpatterns = [
     path('exportar-disponibilidade-maquina/', views.exportar_disponibilidade_maquina, name='exportar_disponibilidade_maquina'),
     path('exportar-horas-trabalhadas-setor/', views.exportar_horas_trabalhadas_setor, name='exportar_horas_trabalhadas_setor'),
     path('exportar-horas-trabalhadas-tipo/', views.exportar_horas_trabalhadas_tipo, name='exportar_horas_trabalhadas_tipo'),
+    path('exportar-disponibilidade-maq-criticas/', views.exportar_disponibilidade_maquina_criticas, name='exportar_disponibilidade_maquina_criticas'),
 
     path('ordens-abertas/', views.quantidade_abertura_ordens, name='quantidade_abertura_ordens'),
     path('ordens-finalizada/', views.quantidade_finalizada, name='quantidade_finalizada'),
@@ -30,5 +31,6 @@ urlpatterns = [
     path('horas-trabalhadas-setor/', views.horas_trabalhadas_setor, name='horas_trabalhadas_setor'),
     path('horas-trabalhadas-tipo/', views.horas_trabalhadas_tipo, name='horas_trabalhadas_tipo'),
     path('disponibilidade-geral/', views.disponibilidade_geral, name='disponibilidade_geral'),
+    path('disponibilidade-maq-criticas/', views.disponibilidade_maquinas_criticas, name='disponibilidade_maquinas_criticas'),
 
 ]

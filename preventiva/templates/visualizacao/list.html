@@ -17,6 +17,20 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="filtroMaquina" class="form-label">Filtro por Máquina:</label>
+                            <select id="filtroMaquina" class="form-select">
+                                <option value="">Todas as Máquinas</option>
+                                <option value="maquina1">Máquina 1</option>
+                                <option value="maquina2">Máquina 2</option>
+                                <option value="maquina3">Máquina 3</option>
+                            </select>
+                        </div>
+                    </div>
+    
+                    <!-- Tabela -->
                     <table id="preventivasTable" class="table table-striped table-hover">
                         <thead class="table-light">
                             <tr>
@@ -107,6 +121,50 @@
         </div>
     </div>
 </div>
+
+<!-- modalVerHistorico -->
+<div class="modal fade" id="modalVerHistorico" tabindex="-1" aria-labelledby="modalVerHistoricoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg"> <!-- Alterado para modal-lg para maior largura -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalVerHistoricoLabel">Histórico</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Data das próximas preventivas -->
+                <div class="row mb-3">
+                    <h6>Data das próximas preventivas</h6>
+                    <ul id="proximasPreventivas" class="list-group" style="max-height: 250px; overflow-y: auto;">
+                        <!-- Os dados serão preenchidos dinamicamente -->
+                    </ul>
+                </div>
+                <!-- Tabela com o histórico das preventivas realizadas -->
+                <div class="row mb-3">
+                    <h6>Histórico das preventivas realizadas</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#OS</th>
+                                    <th>Data</th>
+                                    <th>Plano</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historicoPreventivas">
+                                <!-- Os dados serão preenchidos dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -310,6 +368,69 @@
             fetchDataExcluir(itemId);
             $(modalConfirmarExclusao).modal('hide');  // Fecha o modal após confirmação
         });
+
+        $('#preventivasTable').on('click', '.btnVisualizar', function (event) {
+            event.preventDefault();
+            const itemId = $(this).data('id'); // Armazena o ID do item
+
+            // Faz a requisição para buscar o histórico
+            fetch(`/buscar-historico?id=${itemId}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Preenche o modal com os dados retornados
+                preencherModalHistorico(data);
+
+                // Abre o modal
+                const modalVerHistorico = new bootstrap.Modal(document.getElementById('modalVerHistorico'));
+                modalVerHistorico.show();
+            })
+            .catch(error => console.error('Erro ao buscar dados:', error));
+        });
+
+        // Função para preencher o modal com os dados retornados
+        function preencherModalHistorico(data) {
+            // Preenche as próximas preventivas
+            const proximasPreventivas = document.getElementById('proximasPreventivas');
+            proximasPreventivas.innerHTML = '';
+            if (data.proximas_preventivas && data.proximas_preventivas.length > 0) {
+                data.proximas_preventivas.forEach(preventiva => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.textContent = preventiva; // Exemplo: "10/01/2025"
+                    proximasPreventivas.appendChild(li);
+                });
+            } else {
+                proximasPreventivas.innerHTML = '<li class="list-group-item">Nenhuma próxima preventiva disponível.</li>';
+            }
+
+            // Preenche o histórico de preventivas realizadas
+            const historicoPreventivas = document.getElementById('historicoPreventivas');
+            historicoPreventivas.innerHTML = '';
+            if (data.historico_preventivas && data.historico_preventivas.length > 0) {
+                data.historico_preventivas.forEach(preventiva => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${preventiva.os}</td>
+                        <td>${preventiva.data}</td>
+                        <td>${preventiva.descricao}</td>
+                        <td>${preventiva.status}</td>
+                    `;
+                    historicoPreventivas.appendChild(row);
+                });
+            } else {
+                historicoPreventivas.innerHTML = '<tr><td colspan="4">Nenhum histórico disponível.</td></tr>';
+            }
+        }
 
         // Função para realizar a requisição de exclusão
         function fetchDataExcluir(id) {
