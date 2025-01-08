@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.utils.timezone import make_aware
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from .models import PlanoPreventiva, Solicitacao, SolicitacaoPreventiva
 from execucao.models import InfoSolicitacao, Execucao
@@ -69,41 +69,39 @@ def verificar_abertura_solicitacoes_preventivas():
 # def inserir_ordens_preventivas_historicas():
 #     # Dados fornecidos
 #     historico_ordens = [
-#         {"maquina": 124, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-02-11"},
-#         {"maquina": 125, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-02-11"},
-#         {"maquina": 64, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-02-11"},
-#         {"maquina": 10, "setor": 1, "descricao": "10 Meses", "area": "producao", "data": "2024-03-30"},
-#         {"maquina": 13, "setor": 1, "descricao": "10 Meses", "area": "producao", "data": "2024-03-16"},
-#         {"maquina": 65, "setor": 5, "descricao": "10 Meses", "area": "producao", "data": "2024-07-15"},
-#         {"maquina": 27, "setor": 5, "descricao": "10 Meses", "area": "producao", "data": "2024-09-14"},
-#         {"maquina": 69, "setor": 1, "descricao": "10 Meses", "area": "producao", "data": "2024-08-01"},
-#         {"maquina": 4, "setor": 1, "descricao": "10 Meses", "area": "producao", "data": "2024-08-02"},
-#         {"maquina": 169, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-09-07"},
-#         {"maquina": 46, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-09-07"},
-#         {"maquina": 17, "setor": 1, "descricao": "10 Meses", "area": "producao", "data": "2024-07-19"},
-#         {"maquina": 125, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-10-30"},
-#         {"maquina": 64, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-10-30"},
-#         {"maquina": 124, "setor": 10, "descricao": "6 Meses", "area": "producao", "data": "2024-10-20"},
+#         {"id": 1591, "maquina": 27, "setor": 5, "plano_id": 18, "descricao": "10 Meses", "area": "producao", "data": "2024-04-01 00:00:00"},
+#         {"id": 1912, "maquina": 69, "setor": 1, "plano_id": 32, "descricao": "10 Meses", "area": "producao", "data": "2024-05-31 00:00:00"},
+#         {"id": 1947, "maquina": 4, "setor": 1, "plano_id": 27, "descricao": "10 Meses", "area": "producao", "data": "2024-06-07 00:00:00"},
+#         {"id": 2203, "maquina": 20, "setor": 5, "plano_id": 39, "descricao": "10 Meses", "area": "producao", "data": "2024-07-24 00:00:00"},
 #     ]
 
 #     # Usuário padrão para a solicitação
-#     solicitante = User.objects.get(matricula='0000')
+#     try:
+#         solicitante = User.objects.get(matricula='0000')
+#     except User.DoesNotExist:
+#         print("Usuário com matrícula '0000' não encontrado.")
+#         return
 
 #     for ordem in historico_ordens:
 #         try:
 #             # Obter o plano preventivo associado
-#             plano = PlanoPreventiva.objects.filter(
-#                 maquina_id=ordem["maquina"],
-#                 area=ordem["area"],
-#                 ativo=True
-#             ).first()
+#             plano = PlanoPreventiva.objects.filter(pk=ordem['plano_id']).first()
 
 #             if not plano:
 #                 print(f'Plano não encontrado para máquina {ordem["maquina"]} na área {ordem["area"]}.')
 #                 continue
 
+#             # Verificar se a solicitação já existe
+#             if Solicitacao.objects.filter(id=ordem["id"]).exists():
+#                 print(f'Solicitação com ID {ordem["id"]} já existe. Pulando.')
+#                 continue
+
+#             # Converter a data para o formato correto
+#             data_prevista = datetime.strptime(ordem["data"], '%Y-%m-%d').date()
+
 #             # Criar nova solicitação
 #             nova_solicitacao = Solicitacao.objects.create(
+#                 id=ordem["id"],
 #                 impacto_producao="baixo",
 #                 maquina=plano.maquina,
 #                 setor=plano.maquina.setor,
@@ -111,64 +109,62 @@ def verificar_abertura_solicitacoes_preventivas():
 #                 descricao=f'Preventiva: {ordem["descricao"]}',
 #                 area=ordem["area"],
 #                 planejada=True,
+#                 data_abertura=data_prevista,  # Ajuste aqui para incluir a data
 #             )
 
-#             # Criar a solicitação preventiva
-#             data_aware = make_aware(datetime.strptime(ordem["data"], "%Y-%m-%d"))
-#             SolicitacaoPreventiva.objects.create(
-#                 ordem=nova_solicitacao,
-#                 plano=plano,
-#                 data=data_aware,
-#             )
+#             print(f'Solicitação {nova_solicitacao.id} criada com sucesso.')
 
-#             # Criar registro de informações da solicitação
-#             InfoSolicitacao.objects.create(
-#                 solicitacao=nova_solicitacao,
-#                 tipo_manutencao="preventiva_programada",
-#             )
-
-#             print(f'Criada solicitação preventiva para máquina {ordem["maquina"]} na data {ordem["data"]}.')
+#         except IntegrityError:
+#             print(f'Erro: A solicitação com ID {ordem["id"]} já existe.')
 #         except Exception as e:
-#             print(f'Erro ao criar solicitação para máquina {ordem["maquina"]}: {e}')
+#             print(f"Erro ao criar solicitação para a máquina {ordem['maquina']}: {str(e)}")
 
 # def atualizar_solicitacoes_preventivas():
 #     # Dados fornecidos
+#     # ordens_responsaveis = [
+#     #     {"ordem": 4262, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
+#     #     {"ordem": 4263, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
+#     #     {"ordem": 4264, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
+#     #     {"ordem": 4265, "operador": 4, "data_inicio": "2024-03-30 07:00:00", "data_fim": "2024-03-30 09:00:00"},
+#     #     {"ordem": 4266, "operador": 4, "data_inicio": "2024-03-16 07:00:00", "data_fim": "2024-03-16 08:00:00"},
+#     #     {"ordem": 4267, "operador": 22, "data_inicio": "2024-07-15 22:00:00", "data_fim": "2024-07-16 06:00:00"},
+#     #     {"ordem": 4268, "operador": 4, "data_inicio": "2024-09-14 08:00:00", "data_fim": "2024-09-14 10:40:00"},
+#     #     {"ordem": 4269, "operador": 22, "data_inicio": "2024-08-01 03:00:00", "data_fim": "2024-08-01 06:20:00"},
+#     #     {"ordem": 4270, "operador": 22, "data_inicio": "2024-08-02 22:30:00", "data_fim": "2024-08-03 05:00:00"},
+#     #     {"ordem": 4271, "operador": 22, "data_inicio": "2024-09-07 11:00:00", "data_fim": "2024-09-07 14:00:00"},
+#     #     {"ordem": 4272, "operador": 22, "data_inicio": "2024-09-07 10:00:00", "data_fim": "2024-09-07 15:00:00"},
+#     #     {"ordem": 4273, "operador": 22, "data_inicio": "2024-07-19 21:00:00", "data_fim": "2024-07-20 05:00:00"},
+#     #     {"ordem": 4274, "operador": 4, "data_inicio": "2024-10-30 15:00:00", "data_fim": "2024-10-30 17:00:00"},
+#     #     {"ordem": 4275, "operador": 4, "data_inicio": "2024-10-30 15:00:00", "data_fim": "2024-10-30 17:00:00"},
+#     #     {"ordem": 4276, "operador": 4, "data_inicio": "2024-10-20 15:00:00", "data_fim": "2024-10-20 17:00:00"},
+#     # ]
+
 #     ordens_responsaveis = [
-#         {"ordem": 4262, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
-#         {"ordem": 4263, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
-#         {"ordem": 4264, "operador": 23, "data_inicio": "2024-02-11 08:00:00", "data_fim": "2024-02-11 12:30:00"},
-#         {"ordem": 4265, "operador": 4, "data_inicio": "2024-03-30 07:00:00", "data_fim": "2024-03-30 09:00:00"},
-#         {"ordem": 4266, "operador": 4, "data_inicio": "2024-03-16 07:00:00", "data_fim": "2024-03-16 08:00:00"},
-#         {"ordem": 4267, "operador": 22, "data_inicio": "2024-07-15 22:00:00", "data_fim": "2024-07-16 06:00:00"},
-#         {"ordem": 4268, "operador": 4, "data_inicio": "2024-09-14 08:00:00", "data_fim": "2024-09-14 10:40:00"},
-#         {"ordem": 4269, "operador": 22, "data_inicio": "2024-08-01 03:00:00", "data_fim": "2024-08-01 06:20:00"},
-#         {"ordem": 4270, "operador": 22, "data_inicio": "2024-08-02 22:30:00", "data_fim": "2024-08-03 05:00:00"},
-#         {"ordem": 4271, "operador": 22, "data_inicio": "2024-09-07 11:00:00", "data_fim": "2024-09-07 14:00:00"},
-#         {"ordem": 4272, "operador": 22, "data_inicio": "2024-09-07 10:00:00", "data_fim": "2024-09-07 15:00:00"},
-#         {"ordem": 4273, "operador": 22, "data_inicio": "2024-07-19 21:00:00", "data_fim": "2024-07-20 05:00:00"},
-#         {"ordem": 4274, "operador": 4, "data_inicio": "2024-10-30 15:00:00", "data_fim": "2024-10-30 17:00:00"},
-#         {"ordem": 4275, "operador": 4, "data_inicio": "2024-10-30 15:00:00", "data_fim": "2024-10-30 17:00:00"},
-#         {"ordem": 4276, "operador": 4, "data_inicio": "2024-10-20 15:00:00", "data_fim": "2024-10-20 17:00:00"},
+#         {"id": 1591, "operador":4, "maquina": 27, "setor": 5, "plano_id": 18, "descricao": "10 Meses", "area": "producao", "datainicio": "2024-09-14 08:00:00", 'datafim':"2024-09-14 10:40:00", 'status_andamento':'em_execucao'},
+#         {"id": 1912, "operador":6, "maquina": 69, "setor": 1, "plano_id": 32, "descricao": "10 Meses", "area": "producao", "datainicio": "2024-08-01 03:00:00", 'datafim':"2024-08-01 06:20:00",'status_andamento':'em_execucao'},
+#         {"id": 1947, "operador":6, "maquina": 4, "setor": 1, "plano_id": 27, "descricao": "10 Meses", "area": "producao", "datainicio": "2024-08-02 22:30:00", 'datafim':"2024-08-03 05:00:00",'status_andamento':'em_execucao'},
+#         {"id": 2203, "operador":7, "maquina": 20, "setor": 5, "plano_id": 39, "descricao": "10 Meses", "area": "producao", "datainicio": "2024-10-14 14:00:00", 'datafim':"2024-10-14 18:00:00",'status_andamento':'em_execucao'},
 #     ]
     
 #     with transaction.atomic():
 #         for ordem in ordens_responsaveis:
 #             try:
 #                 # Buscar a solicitação pela ordem
-#                 solicitacao = Solicitacao.objects.get(id=ordem["ordem"])
-#                 solicitacao.status_andamento = 'finalizada'
+#                 solicitacao = Solicitacao.objects.get(id=ordem["id"])
+#                 solicitacao.status_andamento = ordem['status_andamento']
 
 #                 # # Buscar o operador responsável
 #                 operador = Operador.objects.get(id=ordem["operador"])
+#                 plano = PlanoPreventiva.objects.get(id=ordem["plano_id"])
 
 #                 # # Atualizar a solicitação
-#                 # solicitacao.atribuido = responsavel
-#                 # solicitacao.programacao = datetime.strptime(ordem["data_programacao"], "%Y-%m-%d").date()
-#                 # solicitacao.status = "aprovar"  # Atualizar o status para "aprovar"
-#                 # solicitacao.nivel_prioridade = 'baixo'
-#                 # solicitacao.status_andamento = 'em_espera'
-#                 data_inicio = datetime.strptime(ordem["data_inicio"], "%Y-%m-%d %H:%M:%S")
-#                 data_fim = datetime.strptime(ordem["data_fim"], "%Y-%m-%d %H:%M:%S")
+#                 solicitacao.atribuido = operador
+#                 solicitacao.programacao = solicitacao.data_abertura
+#                 solicitacao.status = "aprovar"  # Atualizar o status para "aprovar"
+#                 solicitacao.nivel_prioridade = 'baixo'
+#                 solicitacao.status_andamento = 'em_execucao'
+#                 data_inicio = datetime.strptime(ordem["datainicio"], "%Y-%m-%d %H:%M:%S")
+#                 data_fim = datetime.strptime(ordem["datafim"], "%Y-%m-%d %H:%M:%S")
 
 #                 # Criar a execução
 #                 execucao = Execucao.objects.create(
@@ -177,7 +173,7 @@ def verificar_abertura_solicitacoes_preventivas():
 #                     data_inicio=data_inicio,
 #                     data_fim=data_fim,
 #                     observacao="Histórico de execução de preventiva",
-#                     status="finalizado",
+#                     status="em_execucao",
 #                     che_maq_parada=False,
 #                     exec_maq_parada=False,
 #                     apos_exec_maq_parada=False,
@@ -188,21 +184,16 @@ def verificar_abertura_solicitacoes_preventivas():
 #                 execucao.save()
 #                 solicitacao.save()
 
-#                 # InfoSolicitacao.objects.update_or_create(
-#                 #     solicitacao=solicitacao,
-#                 #     defaults={'area_manutencao': 'mecanica'}
-#                 # )
+#                 InfoSolicitacao.objects.update_or_create(
+#                     solicitacao=solicitacao,
+#                     defaults={'area_manutencao': 'mecanica', 'tipo_manutencao':'preventiva_programada'}
+#                 )
 
-#                 # Execucao.objects.create(
-#                 #     ordem=solicitacao,
-#                 #     # n_execucao=0,
-#                 #     data_inicio=datetime.strptime(ordem["data_programacao"], "%Y-%m-%d"),
-#                 #     data_fim=datetime.strptime(ordem["data_programacao"], "%Y-%m-%d"),
-#                 #     status='em_espera',
-#                 #     che_maq_parada=False,
-#                 #     exec_maq_parada=False,
-#                 #     apos_exec_maq_parada=False
-#                 # )
+#                 SolicitacaoPreventiva.objects.create(
+#                     data=solicitacao.data_abertura,
+#                     ordem=solicitacao,
+#                     plano=plano
+#                 )
 
 #                 print(f"Solicitação {solicitacao.id} atualizada com sucesso.")
 #             except Solicitacao.DoesNotExist:
@@ -211,3 +202,5 @@ def verificar_abertura_solicitacoes_preventivas():
 #                 print(f"Operador com ID {ordem['responsavel_id']} não encontrado.")
 #             except Exception as e:
 #                 print(f"Erro ao atualizar a solicitação {ordem['ordem']}: {e}")
+
+
