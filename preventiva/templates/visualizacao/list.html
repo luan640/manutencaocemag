@@ -70,10 +70,13 @@
                     <div class="text-end ms-auto">
                     </div>
                 </div>
-                <div class="card-body">
-                    <ul id="preventivasAbertoList" class="list-group list-group-flush">
-                        
-                    </ul>
+                <div class="card-body text-center">
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i class="bi bi-tools me-2" style="font-size: 1.5rem;"></i>
+                        <div>
+                            <strong>Quadro passando por melhorias.</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -220,79 +223,79 @@
             .catch(error => console.error('Erro ao buscar dados:', error));
         }
 
-        function renderPreventivas(preventivas) {
-            const preventivasList = document.getElementById('preventivasList');
-            preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
+        // function renderPreventivas(preventivas) {
+        //     const preventivasList = document.getElementById('preventivasList');
+        //     preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
 
-            if (preventivas.length === 0) {
-                preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
-                return;
-            }
+        //     if (preventivas.length === 0) {
+        //         preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
+        //         return;
+        //     }
 
-            preventivas.forEach(preventiva => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
+        //     preventivas.forEach(preventiva => {
+        //         const listItem = document.createElement('li');
+        //         listItem.className = 'list-group-item';
 
-                const dataFormatada = preventiva.ultima_atualizacao 
-                    ? formatarData(preventiva.ultima_atualizacao) 
-                    : 'N/A';
+        //         const dataFormatada = preventiva.ultima_atualizacao 
+        //             ? formatarData(preventiva.ultima_atualizacao) 
+        //             : 'N/A';
 
-                listItem.innerHTML = `
-                    <strong>${preventiva.maquina__codigo}:</strong> 
-                    ${preventiva.descricao} <br>
-                    Data: ${dataFormatada}
-                `;
+        //         listItem.innerHTML = `
+        //             <strong>${preventiva.maquina__codigo}:</strong> 
+        //             ${preventiva.descricao} <br>
+        //             Data: ${dataFormatada}
+        //         `;
 
-                preventivasList.appendChild(listItem);
-            });
-        }
+        //         preventivasList.appendChild(listItem);
+        //     });
+        // }
 
-        function fetchPreventivasAberto(){
-            fetch(`/preventivas-aberto?area=${area}`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro: ${response.status} ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('data', data);  // Exibe no console para depuração
-                renderPreventivasAberto(data.data);  // Chama a função para renderizar a lista
-            })
-            .catch(error => console.error('Erro ao buscar dados:', error));
-        }
+        // function fetchPreventivasAberto(){
+        //     fetch(`/preventivas-aberto?area=${area}`, {
+        //         method: 'GET',
+        //         headers: {
+        //             'X-Requested-With': 'XMLHttpRequest',
+        //         }
+        //     })
+        //     .then(response => {
+        //         if (!response.ok) {
+        //             throw new Error(`Erro: ${response.status} ${response.statusText}`);
+        //         }
+        //         return response.json();
+        //     })
+        //     .then(data => {
+        //         console.log('data', data);  // Exibe no console para depuração
+        //         renderPreventivasAberto(data.data);  // Chama a função para renderizar a lista
+        //     })
+        //     .catch(error => console.error('Erro ao buscar dados:', error));
+        // }
 
-        function renderPreventivasAberto(preventivas) {
-            const preventivasList = document.getElementById('preventivasAbertoList');
-            preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
+        // function renderPreventivasAberto(preventivas) {
+        //     const preventivasList = document.getElementById('preventivasAbertoList');
+        //     preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
 
-            if (preventivas.length === 0) {
-                preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
-                return;
-            }
+        //     if (preventivas.length === 0) {
+        //         preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
+        //         return;
+        //     }
 
-            preventivas.forEach((preventiva, index) => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
+        //     preventivas.forEach((preventiva, index) => {
+        //         const listItem = document.createElement('li');
+        //         listItem.className = 'list-group-item';
 
-                const dataFormatada = preventiva.proxima_execucao 
-                    ? formatarData(preventiva.proxima_execucao) 
-                    : 'N/A';
+        //         const dataFormatada = preventiva.proxima_execucao 
+        //             ? formatarData(preventiva.proxima_execucao) 
+        //             : 'N/A';
 
-                    listItem.innerHTML = `
-                        <strong>${index + 1}. ${preventiva.maquina__codigo}</strong> 
-                        <br>
-                        Descrição: ${preventiva.descricao} <br>
-                    `;
+        //             listItem.innerHTML = `
+        //                 <strong>${index + 1}. ${preventiva.maquina__codigo}</strong> 
+        //                 <br>
+        //                 Descrição: ${preventiva.descricao} <br>
+        //             `;
 
-                preventivasList.appendChild(listItem);
-            });
-        }
+        //         preventivasList.appendChild(listItem);
+        //     });
+        // }
 
         function formatarData(dataString) {
             const data = new Date(dataString);
@@ -477,7 +480,7 @@
         // Chama a função para buscar dados ao carregar a página
         fetchData();
         fetchUltimasPreventivas();
-        fetchPreventivasAberto();
+        // fetchPreventivasAberto();
     });
 </script>
 
