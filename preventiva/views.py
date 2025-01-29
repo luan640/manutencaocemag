@@ -325,7 +325,7 @@ def calcular_manutencoes_semanais(request):
         semana_atual += timedelta(days=7)  # Avança para a próxima semana
 
     # Iterar sobre todos os planos preventivos e calcular as execuções futuras
-    planos = PlanoPreventiva.objects.all()
+    planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
     for plano in planos:
         proxima_data = hoje  # Inicia hoje e calcula as próximas execuções
         while proxima_data <= ultimo_dia_ano:

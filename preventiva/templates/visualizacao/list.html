@@ -81,6 +81,10 @@
             </div>
         </div>
     </div>
+    <div class="row mb-3">
+        <!-- Calendário -->
+        <div id="calendar"></div>
+    </div>
 </div>
 
 <!-- modalAddPreventiva -->
@@ -223,32 +227,32 @@
             .catch(error => console.error('Erro ao buscar dados:', error));
         }
 
-        // function renderPreventivas(preventivas) {
-        //     const preventivasList = document.getElementById('preventivasList');
-        //     preventivasList.innerHTML = '';  // Limpa a lista antes de preencher
+        function renderPreventivas(preventivas) {
+            const preventivasList = document.getElementById('preventivasList');
+            preventivasList.innerHTML = '';  
 
-        //     if (preventivas.length === 0) {
-        //         preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
-        //         return;
-        //     }
+            if (preventivas.length === 0) {
+                preventivasList.innerHTML = '<li class="list-group-item">Nenhuma preventiva encontrada</li>';
+                return;
+            }
 
-        //     preventivas.forEach(preventiva => {
-        //         const listItem = document.createElement('li');
-        //         listItem.className = 'list-group-item';
+            preventivas.forEach(preventiva => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
 
-        //         const dataFormatada = preventiva.ultima_atualizacao 
-        //             ? formatarData(preventiva.ultima_atualizacao) 
-        //             : 'N/A';
+                const dataFormatada = preventiva.ultima_atualizacao 
+                    ? formatarData(preventiva.ultima_atualizacao) 
+                    : 'N/A';
 
-        //         listItem.innerHTML = `
-        //             <strong>${preventiva.maquina__codigo}:</strong> 
-        //             ${preventiva.descricao} <br>
-        //             Data: ${dataFormatada}
-        //         `;
+                listItem.innerHTML = `
+                    <strong>${preventiva.maquina__codigo}:</strong> 
+                    ${preventiva.descricao} <br>
+                    Data: ${dataFormatada}
+                `;
 
-        //         preventivasList.appendChild(listItem);
-        //     });
-        // }
+                preventivasList.appendChild(listItem);
+            });
+        }
 
         // function fetchPreventivasAberto(){
         //     fetch(`/preventivas-aberto?area=${area}`, {
@@ -489,5 +493,7 @@
 {% block scripts %}
 
 <script src="{% static 'js/datatable-preventivas.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="{% static 'js/calendar-52-week.js' %}"></script>
 
 {% endblock %}
