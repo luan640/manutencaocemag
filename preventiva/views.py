@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.forms import formset_factory
-from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Count
+from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Max
 from django.utils.timezone import datetime, timedelta, now
 
 from .models import PlanoPreventiva, TarefaPreventiva, SolicitacaoPreventiva
@@ -448,7 +448,6 @@ def calcular_proximas_preventivas(plano):
 
     return proximas_preventivas
 
-
 def buscar_historico(request):
     item_id = request.GET.get('id')  # ID da máquina ou do item
 
@@ -503,4 +502,54 @@ def buscar_historico(request):
 
     except PlanoPreventiva.DoesNotExist:
         return JsonResponse({'error': 'Item não encontrado'}, status=404)
+
+def historico_preventivas(request):
+    """
+    Retorna apenas preventivas finalizadas com:
+    - Data finalizada (última execução)
+    - Código da máquina
+    - Descrição da máquina
+    """
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        draw = int(request.GET.get('draw', 0))
+        start = int(request.GET.get('start', 0))
+        length = int(request.GET.get('length', 10))
+        maquina_filtro = request.GET.get('maquina', None)  # Obtém o filtro de máquina
+
+        # Subquery para buscar o maior `n_execucao` de cada ordem preventiva finalizada
+        subquery = Execucao.objects.filter(
+            ordem=OuterRef('ordem'), status='finalizada', ordem__planejada=True
+        ).order_by('-n_execucao').values('n_execucao')[:1]
+
+        # Filtrar apenas execuções preventivas finalizadas com o maior `n_execucao` por ordem
+        execucoes_finalizadas = Execucao.objects.filter(
+            n_execucao=Subquery(subquery),
+            status='finalizada',
+            ordem__planejada=True,
+        ).exclude(ordem__maquina__codigo='ETE').select_related('ordem', 'ordem__maquina', 'ordem__tarefa').order_by('-data_fim')
+
+        # Se um filtro de máquina foi fornecido, aplicamos o filtro
+        if maquina_filtro:
+            execucoes_finalizadas = execucoes_finalizadas.filter(ordem__maquina__codigo=maquina_filtro)
+
+        # Paginação
+        paginator = Paginator(execucoes_finalizadas, length)
+        execucoes_page = paginator.get_page(start // length + 1)
+
+        data = []
+        for execucao in execucoes_page:
+            data.append({
+                'data_finalizada': execucao.data_fim.strftime('%d/%m/%Y') if execucao.data_fim else 'N/A',
+                'codigo_maquina': execucao.ordem.maquina.codigo if execucao.ordem and execucao.ordem.maquina else 'N/A',
+                'descricao_maquina': execucao.ordem.maquina.descricao if execucao.ordem and execucao.ordem.maquina else 'N/A',
+                'nome_plano': execucao.ordem.descricao if execucao.ordem and execucao.ordem.descricao else 'N/A',
+            })
+
+        return JsonResponse({
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+            'data': data
+        })
 

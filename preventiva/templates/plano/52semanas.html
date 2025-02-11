@@ -6,6 +6,42 @@ Manutenções Semanais
 
 {% block links %}    
     <style>
+        /* Container do cabeçalho */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #0284c7;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .header-container h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* Botão para voltar */
+        .btn-voltar {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .btn-voltar:hover {
+            background-color: #d32f2f;
+        }
+
         /* Container geral das semanas */
         .semanas-container {
             display: flex;
@@ -24,6 +60,17 @@ Manutenções Semanais
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             padding: 10px;
             text-align: center;
+            transition: 0.3s;
+        }
+
+        .semana-card:hover {
+            transform: scale(1.05);
+        }
+
+        /* Semana atual destacada */
+        .semana-atual {
+            border: 3px solid #ff9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);
         }
 
         /* Título da semana */
@@ -61,19 +108,26 @@ Manutenções Semanais
 
 {% block content %}
 
-<div>
-    <h2>Planejamento Anual - Manutenções Preventivas</h2>
-    <div id="semanas-container" class="semanas-container"></div>
+<!-- Cabeçalho -->
+<div class="header-container">
+    <h2 id="semana-atual-info">Semana Atual: Carregando...</h2>
+    <a href="/preventiva/" class="btn-voltar">🔙 Voltar para Preventivas</a>
 </div>
+
+<!-- Container de semanas -->
+<div id="semanas-container" class="semanas-container"></div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         fetch('/manutencoes-semana/')
             .then(response => response.json())
-            .then(data => renderSemanas(data))
+            .then(data => {
+                const semanaAtual = getSemanaAtual();
+                renderSemanas(data, semanaAtual);
+            })
             .catch(error => console.error('Erro ao carregar os dados:', error));
 
-        function renderSemanas(data) {
+        function renderSemanas(data, semanaAtual) {
             const container = document.getElementById('semanas-container');
             container.innerHTML = '';  // Limpa antes de preencher
 
@@ -84,6 +138,11 @@ Manutenções Semanais
                 // Define a cor do mês
                 const mesClasse = getMesClasse(semana.inicio);
                 semanaCard.classList.add(mesClasse);
+
+                // Verifica se é a semana atual e adiciona destaque
+                if (semana.inicio === semanaAtual) {
+                    semanaCard.classList.add('semana-atual');
+                }
 
                 // Adiciona título da semana
                 const titulo = document.createElement('h3');
@@ -108,6 +167,9 @@ Manutenções Semanais
                 semanaCard.appendChild(manutencoesDiv);
                 container.appendChild(semanaCard);
             });
+
+            // Atualiza o cabeçalho com a semana atual
+            document.getElementById('semana-atual-info').textContent = `Semana Atual: ${semanaAtual}`;
         }
 
         // Retorna a classe CSS do mês correspondente
@@ -119,6 +181,15 @@ Manutenções Semanais
             ];
             const mesIndex = new Date(dataString).getMonth();
             return meses[mesIndex];
+        }
+
+        // Retorna a semana atual no formato YYYY-MM-DD
+        function getSemanaAtual() {
+            const hoje = new Date();
+            const diaDaSemana = hoje.getDay(); // 0 = Domingo, 1 = Segunda...
+            const diffSegunda = hoje.getDate() - diaDaSemana + (diaDaSemana === 0 ? -6 : 1);
+            const segundaFeira = new Date(hoje.setDate(diffSegunda));
+            return segundaFeira.toISOString().split('T')[0]; // Retorna no formato YYYY-MM-DD
         }
     });
 </script>

@@ -111,7 +111,7 @@ def criar_solicitacao_predial(request):
 def criar_execucao_rotina(request):
     # maquinas_predial = Maquina.objects.filter(area='predial')
     operadores = Operador.objects.filter(area='predial')
-    tipo_tarefas = TipoTarefas.objects.all()
+    tipo_tarefas = TipoTarefas.objects.filter(status=True)
 
     if request.method == 'POST':
 
@@ -120,7 +120,7 @@ def criar_execucao_rotina(request):
         
         data_inicio = request.POST.get('data_inicio')
         if 'T' in data_inicio:
-            data_inicio = data_inicio.split('T')[0]
+            data_programacao = data_inicio.split('T')[0]
         data_fim = request.POST.get('data_fim')
 
         tarefa_rotina = request.POST.get('tarefa_rotina')
@@ -137,14 +137,13 @@ def criar_execucao_rotina(request):
                     descricao = 'Tarefa de rotina',
                     status = 'aprovar',
                     status_andamento = 'finalizada',
-                    programacao = data_inicio,
+                    programacao = data_programacao,
                     tarefa = tarefa,
                     setor = get_object_or_404(Setor, pk=2), # Setor "administrativo"
                     maquina = get_object_or_404(Maquina, pk=190) # Máquina "outro"
                 )
-
-                # for imagem in request.FILES.getlist('imagens'):
-                #     Foto.objects.create(solicitacao=solicitacao, imagem=imagem)
+                solicitacao.data_abertura = data_inicio
+                solicitacao.save()
 
                 execucao = Execucao.objects.create(
                     ordem=solicitacao,
@@ -339,6 +338,11 @@ def gerar_solicitacoes(request, qtd=10):
 @csrf_exempt
 def criar_tarefa_rotina(request):
     
+    try:
+        data = json.loads(request.body)
+    except:
+        pass
+
     if request.method == 'POST':
         nome_tarefa = request.POST.get('nome_tarefa')
 
@@ -352,10 +356,23 @@ def criar_tarefa_rotina(request):
             
             except IntegrityError:
                 return JsonResponse({'status': 'error', 'message': 'Tarefa já existe!'})
+        elif data:
+
+            nome_tarefa = data.get('nome_tarefa')
+            type_status = data.get('type_status')
+
+            tipo_tarefa_object = get_object_or_404(TipoTarefas, nome=nome_tarefa)
+            tipo_tarefa_object.status = type_status
+            tipo_tarefa_object.save()
+
+            if type_status:
+                return JsonResponse({'status':'success', 'message':'Tarefa habilitada com sucesso'})
+            else:
+                return JsonResponse({'status':'success', 'message':'Tarefa desabilitada com sucesso'})
 
         # Retorna uma resposta JSON indicando falha
         return JsonResponse({'status': 'error', 'message': 'O nome da tarefa é obrigatório!'})
-
+        
     tarefas_existentes = TipoTarefas.objects.all()
 
     return render(request, "tarefa-rotina/add-tarefa.html", {"tarefas_existentes":tarefas_existentes}) 

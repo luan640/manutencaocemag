@@ -22,6 +22,9 @@ urlpatterns = [
     path('preventivas-aberto/', preventivas_em_aberto, name='preventivas_em_aberto'),
 
     path('get-maquinas-preventiva/', views.get_maquinas_preventiva, name='get_maquinas_preventiva'),
-    path('buscar-historico/', views.buscar_historico, name='buscar_historico')
+    path('buscar-historico/', views.buscar_historico, name='buscar_historico'),
+
+    path('historico-preventiva/', views.historico_preventivas, name='historico_preventivas'),
+
 
 ]

@@ -64,6 +64,7 @@ class Operador(models.Model):
 class TipoTarefas(models.Model):
 
     nome = models.CharField(max_length=100, unique=True)
+    status = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome

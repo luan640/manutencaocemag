@@ -50,7 +50,7 @@
             </div>
         </div>
     </div>
-    <div class="row mb-3">
+    <!-- <div class="row mb-3">
         <div class="col-sm-6">
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -80,10 +80,44 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
     <div class="row mb-3">
-        <!-- Calendário -->
-        <div id="calendar"></div>
+        <div class="col-sm-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">Histórico de preventivas</span>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="filtroMaquinaHistorico" class="form-label">Filtro por Máquina:</label>
+                            <select id="filtroMaquinaHistorico" class="form-select">
+                                <option value="">Todas as Máquinas</option>
+                                <option value="maquina1">Máquina 1</option>
+                                <option value="maquina2">Máquina 2</option>
+                                <option value="maquina3">Máquina 3</option>
+                            </select>
+                        </div>
+                    </div>
+    
+                    <!-- Tabela -->
+                    <table id="preventivasTableHistorico" class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Máquina</th>
+                                <th>Descrição</th>
+                                <th>Plano</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- DataTables irá preencher este corpo automaticamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -495,5 +529,6 @@
 <script src="{% static 'js/datatable-preventivas.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="{% static 'js/calendar-52-week.js' %}"></script>
+<script src="{% static 'js/datatable-preventivas-historico.js' %}"></script>
 
 {% endblock %}
