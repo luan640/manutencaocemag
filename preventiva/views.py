@@ -262,6 +262,9 @@ def editar_plano_preventiva(request, pk):
 
     else:
         plano_form = PlanoPreventivaForm(instance=plano)
+
+        print(plano_form)
+
         tarefas = TarefaPreventiva.objects.filter(plano=plano)
     
     return render(request, 'plano/edit.html', {
@@ -316,8 +319,8 @@ def calcular_manutencoes_semanais(request):
 
     for plano in planos:
         # Define o ano com base na data_base do plano; se não houver, usa o ano atual
-        if plano.data_base:
-            plano_data_base = datetime.combine(plano.data_base, datetime.min.time())
+        if plano.data_inicio:
+            plano_data_base = datetime.combine(plano.data_inicio, datetime.min.time())
             year = datetime.today().year
         else:
             year = datetime.today().year
@@ -361,9 +364,6 @@ def calcular_manutencoes_semanais(request):
         })
 
     return JsonResponse(response_data, safe=False)
-
-
-
 
 def ultimas_preventivas(request):
     """

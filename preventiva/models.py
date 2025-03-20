@@ -16,6 +16,14 @@ class PlanoPreventiva(models.Model):
     area = models.CharField(max_length=20,choices=CHOICES_AREA)
     ativo = models.BooleanField(default=True)
     data_base = models.DateField(null=True, blank=True)
+    data_inicio = models.DateField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        
+        if self.data_inicio:
+            self.data_base = self.data_inicio
+        
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.maquina} {self.nome}'

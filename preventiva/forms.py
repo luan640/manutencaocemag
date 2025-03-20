@@ -8,12 +8,12 @@ class PlanoPreventivaForm(forms.ModelForm):
     descricao = forms.CharField(label='Descrição', widget=forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}))
     periodicidade = forms.IntegerField(label='Periodicidade (em dias)', widget=forms.NumberInput(attrs={'class': 'form-control'}))
     dias_antecedencia = forms.IntegerField(help_text="Dias para abertura com antecedência",label='Abertura com antecedência de:', widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    data_base = forms.DateField(label='Data para inicio da contagem',required=True,widget=forms.DateInput(attrs={'class': 'form-control','type': 'date'},format='%Y-%m-%d'))
+    data_inicio = forms.DateField(label='Data para inicio da contagem',required=True,widget=forms.DateInput(attrs={'class': 'form-control','type': 'date'},format='%Y-%m-%d'))
     abertura_automatica = forms.BooleanField(label='Abertura Automática', required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
 
     class Meta:
         model = PlanoPreventiva
-        fields = ['nome', 'descricao', 'periodicidade', 'dias_antecedencia','data_base','abertura_automatica']
+        fields = ['nome', 'descricao', 'periodicidade', 'dias_antecedencia','data_inicio','abertura_automatica']
 
 
 class TarefaPreventivaForm(forms.ModelForm):
