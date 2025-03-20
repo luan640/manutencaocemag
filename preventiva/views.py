@@ -318,7 +318,7 @@ def calcular_manutencoes_semanais(request):
         # Define o ano com base na data_base do plano; se não houver, usa o ano atual
         if plano.data_base:
             plano_data_base = datetime.combine(plano.data_base, datetime.min.time())
-            year = plano_data_base.year
+            year = datetime.today().year
         else:
             year = datetime.today().year
             plano_data_base = datetime(year, 1, 1)

@@ -197,7 +197,7 @@ Manutenções Semanais
             });
 
             // Atualiza o cabeçalho com a semana atual
-            document.getElementById('semana-atual-info').textContent = `Semana Atual: ${semanaAtual}`;
+            document.getElementById('semana-atual-info').textContent = `Semana Atual: ${getSemanaAtualNumero()}`;
         }
 
         // Retorna a classe CSS do mês correspondente à data (para fins de estilo)
@@ -220,6 +220,18 @@ Manutenções Semanais
             const segundaFeira = new Date(hoje);
             segundaFeira.setDate(diffSegunda);
             return segundaFeira.toISOString().split('T')[0];
+        }
+
+        function getSemanaAtualNumero() {
+            const hoje = new Date();
+            // Copia a data para não alterar o original e ajusta para UTC
+            const d = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
+            // Ajusta para a quinta-feira da semana atual (ISO: a semana é definida pela quinta-feira)
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            // Calcula o número da semana
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
         }
     });
 </script>
