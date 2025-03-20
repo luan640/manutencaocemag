@@ -302,46 +302,68 @@ def planejamento_anual(request):
 
 def calcular_manutencoes_semanais(request):
     """
-    Calcula as manutenções planejadas por semana até o final do ano com base na periodicidade.
-    Retorna um JSON com as semanas e os planos por máquina.
+    Para cada plano preventivo ativo (exceto os da máquina 'ETE'),
+    gera um cronograma de 52 semanas a partir de 01/01 do ano do plano e
+    calcula as datas de manutenção com base na periodicidade, iniciando
+    em data_base + periodicidade.
     """
+    from datetime import datetime, timedelta
+    from django.http import JsonResponse
 
-    # Data de hoje e último dia do ano
-    hoje = datetime.today()
-    hoje = datetime(hoje.year, 1, 1)
-    ultimo_dia_ano = datetime(hoje.year, 12, 31)
-
-    # Inicializar lista para armazenar as manutenções por semana
-    semanas = []
-
-    # Calcular as semanas até o final do ano
-    semana_atual = hoje - timedelta(days=hoje.weekday())  # Início da semana atual (segunda-feira)
-    while semana_atual <= ultimo_dia_ano:
-        semanas.append({
-            'inicio': semana_atual.strftime('%Y-%m-%d'),
-            'fim': (semana_atual + timedelta(days=6)).strftime('%Y-%m-%d'),
-            'manutencoes': []  # Manutenções a serem preenchidas
-        })
-        semana_atual += timedelta(days=7)  # Avança para a próxima semana
-
-    # Iterar sobre todos os planos preventivos e calcular as execuções futuras
+    # Filtra os planos ativos (exceto os da máquina com código 'ETE')
     planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
-    for plano in planos:
-        proxima_data = hoje  # Inicia hoje e calcula as próximas execuções
-        while proxima_data <= ultimo_dia_ano:
-            # Encontrar a semana correspondente à data calculada
-            for semana in semanas:
-                inicio = datetime.strptime(semana['inicio'], '%Y-%m-%d')
-                fim = datetime.strptime(semana['fim'], '%Y-%m-%d')
-                if inicio <= proxima_data <= fim:
-                    semana['manutencoes'].append({
-                        'maquina': plano.maquina.codigo,
-                        'plano': plano.nome
-                    })
-                    break  # Para de procurar assim que encontrar a semana correta
-            proxima_data += timedelta(days=plano.periodicidade)  # Próxima execução
+    response_data = []
 
-    return JsonResponse(semanas, safe=False)
+    for plano in planos:
+        # Define o ano com base na data_base do plano; se não houver, usa o ano atual
+        if plano.data_base:
+            plano_data_base = datetime.combine(plano.data_base, datetime.min.time())
+            year = plano_data_base.year
+        else:
+            year = datetime.today().year
+            plano_data_base = datetime(year, 1, 1)
+        
+        # Define o início global do ano e o final considerando 52 semanas
+        global_start = datetime(year, 1, 1)
+        global_end = global_start + timedelta(days=52*7 - 1)
+
+        # Gera o cronograma de 52 semanas a partir de 01/01 do ano
+        weeks = []
+        for week_num in range(52):
+            week_start = global_start + timedelta(days=week_num * 7)
+            week_end = week_start + timedelta(days=6)
+            weeks.append({
+                'semana': week_num + 1,
+                'inicio': week_start.strftime('%Y-%m-%d'),
+                'fim': week_end.strftime('%Y-%m-%d'),
+                'manutencoes': []
+            })
+
+        # Calcula as manutenções a partir de data_base + periodicidade
+        maintenance_date = plano_data_base + timedelta(days=plano.periodicidade)
+        while maintenance_date <= global_end:
+            # Calcula a posição da semana no cronograma global
+            offset_days = (maintenance_date - global_start).days
+            week_index = offset_days // 7  # 0-indexado
+            if 0 <= week_index < 52:
+                weeks[week_index]['manutencoes'].append({
+                    'maquina': plano.maquina.codigo,
+                    'plano': plano.nome,
+                    'data': maintenance_date.strftime('%Y-%m-%d')
+                })
+            maintenance_date += timedelta(days=plano.periodicidade)
+
+        response_data.append({
+            'maquina': plano.maquina.codigo,
+            'plano': plano.nome,
+            'data_base': plano_data_base.strftime('%Y-%m-%d'),
+            'semanas': weeks
+        })
+
+    return JsonResponse(response_data, safe=False)
+
+
+
 
 def ultimas_preventivas(request):
     """

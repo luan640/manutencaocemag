@@ -122,48 +122,76 @@ Manutenções Semanais
         fetch('/manutencoes-semana/')
             .then(response => response.json())
             .then(data => {
+                // data é um array de objetos, cada um com:
+                // { maquina, plano, data_base, semanas: [ { semana, inicio, fim, manutencoes: [...] }, ... ] }
+                let globalWeeks = [];
+                // Se houver pelo menos um plano, usamos a estrutura de semanas do primeiro como "template"
+                if (data.length > 0) {
+                    globalWeeks = data[0].semanas.map(week => ({
+                        semana: week.semana,
+                        inicio: week.inicio,
+                        fim: week.fim,
+                        manutencoes: []
+                    }));
+                }
+                
+                // Itera por cada plano e agrupa as manutenções na semana correspondente
+                data.forEach(plan => {
+                    plan.semanas.forEach(week => {
+                        if (week.manutencoes && week.manutencoes.length > 0) {
+                            week.manutencoes.forEach(event => {
+                                // globalWeeks é indexado por (semana - 1)
+                                globalWeeks[week.semana - 1].manutencoes.push({
+                                    maquina: event.maquina,
+                                    plano: event.plano,
+                                    data: event.data
+                                });
+                            });
+                        }
+                    });
+                });
+                
                 const semanaAtual = getSemanaAtual();
-                renderSemanas(data, semanaAtual);
+                renderSemanas(globalWeeks, semanaAtual);
             })
             .catch(error => console.error('Erro ao carregar os dados:', error));
-
-        function renderSemanas(data, semanaAtual) {
+        
+        function renderSemanas(weeks, semanaAtual) {
             const container = document.getElementById('semanas-container');
-            container.innerHTML = '';  // Limpa antes de preencher
+            container.innerHTML = '';  // Limpa o container
 
-            data.forEach((semana, index) => {
+            weeks.forEach(week => {
                 const semanaCard = document.createElement('div');
                 semanaCard.classList.add('semana-card');
 
-                // Define a cor do mês
-                const mesClasse = getMesClasse(semana.inicio);
+                // Adiciona uma classe referente ao mês (para estilo)
+                const mesClasse = getMesClasse(week.inicio);
                 semanaCard.classList.add(mesClasse);
 
-                // Verifica se é a semana atual e adiciona destaque
-                if (semana.inicio === semanaAtual) {
+                // Se for a semana atual, adiciona destaque
+                if (week.inicio === semanaAtual) {
                     semanaCard.classList.add('semana-atual');
                 }
 
-                // Adiciona título da semana
+                // Cria o título do card com o número da semana
                 const titulo = document.createElement('h3');
-                titulo.textContent = `Semana ${index + 1}`;
+                titulo.textContent = `Semana ${week.semana}`;
+                semanaCard.appendChild(titulo);
 
-                // Criando a lista de manutenções
+                // Cria a área para listar as manutenções
                 const manutencoesDiv = document.createElement('div');
                 manutencoesDiv.classList.add('manutencoes');
 
-                if (semana.manutencoes.length === 0) {
+                if (week.manutencoes.length === 0) {
                     manutencoesDiv.innerHTML = `<em>Sem manutenções</em>`;
                 } else {
-                    semana.manutencoes.forEach(manutencao => {
+                    week.manutencoes.forEach(manutencao => {
                         const manutencaoItem = document.createElement('div');
-                        manutencaoItem.textContent = `🔧 ${manutencao.maquina} - ${manutencao.plano}`;
+                        manutencaoItem.textContent = `🔧 ${manutencao.maquina} - ${manutencao.plano} (${manutencao.data})`;
                         manutencoesDiv.appendChild(manutencaoItem);
                     });
                 }
 
-                // Monta o card
-                semanaCard.appendChild(titulo);
                 semanaCard.appendChild(manutencoesDiv);
                 container.appendChild(semanaCard);
             });
@@ -172,7 +200,7 @@ Manutenções Semanais
             document.getElementById('semana-atual-info').textContent = `Semana Atual: ${semanaAtual}`;
         }
 
-        // Retorna a classe CSS do mês correspondente
+        // Retorna a classe CSS do mês correspondente à data (para fins de estilo)
         function getMesClasse(dataString) {
             const meses = [
                 'janeiro', 'fevereiro', 'marco', 'abril',
@@ -183,15 +211,19 @@ Manutenções Semanais
             return meses[mesIndex];
         }
 
-        // Retorna a semana atual no formato YYYY-MM-DD
+        // Calcula e retorna a data (segunda-feira) da semana atual no formato YYYY-MM-DD
         function getSemanaAtual() {
             const hoje = new Date();
-            const diaDaSemana = hoje.getDay(); // 0 = Domingo, 1 = Segunda...
-            const diffSegunda = hoje.getDate() - diaDaSemana + (diaDaSemana === 0 ? -6 : 1);
-            const segundaFeira = new Date(hoje.setDate(diffSegunda));
-            return segundaFeira.toISOString().split('T')[0]; // Retorna no formato YYYY-MM-DD
+            const diaDaSemana = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
+            // Ajusta: se hoje é domingo, trata como se fosse o último dia da semana anterior
+            const diffSegunda = hoje.getDate() - (diaDaSemana === 0 ? 6 : diaDaSemana - 1);
+            const segundaFeira = new Date(hoje);
+            segundaFeira.setDate(diffSegunda);
+            return segundaFeira.toISOString().split('T')[0];
         }
     });
 </script>
+
+
 
 {% endblock %}
