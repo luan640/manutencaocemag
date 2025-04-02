@@ -63,6 +63,10 @@ def criar_execucao(request, solicitacao_id):
 
             if not apos_exec_maq_parada:
                 solicitacao.maq_parada = False
+
+            if solicitacao.maq_parada == False:
+                if apos_exec_maq_parada:
+                    solicitacao.maq_parada = True
                 
             solicitacao.status_andamento = status
 
@@ -150,12 +154,26 @@ def editar_solicitacao(request, solicitacao_id):
     if request.method == 'POST':
         try:
             # Obtém os dados do formulário
+            print(request.POST.get('id_maquina'))
+            print(request.POST.get('id_setor'))
             maquina = request.POST.get('id_maquina')
             setor = request.POST.get('id_setor')
             comentario_pcm = request.POST.get('comentario_manutencao')
             data_abertura = parse_datetime(request.POST.get('data_abertura'))
             if not data_abertura:
                 raise ValueError('Data de abertura inválida.')
+            
+            setor_maq_solda = request.POST.get('setor_maq_solda', None)
+            equipamento_em_falha = request.POST.get('eq_falha', None)
+            tipo_ferramenta = request.POST.get('tipo_ferramenta', None)
+            codigo_ferramenta = request.POST.get('codigo_ferramenta', None)
+
+            print(setor_maq_solda)
+            print(equipamento_em_falha)
+            print(tipo_ferramenta)
+            print(codigo_ferramenta)
+
+            print(request.POST)
 
             programacao = parse_datetime(request.POST.get('data_programacao'))
             programacao = programacao if programacao else None
@@ -205,8 +223,14 @@ def editar_solicitacao(request, solicitacao_id):
                     solicitacao.atribuido = responsavel_object
                     solicitacao.prioridade = nivel_prioridade
 
-                    if request.POST.get('flagMaqParada') == 'on':
-                        solicitacao.maq_parada = True
+                    # Campos exclusivos para o setor de Solda
+                    # Ao editar a primeira execução
+                    solicitacao.setor_maq_solda = setor_maq_solda
+                    solicitacao.equipamento_em_falha = equipamento_em_falha
+                    solicitacao.tipo_ferramenta = tipo_ferramenta
+                    solicitacao.codigo_ferramenta = codigo_ferramenta
+
+                    solicitacao.maq_parada = True if request.POST.get('flagMaqParada') == 'on' else False
 
                     if tipo_manutencao == 'preventiva_programada':
                         solicitacao.planejada = True
@@ -218,6 +242,9 @@ def editar_solicitacao(request, solicitacao_id):
 
                 if maquina:
                     solicitacao.maquina = get_object_or_404(Maquina, pk=maquina)
+                elif tipo_ferramenta is not None:
+                    solicitacao.maquina = None
+
                 if setor:
                     solicitacao.setor = get_object_or_404(Setor, pk=setor)
 

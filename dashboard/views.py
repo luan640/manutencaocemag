@@ -14,7 +14,7 @@ from cadastro.models import Maquina, Setor
 from preventiva.models import PlanoPreventiva
 
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 def dashboard(request):
@@ -42,10 +42,14 @@ def mtbf_maquina(request):
     -------
     - Calcula o primeiro e último dia do mês atual.
     - Assume um tempo de atividade esperado de 9 horas por dia.
+        -Segunda à Sexta -- 8:00 às 18:00
+        -Sábado -- 8:00 às 12:00
+        -Domingo -- sem expediente
     - Busca as paradas finalizadas dentro do mês atual e agrupa por máquina.
     - Calcula o tempo total de paradas e a quantidade de paradas para cada máquina.
     - Usa esses dados para calcular o MTBF de cada máquina.
     - Retorna os resultados como uma lista JSON contendo o código da máquina e o MTBF arredondado para duas casas decimais.
+
 
     Retorno:
     --------
@@ -62,10 +66,16 @@ def mtbf_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
+
+
 
     # Tempo de atividade esperada: 9 horas por dia
-    dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+    # dias_mes = (data_fim - data_inicio).days + 1
+    # tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+    tempo_atividade_esperada = tempo_util(data_inicio,data_fim)/3600
 
     filtros = {
             'data_inicio__gte': data_inicio,
@@ -75,25 +85,46 @@ def mtbf_maquina(request):
     if setor:
         filtros['ordem__setor_id'] = int(setor)
 
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+
+    # paradas = (
+    #     MaquinaParada.objects.filter(**filtros)
+    #     .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
+    #     .values('ordem__maquina__codigo') # Agrupa pelo codigo da máquina
+    #     .annotate(
+    #         total_paradas=Sum('duracao'),  # Soma das durações das paradas
+    #         quantidade_paradas=Count('id')  # Contagem de paradas
+    #     )
+    # )
+
     # Buscar as paradas do mês atual e calcular a duração de cada uma
     paradas = (
         MaquinaParada.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')  # Agrupa pelo codigo da máquina
+        .values('ordem__maquina__codigo')
         .annotate(
-            total_paradas=Sum('duracao'),  # Soma das durações das paradas
-            quantidade_paradas=Count('id')  # Contagem de paradas
-        )
+            quantidade_paradas=Count('id')
+        ) # Agrupa pelo codigo da máquina
     )
 
+    print(paradas)
+    
     # Preparar os dados para o JSON
     resultados = []
+    
     for parada in paradas:
-        tempo_total_paradas_horas = parada['total_paradas'].total_seconds() / 3600  # Converter para horas
+        filtros['ordem__maquina__codigo'] = parada['ordem__maquina__codigo']
+        total_duracao = sum(tempo_util(p.data_inicio, p.data_fim) for p in MaquinaParada.objects.filter(**filtros))
+        tempo_total_paradas_horas = total_duracao / 3600
+        # tempo_total_paradas_horas = parada['total_paradas'].total_seconds() / 3600  # Converter para horas
         quantidade_paradas = parada['quantidade_paradas']
 
         # Cálculo do MTBF
         mtbf = (tempo_atividade_esperada - tempo_total_paradas_horas) / quantidade_paradas
+        # print("Tempo atividade esperada: ",tempo_atividade_esperada)
+        # print("Tempo parada: ",tempo_total_paradas_horas)
+        # print("Quantidade de paradas: ",quantidade_paradas)
+        # print("mtbf: ",mtbf)
 
         resultados.append({
             'maquina': parada['ordem__maquina__codigo'],
@@ -110,6 +141,9 @@ def exportar_mtbf_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Tempo de atividade esperada: 9 horas por dia
     dias_mes = (data_fim - data_inicio).days + 1
@@ -122,6 +156,8 @@ def exportar_mtbf_maquina(request):
         }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Buscar as paradas do mês atual e calcular a duração de cada uma
     paradas = (
@@ -193,6 +229,9 @@ def mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
@@ -201,6 +240,8 @@ def mttr_maquina(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Buscar execuções finalizadas no mês atual
     execucoes = (
@@ -241,6 +282,9 @@ def exportar_mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
@@ -249,6 +293,8 @@ def exportar_mttr_maquina(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Buscar execuções finalizadas no mês atual
     execucoes = (
@@ -302,6 +348,9 @@ def disponibilidade_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Tempo de atividade esperada: 9 horas por dia
     dias_mes = (data_fim - data_inicio).days + 1
@@ -315,6 +364,8 @@ def disponibilidade_maquina(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Buscar e calcular MTBF
     paradas = (
@@ -368,6 +419,9 @@ def exportar_disponibilidade_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Tempo de atividade esperada: 9 horas por dia
     dias_mes = (data_fim - data_inicio).days + 1
@@ -381,6 +435,8 @@ def exportar_disponibilidade_maquina(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Buscar e calcular MTBF
     paradas = (
@@ -441,163 +497,15 @@ def exportar_disponibilidade_maquina(request):
     response['Content-Disposition'] = 'attachment; filename="disponibilidade_maquina.xlsx"'
     return response
 
-def disponibilidade_maquinas_criticas(request):
-    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
-    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
-    setor = request.GET.get('setor')
-    area = request.GET.get('area')
-
-    # Tempo de atividade esperada: 9 horas por dia
-    dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
-
-    filtros = {
-        'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
-        'ordem__area': area
-
-    }
-    if setor:
-        filtros['ordem__setor_id'] = int(setor)
-
-    maquinas_criticas = PlanoPreventiva.objects.filter(
-        ativo=True
-    ).values_list('maquina__id', flat=True).distinct().exclude(maquina__codigo='ETE')
-
-    # Buscar e calcular MTBF
-    paradas = (
-        MaquinaParada.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
-    )
-
-    # Buscar e calcular MTTR
-    execucoes = (
-        Execucao.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
-    )
-
-    # Organizar os dados em dicionários para fácil acesso
-    mtbf_dict = {
-        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
-        for parada in paradas
-    }
-    mttr_dict = {
-        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
-        for execucao in execucoes
-    }
-
-    # Calcular a disponibilidade para cada máquina
-    resultados = []
-    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
-        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
-
-        if mtbf + mttr > 0:
-            disponibilidade = (mtbf / (mtbf + mttr)) * 100
-        else:
-            disponibilidade = 0
-
-        resultados.append({
-            'maquina': maquina,
-            'disponibilidade': round(disponibilidade, 2)
-        })
-
-    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
-
-    return JsonResponse(resultados, safe=False)
-
-def exportar_disponibilidade_maquina_criticas(request):
-    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
-    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
-    setor = request.GET.get('setor')
-    area = request.GET.get('area')
-
-    # Tempo de atividade esperada: 9 horas por dia
-    dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
-
-    filtros = {
-        'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
-        'ordem__area': area
-
-    }
-    if setor:
-        filtros['ordem__setor_id'] = int(setor)
-
-    maquinas_criticas = PlanoPreventiva.objects.filter(
-        ativo=True
-    ).values_list('maquina__id', flat=True).distinct().exclude(maquina__codigo='ETE')
-
-    # Buscar e calcular MTBF
-    paradas = (
-        MaquinaParada.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
-    )
-
-    # Buscar e calcular MTTR
-    execucoes = (
-        Execucao.objects.filter(**filtros, ordem__maquina__id__in=maquinas_criticas)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
-    )
-
-    # Organizar os dados em dicionários para fácil acesso
-    mtbf_dict = {
-        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
-        for parada in paradas
-    }
-    mttr_dict = {
-        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
-        for execucao in execucoes
-    }
-
-    # Calcular a disponibilidade para cada máquina
-    resultados = []
-    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
-        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
-
-        if mtbf + mttr > 0:
-            disponibilidade = (mtbf / (mtbf + mttr)) * 100
-        else:
-            disponibilidade = 0
-
-        resultados.append({
-            'maquina': maquina,
-            'disponibilidade': round(disponibilidade, 2)
-        })
-
-    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
-
-    df = pd.DataFrame(resultados)
-
-    # Criar o arquivo Excel na memória
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Disponibilidade Máquina Crítica')
-
-    # Configurar a resposta para download
-    response = HttpResponse(
-        output.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="disponibilidade_maquina.xlsx"'
-    return response
-
 def ordens_prazo(request):
     """
     Retorna um indicador de ordens finalizadas dentro e fora do prazo.
     """
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'status_andamento': 'finalizada',
@@ -605,6 +513,8 @@ def ordens_prazo(request):
     }
     if setor:
         filtros['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     # Subquery para pegar a última execução de cada solicitação
     ultima_execucao_subquery = (
@@ -645,6 +555,9 @@ def relacao_por_tipo_ordem(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'solicitacao__status_andamento': 'finalizada',
@@ -654,6 +567,8 @@ def relacao_por_tipo_ordem(request):
     }
     if setor:
         filtros['solicitacao__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['solicitacao__maquina__maquina_critica'] = maquinas_criticas
 
     # Filtrando apenas as ordens finalizadas e agrupando por tipo de manutenção
     ordens_por_tipo = (
@@ -674,6 +589,9 @@ def maquina_parada(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
@@ -685,6 +603,8 @@ def maquina_parada(request):
 
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Calcular a duração (diferença entre início e fim), usando Coalesce para lidar com valores nulos em data_fim
     total_por_maquina = (
@@ -698,14 +618,19 @@ def maquina_parada(request):
         )
         .values('ordem__maquina__codigo')  # Agrupa pelo código da máquina
         .annotate(total_duracao=Sum('duracao'))  # Soma a duração por máquina
-        .order_by('-total_duracao')
+        # .order_by('-total_duracao')
     )
-
+    
+    for maq in total_por_maquina:
+        filtros['ordem__maquina__codigo'] = maq['ordem__maquina__codigo']
+        total_duracao = sum(tempo_util(p.data_inicio, p.data_fim) for p in MaquinaParada.objects.filter(**filtros))
+        maq['total_duracao'] = total_duracao / 3600 if total_duracao else 0
     # Converter o resultado para uma lista de dicionários com as durações em horas
     resultado = [
         {
             'maquina': item['ordem__maquina__codigo'],
-            'total_horas': item['total_duracao'].total_seconds() / 3600 if item['total_duracao'] else 0
+            # 'total_horas': item['total_duracao'].total_seconds() / 3600 if item['total_duracao'] else 0
+            'total_horas': item['total_duracao']
         }
         for item in total_por_maquina
     ]
@@ -717,6 +642,9 @@ def exportar_maquina_parada_excel(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
@@ -727,6 +655,8 @@ def exportar_maquina_parada_excel(request):
 
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Obter os dados
     total_por_maquina = (
@@ -772,6 +702,9 @@ def solicitacao_setor(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_abertura__gte': data_inicio,
@@ -781,6 +714,8 @@ def solicitacao_setor(request):
     }
     if setor:
         filtros['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     resultado = (
         Solicitacao.objects
@@ -803,6 +738,9 @@ def exportar_solicitacao_setor(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_abertura__gte': data_inicio,
@@ -812,6 +750,8 @@ def exportar_solicitacao_setor(request):
     }
     if setor:
         filtros['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     resultado = (
         Solicitacao.objects
@@ -851,6 +791,9 @@ def quantidade_abertura_ordens(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_abertura__range':[data_inicio,data_fim],
@@ -858,6 +801,8 @@ def quantidade_abertura_ordens(request):
     }
     if setor:
         filtros['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     ordens = Solicitacao.objects.filter(**filtros).exclude(status='rejeitar').count()
 
@@ -871,6 +816,9 @@ def quantidade_finalizada(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'status': 'finalizada',
@@ -879,6 +827,8 @@ def quantidade_finalizada(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     ordens = Execucao.objects.filter(**filtros).count()
 
@@ -890,6 +840,9 @@ def quantidade_aguardando_material(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'status_andamento': 'aguardando_material',
@@ -898,6 +851,8 @@ def quantidade_aguardando_material(request):
 
     if setor:
         filtros['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     ordens = Solicitacao.objects.filter(**filtros).count()
 
@@ -925,11 +880,16 @@ def quantidade_atrasada_view(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Define os filtros para a solicitação
     filtros={'area':area}
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     fora_do_prazo = quantidade_atrasada(filtros)
 
@@ -939,12 +899,17 @@ def quantidade_em_execucao(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Define os filtros para a solicitação
     filtros = {'area': area, 'status_andamento': 'em_execucao', 'status': 'aprovar'}
 
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     ordens = Solicitacao.objects.filter(**filtros).count()
 
@@ -956,6 +921,9 @@ def tempo_medio_finalizar(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Define os filtros para a solicitação
     filtros = {'status': 'finalizada',
@@ -966,6 +934,8 @@ def tempo_medio_finalizar(request):
     
     if setor:
         filtros['ordem__setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     tempo_medio = (
         Execucao.objects
@@ -999,6 +969,9 @@ def tempo_medio_abertura(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Define os filtros para a solicitação
     filtros = {'data_abertura__gte': data_inicio,
@@ -1009,6 +982,8 @@ def tempo_medio_abertura(request):
     
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
+    if maquinas_criticas:
+        filtros['maquina__maquina_critica'] = maquinas_criticas
 
     # Obtém a data da primeira e da última ordem aberta e a contagem total de ordens
     valores = Solicitacao.objects.filter(**filtros).aggregate(
@@ -1042,8 +1017,11 @@ def tempo_medio_abertura(request):
 def horas_trabalhadas_setor(request):
 
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
 
-    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area).annotate(
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
+
+    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
             output_field=DurationField()
@@ -1078,8 +1056,11 @@ def horas_trabalhadas_setor(request):
 def exportar_horas_trabalhadas_setor(request):
     
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
 
-    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area).annotate(
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
+
+    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
             output_field=DurationField()
@@ -1126,11 +1107,15 @@ def exportar_horas_trabalhadas_setor(request):
 def horas_trabalhadas_tipo(request):
 
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     resultado = Execucao.objects.filter(
         data_fim__isnull=False,
         ordem__info_solicitacao__tipo_manutencao__isnull=False,
-        ordem__area=area
+        ordem__area=area,
+        ordem__maquina__maquina_critica=maquinas_criticas
     ).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
@@ -1166,11 +1151,15 @@ def horas_trabalhadas_tipo(request):
 def exportar_horas_trabalhadas_tipo(request):
     
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     resultado = Execucao.objects.filter(
         data_fim__isnull=False,
         ordem__info_solicitacao__tipo_manutencao__isnull=False,
-        ordem__area=area
+        ordem__area=area,
+        ordem__maquina__maquina_critica=maquinas_criticas
     ).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
@@ -1220,6 +1209,9 @@ def disponibilidade_geral(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
+    maquinas_criticas = request.GET.get('maquina-critica',False)
+
+    maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Filtros básicos
     filtros = {
@@ -1229,6 +1221,8 @@ def disponibilidade_geral(request):
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
     # Obtém todas as máquinas e calcula o tempo de atividade esperada por máquina
     maquinas = MaquinaParada.objects.filter(**filtros).values_list('ordem__maquina', flat=True).distinct()
@@ -1267,3 +1261,48 @@ def disponibilidade_geral(request):
     )
 
     return JsonResponse({'data': round(disponibilidade_geral_media, 2)})
+
+
+#Função à parte de chamadas de requisições
+def tempo_util(data_inicio, data_fim):
+
+    '''
+        Função para calcular somente as horas de expediente e 
+        evitar erros de cálculo no funcionamento das máquinas
+    '''
+    # Inicializar a quantidade de horas trabalhadas
+    if data_fim is None:
+        return 0
+    horas_trabalhadas = timedelta()
+    # print("Data inicio: ",data_inicio)
+    # print("Data fim: ",data_fim)
+
+    # Loop para iterar sobre cada dia no intervalo
+    current_day = data_inicio
+    
+    while current_day <= data_fim:
+        if current_day.weekday() < 5:  # Segunda a sexta (0-4)
+            # Horário de trabalho de 08:00 às 18:00
+            start_of_day = current_day.replace(hour=8, minute=0, second=0)
+            end_of_day = current_day.replace(hour=18, minute=0, second=0)
+            # Ajustar caso a data de início ou final esteja fora do intervalo
+            start_of_day = max(start_of_day, data_inicio)
+            end_of_day = min(end_of_day, data_fim)
+            if start_of_day < end_of_day:
+                horas_trabalhadas += end_of_day - start_of_day
+        elif current_day.weekday() == 5:  # Sábado (5)
+            # Horário de trabalho de 08:00 às 12:00
+            start_of_day = current_day.replace(hour=8, minute=0, second=0)
+            end_of_day = current_day.replace(hour=12, minute=0, second=0)
+            # Ajustar caso a data de início ou final esteja fora do intervalo
+            start_of_day = max(start_of_day, data_inicio)
+            end_of_day = min(end_of_day, data_fim)
+            if start_of_day < end_of_day:
+                horas_trabalhadas += end_of_day - start_of_day
+
+        # Avançar para o próximo dia
+        current_day += timedelta(days=1)
+    # print("Horas trabalhadas:" ,horas_trabalhadas)
+    # print('-----------------')
+    # Retornar o total de horas trabalhadas em segundos
+    return horas_trabalhadas.total_seconds()

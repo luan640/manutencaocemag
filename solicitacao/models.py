@@ -52,7 +52,7 @@ class Solicitacao(models.Model):
                       ('finalizada','Finalizada'))
     
     setor = models.ForeignKey(Setor, on_delete=models.CASCADE)
-    maquina = models.ForeignKey(Maquina, on_delete=models.CASCADE)
+    maquina = models.ForeignKey(Maquina, on_delete=models.CASCADE, null=True, blank=True)
     data_abertura = models.DateTimeField(auto_now_add=True, blank=True)
     maq_parada = models.BooleanField(default=False)
     solicitante = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

@@ -67,7 +67,7 @@ class Execucao(models.Model):
         super().save(*args, **kwargs)
 
         print(self.apos_exec_maq_parada)
-
+        print(self.n_execucao)
         # Se a execução é nova (número de execução é 1) ou se há uma condição para atualizar MaquinaParada
         if creating:
             if self.n_execucao == 0:
@@ -104,7 +104,7 @@ class Execucao(models.Model):
                     MaquinaParada.objects.get_or_create(
                         ordem=self.ordem,
                         execucao=self,
-                        defaults={'data_inicio': self.data_inicio, 'data_fim': None}
+                        defaults={'data_inicio': self.ordem.data_abertura if self.che_maq_parada else self.data_inicio, 'data_fim': None}
                     )
                 elif self.exec_maq_parada:
                     MaquinaParada.objects.get_or_create(

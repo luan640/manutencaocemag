@@ -639,6 +639,8 @@ def editar_execucao(request, pk):
                 # Obter a execução atual
                 execucao = get_object_or_404(Execucao, pk=pk)
 
+                print("exec: ",execucao)
+
                 # Obter a última execução anterior, se existir
                 ultima_execucao_anterior = (
                     Execucao.objects.filter(
@@ -648,6 +650,20 @@ def editar_execucao(request, pk):
                     .order_by('-n_execucao')
                     .first()
                 )
+
+                proxima_execucao = (
+                    Execucao.objects.filter(
+                        ordem=execucao.ordem,  # Filtra pela mesma ordem
+                        n_execucao__gt=execucao.n_execucao  # Filtra para pegar execuções com número maior que o número da execução atual
+                    )
+                    .order_by('n_execucao')  # Ordena os resultados pela coluna `n_execucao` em ordem crescente
+                    .first()  # Pega o primeiro resultado (a próxima execução com o maior número de execução)
+                )
+
+                print('proxima_exec: ',proxima_execucao.n_execucao)
+
+
+                print("ult_exec: ",ultima_execucao_anterior.n_execucao)
 
                 # Validar as novas datas em relação à última execução anterior
                 if ultima_execucao_anterior:
@@ -664,6 +680,21 @@ def editar_execucao(request, pk):
                     if nova_data_inicio <= ultima_execucao_anterior.data_fim:
                         return JsonResponse({
                             "error": "A nova data de início deve ser posterior à data final da última execução anterior."
+                        }, status=400)
+                
+                if proxima_execucao:
+                    if is_naive(nova_data_inicio):
+                        nova_data_inicio = make_aware(nova_data_inicio)
+                    if is_naive(proxima_execucao.data_inicio):
+                        proxima_execucao.data_inicio = make_aware(proxima_execucao.data_inicio)
+
+                    # Verificação de datas
+                    print(nova_data_inicio)
+                    print(proxima_execucao.data_inicio)
+
+                    if nova_data_inicio >= proxima_execucao.data_inicio:
+                        return JsonResponse({
+                            "error": "A nova data de início deve ser anterior à data início da próxima execução."
                         }, status=400)
 
                 # Validar que a nova data de fim seja posterior à data de início

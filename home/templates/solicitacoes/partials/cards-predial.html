@@ -1,6 +1,12 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
+<style>
+    .flags{
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+</style>
 <div class="col-md-12">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -21,19 +27,50 @@
         </div>
         <div class="card-body">
             <h6 class="card-title d-flex justify-content-between align-items-center">
-                <div class="d-flex flex-column">
-                    <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
+                <!-- <div class="d-flex flex-column"> -->
+                    <!-- <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
                     <small><span title="{{ solicitacao.solicitante.nome }}" class="fw-bold">{{ solicitacao.solicitante.nome }}</span></small>
                     <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }} impacto na produção</span>
                     {% if solicitacao.tarefa %}
                     <small><span title="{{ solicitacao.tarefa.nome }}" class="fw-bold">{{ solicitacao.tarefa.nome|truncatechars:20 }}</span></small>
                     {% else %}
                     <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
+                    <span title="{{ solicitacao.descricao }}" class="text-secondary" style="text-align: justify; font-size: 0.9rem; margin-top: 8px;">
+                        <strong>Motivo:</strong> {{ solicitacao.descricao }}
+                    </span>
+                    {% endif %} -->
+                    
+                <!-- </div> -->
+                <div class="d-flex flex-row flex-wrap gap-4"> 
+                    <span title="{{ solicitacao.setor.nome }}" class="flags fw-bold badge bg-success">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
+                    
+                    {% if solicitacao.get_impacto_producao_display %}
+                        {% if solicitacao.get_impacto_producao_display == 'Alto'%}
+                            <span class="flags badge bg-danger">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                        {% elif solicitacao.get_impacto_producao_display == 'Médio'%}
+                            <span class="flags badge text-bg-warning">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                        {% elif solicitacao.get_impacto_producao_display == 'Baixo'%}
+                            <span class="flags badge bg-info">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                        {% endif %}
                     {% endif %}
+
+                    {% if solicitacao.maquina.descricao %}
+                        <span title="{{ solicitacao.maquina.descricao }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span>
+                    {% else %}
+                        <span title="{{ solicitacao.maquina.codigo }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.codigo }}</span>
+                    {% endif %}
+
+                <div class="gap-4" style="width: 100%;">
+                    <span title="{{ solicitacao.solicitante.nome }}" class="flags fw-bold badge text-bg-light">{{ solicitacao.solicitante.nome}}</span><br><br>
+                    <span title="{{ solicitacao.descricao }}" class="text-secondary"  style="text-align: justify; font-size: 0.9rem;">
+                        <strong>Motivo:</strong> {{ solicitacao.descricao }}
+                    </span>
                 </div>
                 
+            </div>
+                
                 {% if solicitacao.status_andamento != 'finalizada' %}
-                    <div class="d-flex flex-column align-items-end">
+                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
                         <!-- {% if solicitacao.maq_parada %}
                             <div class="d-flex align-items-center text-danger mb-1"> -->
                                 <!-- Ícone SVG de Exclamação -->
@@ -63,7 +100,7 @@
                         {% endif %}
                     </div>
                 {% else %}
-                    <div class="d-flex flex-column align-items-end">
+                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 150px;">
                         {% if solicitacao.tarefa %}
                             <small><span class="badge text-bg-dark ms-2">Rotina</span></small>
                         {% endif %}

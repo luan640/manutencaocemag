@@ -11,6 +11,7 @@ urlpatterns = [
     path('ajax/get-maquinas/', views.get_maquina_by_setor, name='get_maquina_by_setor'),
     path('ajax/get-maquinas-by-eq-falha/', views.get_maquina_by_eq_em_falha, name='get_maquina_by_eq_em_falha'),
     path('ajax/get-all-maquinas/', views.get_maquinas, name='get_maquinas'),
+    path('ajax/get-all-maquinas/<int:setor_id>', views.get_maquinas_setor, name='get_maquinas_setor'),
     path('ajax/get-all-setores/', views.get_setores, name='get_setores'),
 
     path('api/planos-preventiva/<int:maquina_id>/', get_planos_preventiva, name='get_planos_preventiva'),
@@ -35,6 +36,5 @@ urlpatterns = [
 
     path('executar-tarefa-rotina/', views.criar_execucao_rotina, name='criar_execucao_rotina'),
     path('criar-tarefa-rotina/', views.criar_tarefa_rotina, name='criar_tarefa_rotina'),
-
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -39,6 +39,10 @@
         position: relative; /* Garante que o overlay se posicione corretamente */
     }
 
+    .required {
+        color: red;  /* Tornando o asterisco vermelho */
+    }
+
 </style>
 {% endblock %}
 
@@ -208,7 +212,7 @@
         </div>
     </div>
     
-    <div class="row my-4">
+    <div class="row my-4 d-flex justify-content-around">
         <!-- Aguardando primeiro atendimento -->
         {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'solicitante' %}
         <div class="col-sm-6 mb-3">
@@ -319,6 +323,53 @@
 </div>
 
 <script>
+    function updateSelectElement(selectElementId, options, labelCallback) {
+            var selectElement = document.getElementById(selectElementId);
+
+            if (!selectElement) return;
+
+            // Limpa as opções atuais do select
+            selectElement.innerHTML = '';
+
+            // Adiciona a opção padrão
+            var defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = 'Selecione...';
+            selectElement.appendChild(defaultOption);
+
+
+            // Adiciona novas opções baseadas nos dados retornados
+            options.forEach(function(optionData) {
+                var option = document.createElement('option');
+                option.value = optionData.id;  // Use `id` como valor da opção
+                option.text = labelCallback(optionData);  // Usa o callback para definir o texto exibido
+                selectElement.appendChild(option);
+            });
+        }
+
+        function updateSelectElement2(selectElementId, options, labelCallback) {
+            var selectElement = document.getElementById(selectElementId);
+
+            if (!selectElement) return;
+
+            // Limpa as opções atuais do select
+            selectElement.innerHTML = '';
+
+            // Adiciona a opção padrão
+            var defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = 'Selecione...';
+            selectElement.appendChild(defaultOption);
+
+            // Adiciona novas opções baseadas nos dados retornados
+            options.forEach(function(optionData) {
+                var option = document.createElement('option');
+                option.value = optionData.pk;  // O campo `pk` é o ID único do objeto
+                option.text = labelCallback(optionData);  // Usa o callback para definir o texto exibido
+                selectElement.appendChild(option);
+            });
+        }
+
     document.addEventListener("DOMContentLoaded", function() {      
 
         var filterForm = document.getElementById('filter-form');
@@ -915,36 +966,121 @@
 
         };
         
-        function updateSelectElement(selectElementId, options, labelCallback) {
-            var selectElement = document.getElementById(selectElementId);
 
-            if (!selectElement) return;
-
-            // Limpa as opções atuais do select
-            selectElement.innerHTML = '';
-
-            // Adiciona a opção padrão
-            var defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.text = 'Selecione...';
-            selectElement.appendChild(defaultOption);
-
-            // Adiciona novas opções baseadas nos dados retornados
-            options.forEach(function(optionData) {
-                var option = document.createElement('option');
-                option.value = optionData.id;  // Use `id` como valor da opção
-                option.text = labelCallback(optionData);  // Usa o callback para definir o texto exibido
-                selectElement.appendChild(option);
-            });
-        }
         
+
         function attachModalEventListeners() {
+            
+            document.querySelectorAll('[id^="eq_falha_"]').forEach(function(editLink) {
+                editLink.addEventListener('change', function(event) {
+                    const solicitacaoPk = editLink.id.split('_')[2]; // Obtém o ID da solicitação
+                    const modalEditarOrdem = document.getElementById(`editarOrdemInicialModal${solicitacaoPk}`);
+                    const divPlanoPreventiva = modalEditarOrdem.querySelector('#rowEscolhaPlano');
+
+                    const divsSolda = modalEditarOrdem.querySelectorAll('.div-solda');
+                    
+                    divsSolda[1].style.display = 'flex';
+
+                    const selectTipoManutencao = modalEditarOrdem.querySelector(`#tipo_manutencao_${solicitacaoPk}`);
+                    selectTipoManutencao.selectedIndex = -1;
+                    let tipoEquipamento = $(`#eq_falha_${solicitacaoPk} option:selected`).val();
+                    atualizarSelectMaquina(this,tipoEquipamento);
+
+                    $(`#id_maquina_${solicitacaoPk}`).on('change', function() {
+                        var codigoMaquina = this.value;
+                        const url = `/plano-preventiva/criar/${codigoMaquina}/`;
+                        divPlanoPreventiva.innerHTML = `<div class="col-sm-12">
+                                                        <label for="">Escolha o plano</label>
+                                                        <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="${codigoMaquina}">
+                                                            <option value="">Carregando...</option>
+                                                        </select>
+                                                        <a class="form-control" href="${url}">Criar novo plano</a>
+                                                    </div>`
+                        checkMaquinaParada(solicitacaoPk,this);
+                    });
+
+                    const divTipoFerramenta = modalEditarOrdem.querySelector('.div-tipo-ferramenta');
+                    const divCodFerramenta = modalEditarOrdem.querySelector('.div-cod-ferramenta');
+
+                    const divSetorMaqSolda = modalEditarOrdem.querySelector('.div-setor-maq-solda');
+
+                    divSetorMaqSolda.style.display = 'none';
+                    
+                    if (modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`)){
+                        modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).selectedIndex = -1;
+                        modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).disabled = true;
+                    };
+
+                    if (tipoEquipamento === 'ferramentas'){
+                        //Retirando a obrigatoriedade do select máquina
+                        $(`#id_maquina_${solicitacaoPk}`).attr('disabled',true);
+
+                        divPlanoPreventiva.innerHTML = '';
+                        divsSolda[1].style.display = 'flex';
+
+                        // Remove o campo de texto e adiciona um <select> no lugar
+                        divTipoFerramenta.innerHTML = `
+                            <label for="">Tipo de ferramenta <span class="required">*</span></label>
+                            <select class="form-control select2_tipo_ferramenta" name="tipo_ferramenta" id="tipo_ferramenta_${solicitacaoPk}" required>
+                                <option value="">--</option>
+                                <option value="esmerilhadeira">Esmerilhadeira</option>
+                                <option value="tocha">Tocha</option>
+                            </select>
+                        `;
+                        divTipoFerramenta.style.display = 'block';
+                        divCodFerramenta.style.display = 'block';
+                        
+                        //Habilitando o campo codigo de ferramenta
+                        if (modalEditarOrdem.querySelector(`.input-cod-ferramenta`)){
+                            modalEditarOrdem.querySelector(`.input-cod-ferramenta`).disabled = false;
+                        };
+                    }else{
+                        //Desabilitar os campos de ferramentas
+                        if (modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`)){
+                            modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).selectedIndex = -1;
+                            modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).disabled = true;
+                        }
+
+                        if (modalEditarOrdem.querySelector(`.input-cod-ferramenta`)){
+                            modalEditarOrdem.querySelector(`.input-cod-ferramenta`).value = '';
+                            modalEditarOrdem.querySelector(`.input-cod-ferramenta`).disabled = true;
+                        }
+                        divTipoFerramenta.style.display = 'none';
+                        divCodFerramenta.style.display = 'none';
+
+                        
+
+                        if (tipoEquipamento === 'maquina_de_solda'){
+                            divSetorMaqSolda.innerHTML = `
+                                                        <label for="">Setor Máquina de solda <span class="required">*</span></label>
+                                                        <select class="form-control select2_setor_maq_solda" name="setor_maq_solda" id="setor_maq_solda_${solicitacaoPk}" required>
+                                                            <option value="">--</option>
+                                                            <option value="laterais">Laterais</option>
+                                                            <option value="eixos">Eixos</option>
+                                                            <option value="icamentos">Içamentos</option>
+                                                            <option value="plataforma">Plataforma</option>
+                                                            <option value="chassi">Chassi</option>
+                                                            <option value="tanque">Tanque</option>
+                                                            <option value="cacamba">Caçamba</option>
+                                                            <option value="serralheria">Serralheria</option>
+                                                            <option value="fueiro">Fueiro</option>
+                                                        </select>
+                                                        `
+                            divSetorMaqSolda.style.display = 'block';
+                        }
+                    }
+  
+                });
+            });
+
+            
             document.querySelectorAll('#habilitarEdicaoMaquina').forEach(function(editLink) {
                 editLink.addEventListener('click', function(event) {
                     event.preventDefault();
                     
                     const container = editLink.closest('div[id^="editarMaquina_"]');
                     const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
+                    const modalEditarOrdem = document.getElementById(`editarOrdemInicialModal${solicitacaoPk}`);
                     
                     // Remove o campo de texto e adiciona um <select> no lugar
                     container.innerHTML = `
@@ -953,8 +1089,16 @@
                         </select>
                     `;
 
+                    // Verifica o valor do campo Setor
+                    let setor = $(`#id_setor_${solicitacaoPk}`).val();
+                    if (setor == null){
+                        const divSetor = document.getElementById(`editarSetor_${solicitacaoPk}`); 
+                        setor = divSetor.querySelector('input').value;
+                    }
+                    
+
                     // Faz a requisição AJAX para carregar as máquinas
-                    fetch('/solicitacao/ajax/get-all-maquinas/')
+                    fetch(`/solicitacao/ajax/get-all-maquinas/${setor}`)
                         .then(response => response.json())
                         .then(data => {
                             if (data.results) {
@@ -969,6 +1113,23 @@
                                     width: '100%',
                                     dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
                                 });
+                                
+                                $(`#id_maquina_${solicitacaoPk}`).on('change', function() {
+                                    const divPlanoPreventiva = modalEditarOrdem.querySelector('#rowEscolhaPlano');
+                                    var codigoMaquina = this.value;
+                                    const url = `/plano-preventiva/criar/${codigoMaquina}/`;
+                                    divPlanoPreventiva.innerHTML = `<div class="col-sm-12">
+                                                                        <label for="">Escolha o plano</label>
+                                                                        <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="${codigoMaquina}">
+                                                                            <option value="">Carregando...</option>
+                                                                        </select>
+                                                                        <a class="form-control" href="${url}">Criar novo plano</a>
+                                                                    </div>`;
+                                    checkMaquinaParada(solicitacaoPk,this);
+                                });
+
+
+
                             } else {
                                 console.error('Nenhuma máquina encontrada.');
                             }
@@ -982,16 +1143,17 @@
                 editLink.addEventListener('click', function(event) {
                     event.preventDefault();
                     
+                    
                     const container = editLink.closest('div[id^="editarSetor_"]');
                     const solicitacaoPk = container.id.split('_')[1]; // Obtém o ID da solicitação
-                    
+                    const modalEditarOrdem = document.getElementById(`editarOrdemInicialModal${solicitacaoPk}`);
+                    const divPlanoPreventiva = modalEditarOrdem.querySelector('#rowEscolhaPlano');
                     // Remove o campo de texto e adiciona um <select> no lugar
                     container.innerHTML = `
                         <select class="form-control select2_setor" name="id_setor" id="id_setor_${solicitacaoPk}" required>
                             <option value="">Carregando setores...</option>
                         </select>
                     `;
-
                     // Faz a requisição AJAX para carregar as máquinas
                     fetch('/solicitacao/ajax/get-all-setores/')
                         .then(response => response.json())
@@ -1003,11 +1165,179 @@
 
                                 // Inicializa o Select2 após adicionar as opções
                                 $(`#id_setor_${solicitacaoPk}`).select2({
-                                    placeholder: "Selecione a máquina",
+                                    placeholder: "Selecione o setor",
                                     allowClear: true,
                                     width: '100%',
                                     dropdownParent: $(`#editarSetor_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
                                 });
+
+                                
+                                
+                                $(`#id_setor_${solicitacaoPk}`).on('change', function() {
+                                    atualizarSelectMaquina(this,'');
+
+                                    //Retirando o texto de máquina parada apos mudar o setor
+                                    const textoMaquinaParada = document.getElementById(`returnTextMaquinaParada${solicitacaoPk}`);
+                                    textoMaquinaParada.style.display = 'none';
+
+                                    $(`#id_maquina_${solicitacaoPk}`).on('change', function() {
+                                        var codigoMaquina = this.value;
+                                        const url = `/plano-preventiva/criar/${codigoMaquina}/`;
+                                        divPlanoPreventiva.innerHTML = `<div class="col-sm-12">
+                                                                        <label for="">Escolha o plano</label>
+                                                                        <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="${codigoMaquina}">
+                                                                            <option value="">Carregando...</option>
+                                                                        </select>
+                                                                        <a class="form-control" href="${url}">Criar novo plano</a>
+                                                                    </div>`;
+                                        checkMaquinaParada(solicitacaoPk,this);
+                                    });
+                                    
+                                    const divsSolda = modalEditarOrdem.querySelectorAll('.div-solda');
+                                    if ($(`#id_setor_${solicitacaoPk} option:selected`).text() != 'Solda'){
+                                        // div-solda input-solda
+                                        
+                                        if (divsSolda){
+                                            divsSolda.forEach(divSolda =>{
+                                                divSolda.querySelectorAll('.input-solda').forEach(inputSolda =>{
+                                                    inputSolda.disabled = true;
+                                                    inputSolda.value = '';
+                                                })
+                                                divSolda.style.display = 'none';
+                                            })
+                                            if (modalEditarOrdem.querySelector(`#eq_falha_${solicitacaoPk}`)){
+                                                modalEditarOrdem.querySelector(`#eq_falha_${solicitacaoPk}`).selectedIndex = -1;
+                                                modalEditarOrdem.querySelector(`#eq_falha_${solicitacaoPk}`).disabled = true;
+                                            }
+                                            if (modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`)){
+                                                modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).selectedIndex = -1;
+                                                modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).disabled = true;
+                                            }
+                                            if (modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`)){
+                                                modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).selectedIndex = -1;
+                                                modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).disabled = true;
+                                            };
+
+                                        }
+                                    }else{
+                                        if (divsSolda){
+                                            divsSolda[0].style.display = 'flex';
+                                            divsSolda[1].style.display = 'none';
+                                            const divEquipamentoFalha = modalEditarOrdem.querySelector('.div-eq-falha');
+                                            // Remove o campo de texto e adiciona um <select> no lugar
+                                            divEquipamentoFalha.innerHTML = `
+                                                <label for="">Equipamento em falha <span class="required">*</span></label>
+                                                 <select class="form-control select2_eq_falha" name="eq_falha" id="eq_falha_${solicitacaoPk}" required>
+                                                     <option value="">--</option>
+                                                     <option value="maquina_de_solda">Máquina de Solda</option>
+                                                     <option value="monovia">Monovia</option>
+                                                     <option value="ferramentas">Ferramentas</option>
+                                                     <option value="robo_kuka" >SO-RB-01 - ROBÔ - KUKA</option>
+                                                     <option value="outros">Outros</option>
+                                                 </select>
+                                            `;
+                                            divEquipamentoFalha.style.display = 'block';
+                                            $(`#eq_falha_${solicitacaoPk}`).on('change',function(){
+                                                divsSolda[1].style.display = 'flex';
+
+                                                const selectTipoManutencao = modalEditarOrdem.querySelector(`#tipo_manutencao_${solicitacaoPk}`);
+                                                selectTipoManutencao.selectedIndex = -1;
+                                                let tipoEquipamento = $(`#eq_falha_${solicitacaoPk} option:selected`).val();
+
+                                                atualizarSelectMaquina(this,tipoEquipamento);
+
+                                                $(`#id_maquina_${solicitacaoPk}`).on('change', function() {
+                                                    var codigoMaquina = this.value;
+                                                    const url = `/plano-preventiva/criar/${codigoMaquina}/`;
+                                                    divPlanoPreventiva.innerHTML = `<div class="col-sm-12">
+                                                                                    <label for="">Escolha o plano</label>
+                                                                                    <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="${codigoMaquina}">
+                                                                                        <option value="">Carregando...</option>
+                                                                                    </select>
+                                                                                    <a class="form-control" href="${url}">Criar novo plano</a>
+                                                                                </div>`
+                                                    checkMaquinaParada(solicitacaoPk,this);
+                                                });
+
+                                                const divTipoFerramenta = modalEditarOrdem.querySelector('.div-tipo-ferramenta');
+                                                const divCodFerramenta = modalEditarOrdem.querySelector('.div-cod-ferramenta');
+
+                                                const divSetorMaqSolda = modalEditarOrdem.querySelector('.div-setor-maq-solda');
+
+                                                divSetorMaqSolda.style.display = 'none';
+                                                
+                                                if (modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`)){
+                                                    modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).selectedIndex = -1;
+                                                    modalEditarOrdem.querySelector(`#setor_maq_solda_${solicitacaoPk}`).disabled = true;
+                                                };
+
+                                                if (tipoEquipamento === 'ferramentas'){
+                                                    //Retirando a obrigatoriedade do select máquina
+                                                    $(`#id_maquina_${solicitacaoPk}`).attr('disabled',true);
+
+                                                    divPlanoPreventiva.innerHTML = '';
+                                                    divsSolda[1].style.display = 'flex';
+
+                                                    // Remove o campo de texto e adiciona um <select> no lugar
+                                                    divTipoFerramenta.innerHTML = `
+                                                        <label for="">Tipo de ferramenta <span class="required">*</span></label>
+                                                        <select class="form-control select2_tipo_ferramenta" name="tipo_ferramenta" id="tipo_ferramenta_${solicitacaoPk}" required>
+                                                            <option value="">--</option>
+                                                            <option value="esmerilhadeira">Esmerilhadeira</option>
+                                                            <option value="tocha">Tocha</option>
+                                                        </select>
+                                                    `;
+                                                    divTipoFerramenta.style.display = 'block';
+                                                    divCodFerramenta.style.display = 'block';
+                                                    
+                                                    //Habilitando o campo codigo de ferramenta
+                                                    if (modalEditarOrdem.querySelector(`.input-cod-ferramenta`)){
+                                                        modalEditarOrdem.querySelector(`.input-cod-ferramenta`).disabled = false;
+                                                    };
+                                                }else{
+                                                    //Desabilitar os campos de ferramentas
+                                                    if (modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`)){
+                                                        modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).selectedIndex = -1;
+                                                        modalEditarOrdem.querySelector(`#tipo_ferramenta_${solicitacaoPk}`).disabled = true;
+                                                    }
+
+                                                    if (modalEditarOrdem.querySelector(`.input-cod-ferramenta`)){
+                                                        modalEditarOrdem.querySelector(`.input-cod-ferramenta`).value = '';
+                                                        modalEditarOrdem.querySelector(`.input-cod-ferramenta`).disabled = true;
+                                                    }
+                                                    divTipoFerramenta.style.display = 'none';
+                                                    divCodFerramenta.style.display = 'none';
+
+                                                    
+
+                                                    if (tipoEquipamento === 'maquina_de_solda'){
+                                                        divSetorMaqSolda.innerHTML = `
+                                                                                    <label for="">Setor Máquina de solda <span class="required">*</span></label>
+                                                                                    <select class="form-control select2_setor_maq_solda" name="setor_maq_solda" id="setor_maq_solda_${solicitacaoPk}" required>
+                                                                                        <option value="">--</option>
+                                                                                        <option value="laterais">Laterais</option>
+                                                                                        <option value="eixos">Eixos</option>
+                                                                                        <option value="icamentos">Içamentos</option>
+                                                                                        <option value="plataforma">Plataforma</option>
+                                                                                        <option value="chassi">Chassi</option>
+                                                                                        <option value="tanque">Tanque</option>
+                                                                                        <option value="cacamba">Caçamba</option>
+                                                                                        <option value="serralheria">Serralheria</option>
+                                                                                        <option value="fueiro">Fueiro</option>
+                                                                                    </select>
+                                                                                    `
+                                                        divSetorMaqSolda.style.display = 'block';
+                                                    }
+                                                }
+                                            });
+                                            
+
+                                            
+                                        }
+                                    }
+                                });
+
+                                
                             } else {
                                 console.error('Nenhuma máquina encontrada.');
                             }
@@ -1320,7 +1650,15 @@
                     body: JSON.stringify(formData),
                 })
                     .then(response => {
-                        if (!response.ok) throw new Error('Erro ao salvar alterações');
+                        // if (!response.ok) throw new Error('Erro ao salvar alterações');
+                        if (!response.ok){
+                             // Se a resposta não for bem-sucedida, tenta obter o JSON de erro
+                            return response.json().then(errData => {
+                                // Verifique se a resposta contém o campo de erro
+                                const errorMessage = errData.error || 'Erro desconhecido ao salvar alterações';
+                                throw new Error(errorMessage); // Lança o erro com a mensagem
+                            });
+                        }
                         return response.json(); // Converte a resposta para JSON
 
                     })
@@ -1334,7 +1672,8 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: error.responseJSON?.error || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
+                            // text: error.responseJSON?.error || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
+                            text: error.message || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
                             confirmButtonText: 'OK'
                         });
                     });
@@ -1587,6 +1926,7 @@
             });
         }
 
+
         Promise.all([
             
             // Verifica se o elemento existe antes de adicionar a função ao array de Promises
@@ -1630,15 +1970,40 @@
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);
         });
-
     });
-
 </script>
 
 <script>
     function toggleMaqParada(solicitacaoId) {
-        const isChecked = document.getElementById(`maqParadaToggle${solicitacaoId}`).checked;
+        //Verica se a máquina já está parada
 
+
+        let checkboxParada = document.getElementById(`maqParadaToggle${solicitacaoId}`);
+        const isChecked = checkboxParada.checked;
+
+        //Desabilita o botão de salvar ao trocar o toggle de Maquina Parada
+        const salvarButton = document.getElementById(`salvarPrimeiraExecucao_${solicitacaoId}`);
+        salvarButton.disabled = true;
+
+        const textoMaquinaParada = document.getElementById(`returnTextMaquinaParada${solicitacaoId}`);
+
+        const modalEditarOrdem = document.getElementById(`editarOrdemInicialModal${solicitacaoId}`)
+
+        if (modalEditarOrdem.querySelector('.input-eq-falha')){
+            const tipoEqEmFalha = modalEditarOrdem.querySelector('.input-eq-falha').value;
+            if (tipoEqEmFalha === 'Ferramentas'){
+                textoMaquinaParada.style.display = "none";
+                salvarButton.disabled = false;
+                return;
+            }
+        }else if (document.getElementById(`eq_falha_${solicitacaoId}`)){
+            const tipoEqEmFalha = document.getElementById(`eq_falha_${solicitacaoId}`).value;
+            if (tipoEqEmFalha === 'ferramentas'){
+                textoMaquinaParada.style.display = "none";
+                salvarButton.disabled = false;
+                return;
+            }
+        }
         // Envia uma requisição AJAX para atualizar o status da máquina
         fetch("{% url 'atualizar_status_maq_parada' %}", {
             method: 'POST',
@@ -1654,7 +2019,280 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Status da máquina atualizado com sucesso!');
+                // alert('Status da máquina atualizado com sucesso!');
+                if (data.parada){
+                    // alert('A máquina já está parada segundo outra ordem!');
+                    
+                    textoMaquinaParada.style.display = "block";
+                    checkboxParada.checked = false;
+                    salvarButton.disabled = false;
+                }else{
+                    console.log('Máquina funcionando');
+                    textoMaquinaParada.style.display = "none";
+                    salvarButton.disabled = false;
+                }
+            } else {
+                alert('Erro ao atualizar o status da máquina.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar o status da máquina.');
+        });
+    }
+
+    function verificaOrdensDia(input){
+        const idOrdem = input.id.split('_')[2];
+        const ordensDia = document.getElementById(`quantidade_ordens_dia${idOrdem}`);
+
+        ordensDia.textContent = "Carregando..."
+
+        // Usando fetch para obter dados de uma URL
+        fetch(`/programacao/ordens-programadas/producao/?data_prog=${input.value}`)
+        .then(response => {
+            // Verificando se a resposta foi bem-sucedida (status 200)
+            if (!response.ok) {
+                throw new Error('Erro ao buscar os dados');
+            }
+            return response.json(); // Converte a resposta para formato JSON
+        })
+        .then(data => {
+            console.log('Dados recebidos:', data); // Exibe os dados no console
+            if (data.countData == 0){
+                ordensDia.textContent =`Não existem ordens programadas para este dia!`;
+            }else{
+                ordensDia.textContent =`Existem ${data.countData} ordens já programadas para este dia!`;
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error); // Lida com erros, caso ocorra algum
+        });
+
+        }
+
+// data-modal-id="executarModal{{ solicitacao.pk }}"
+    // Função a ser chamada ao abrir o modal (com Bootstrap)
+    let modalIdClose;
+    function verificarMaquinaParadaExecucao(button) {
+        let solicitacaoId = button.id.split("_")[1];
+        const modalId = button.getAttribute('data-bs-target');
+        let maquinaParadaText = document.getElementById(`maquina_parada_text${solicitacaoId}`);
+
+        const modal = document.getElementById(`executarModal${solicitacaoId}`);
+
+        modalIdClose = modalId;
+
+
+        $(modalId).on('shown.bs.modal',function(){
+
+            fetch("{% url 'atualizar_status_maq_parada' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}', // Inclua o CSRF token
+            },
+            body: JSON.stringify({
+                'solicitacao_id': solicitacaoId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // alert('Status da máquina atualizado com sucesso!');
+                if (data.parada){
+                    // alert('A máquina já está parada segundo outra ordem!');
+                    console.log('Máquina parada');
+                    // textoMaquinaParada.style.display = "block";
+                    // checkboxParada.checked = false;
+                    // salvarButton.disabled = false;
+                    // id_che_maq_parada_sim
+                    // id_exec_maq_parada_sim
+                    // id_apos_exec_maq_parada_sim
+                    maquinaParadaText.style.display = 'block';
+                    modal.querySelectorAll('.yes-check').forEach(element =>{
+                        element.disabled = true;
+                    })
+                    modal.querySelectorAll('.no-check').forEach(element =>{
+                        element.checked = true;
+                    })
+                }else{
+                    console.log('Máquina funcionando');
+                    // textoMaquinaParada.style.display = "none";
+                    // salvarButton.disabled = false;
+                    maquinaParadaText.style.display = 'none';
+                    modal.querySelectorAll('.yes-check').forEach(element =>{
+                        element.disabled = false;
+                    })
+                    modal.querySelectorAll('.no-check').forEach(element =>{
+                        element.checked = false;
+                    })
+                }
+            } else {
+                alert('Erro ao atualizar o status da máquina.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar o status da máquina.');
+        });
+
+        })
+    // Aqui você pode adicionar outras ações
+    }
+        
+    function atualizarSelectMaquina(select,tipoEquipamento){
+        // event.preventDefault();
+        const solicitacaoPk = select.id.split('_')[2]; // Obtém o ID da solicitação
+        // const selectMaquina = document.getElementById(`id_maquina_${solicitacaoPk}`);
+        const divMaquina = document.getElementById(`editarMaquina_${solicitacaoPk}`);
+        
+        // Remove o campo de texto e adiciona um <select> no lugar
+            divMaquina.innerHTML = `
+            <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" required>
+                <option value="">Carregando máquinas...</option>
+            </select>
+        `;
+        
+        var setor;
+        // Verifica o valor do campo Setor
+        if ($(`#id_setor_${solicitacaoPk}`).val()){
+            setor = $(`#id_setor_${solicitacaoPk}`).val();
+        }else{
+            //Setor de Solda
+            setor = 3;
+        }
+        
+        // Faz a requisição AJAX para carregar as máquinas
+        // fetch(`/solicitacao/ajax/get-maquinas/?setor=${setor}&area=producao`)
+        if (tipoEquipamento == ''){
+            fetch(`/solicitacao/ajax/get-all-maquinas/${setor}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.results) {
+                    updateSelectElement(`id_maquina_${solicitacaoPk}`, data.results, function(optionData) {
+                        return optionData.text;  // Exibe o nome da máquina
+                        // return optionData.fields.codigo + ' - ' + optionData.fields.descricao;
+                    });
+
+                    // Inicializa o Select2 após adicionar as opções
+                    $(`#id_maquina_${solicitacaoPk}`).select2({
+                        placeholder: "Selecione a máquina",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                    });
+                } else {
+                    console.error('Nenhuma máquina encontrada.');
+                    divMaquina.innerHTML = `
+                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" disabled>
+                            <option value="">Nenhuma máquina encontrada</option>
+                        </select>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar as máquinas:', error);
+            });
+        }else{
+            var url = '{% url "get_maquina_by_eq_em_falha" %}?setor=' + encodeURIComponent(setor) + '&tipo=' + encodeURIComponent(tipoEquipamento);
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.maquinas) {
+                        updateSelectElement2(`id_maquina_${solicitacaoPk}`, JSON.parse(data.maquinas), function(optionData) {
+                            return optionData.fields.codigo + ' - ' + optionData.fields.descricao;
+                        });
+
+                    // Inicializa o Select2 após adicionar as opções
+                    $(`#id_maquina_${solicitacaoPk}`).select2({
+                        placeholder: "Selecione a máquina",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                    });
+                } else {
+                    console.error('Nenhuma máquina encontrada.');
+                    divMaquina.innerHTML = `
+                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" disabled>
+                            <option value="">Nenhuma máquina encontrada</option>
+                        </select>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar as máquinas:', error);
+            });
+
+        }
+        
+    }
+
+    function checkMaquinaParada(solicitacaoId,selectMaquina) {
+        //Verica se a máquina já está parada
+        let codMaquina;
+        if (document.getElementById(selectMaquina)){
+            codMaquina = document.getElementById(selectMaquina).value;
+            
+        }else{
+            codMaquina = selectMaquina.value;
+        }
+        
+        let checkboxParada = document.getElementById(`maqParadaToggle${solicitacaoId}`);
+        const isChecked = checkboxParada.checked;
+
+        //Desabilita o botão de salvar ao trocar o toggle de Maquina Parada
+        const salvarButton = document.getElementById(`salvarPrimeiraExecucao_${solicitacaoId}`);
+        salvarButton.disabled = true;
+
+        const textoMaquinaParada = document.getElementById(`returnTextMaquinaParada${solicitacaoId}`);
+
+        const modalEditarOrdem = document.getElementById(`editarOrdemInicialModal${solicitacaoId}`);
+
+        if (document.getElementById(`eq_falha_${solicitacaoId}`)){
+            const tipoEqEmFalha = document.getElementById(`eq_falha_${solicitacaoId}`).value;
+            if (tipoEqEmFalha === 'ferramentas'){
+                textoMaquinaParada.style.display = "none";
+                salvarButton.disabled = false;
+                return;
+            }
+        }else if (modalEditarOrdem.querySelector('.input-eq-falha')){
+            const tipoEqEmFalha = modalEditarOrdem.querySelector('.input-eq-falha').value;
+            if (tipoEqEmFalha === 'Ferramentas'){
+                textoMaquinaParada.style.display = "none";
+                salvarButton.disabled = false;
+                return;
+            }
+        }
+        
+        
+        // Envia uma requisição AJAX para atualizar o status da máquina
+        fetch("{% url 'atualizar_status_maq_parada' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}', // Inclua o CSRF token
+            },
+            body: JSON.stringify({
+                'solicitacao_id': solicitacaoId,
+                'maq_parada': isChecked,
+                'cod_maquina' : codMaquina,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // alert('Status da máquina atualizado com sucesso!');
+                if (data.parada){
+                    // alert('A máquina já está parada segundo outra ordem!');
+                    
+                    textoMaquinaParada.style.display = "block";
+                    checkboxParada.checked = false;
+                    salvarButton.disabled = false;
+                }else{
+                    console.log('Máquina funcionando');
+                    textoMaquinaParada.style.display = "none";
+                    salvarButton.disabled = false;
+                }
             } else {
                 alert('Erro ao atualizar o status da máquina.');
             }

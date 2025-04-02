@@ -27,7 +27,7 @@
     }
 
     .legenda-red {
-        background-color: red;
+        background-color: rgb(255, 104, 104);
     }
 
     .legenda-yellow {
@@ -35,16 +35,21 @@
     }
 
     .legenda-green {
-        background-color: green;
+        background-color: rgb(30, 216, 30);
     }
 
     .legenda-blue {
-        background-color: blue;
+        background-color: rgb(85, 217, 250);
     }
 
     #calendar {
         max-width: 100%;
         margin: 50px auto;
+    }
+
+    #carregamentoOrdens {
+        max-width: 100%;
+        margin: 25px auto ;
     }
 </style>
 {% endblock %}
@@ -75,6 +80,11 @@
 
 </div>
 
+<div id="carregamentoOrdens">
+    <span class="spinner-border spinner-border spinnerItem" role="status" aria-hidden="true"></span>
+    <span style="font-size: 1.3rem;">Carregando ordens...</span>
+</div>
+
 <div id="calendar"></div>
 
 <!-- FullCalendar JS -->
@@ -84,10 +94,36 @@
     document.addEventListener('DOMContentLoaded', function () {
         var calendarEl = document.getElementById('calendar');
         var area = document.getElementById('area').value;
+        var carregamento = document.getElementById('carregamentoOrdens');
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',  // Exibe o calendário no modo mensal
-            events: `/programacao/ordens-programadas/${area}/`,
+            dayMaxEvents: 5,
+            moreLinkText: 'mais',
+            contentHeight: 'auto',
+            // events: `/programacao/ordens-programadas/${area}/`,
+            events : function(info, successCallback, failureCallback) {
+                // Intercepta a requisição de eventos antes de ser enviada
+                console.log("Preparando para carregar eventos...");
+                // Usa o jQuery AJAX para adicionar o beforeSend
+                $.ajax({
+                    url: `/programacao/ordens-programadas/${area}/`,
+                    type: 'GET',
+                    // beforeSend: function() {
+                    //     // carregamentoOrdens.style.display = 'block';
+                    // },
+                    success: function(data) {
+                        // Se a requisição for bem-sucedida, chama o successCallback
+                        successCallback(data);
+                        carregamento.style.display = 'none';
+                    },
+                    error: function(error) {
+                        // Em caso de erro, chama o failureCallback
+                        console.error('Erro ao carregar eventos:', error);
+                        failureCallback(error);
+                    }
+                });
+            },
             locale: 'pt-br',  // Define o idioma para português
             headerToolbar: {
                 left: 'prev,next today',
@@ -106,14 +142,14 @@
                     info.el.style.backgroundColor = 'orange';  // Cor para planejadas e atrasadas
                     info.el.style.borderColor = 'orange';
                 } else if (info.event.extendedProps.atrasada) {
-                    info.el.style.backgroundColor = 'red';  // Cor para apenas atrasadas
-                    info.el.style.borderColor = 'red';
+                    info.el.style.backgroundColor = 'rgb(255, 104, 104)';  // Cor para apenas atrasadas
+                    info.el.style.borderColor = 'rgb(255, 104, 104)';
                 } else if (info.event.extendedProps.planejada) {
-                    info.el.style.backgroundColor = 'green';  // Cor para planejadas
-                    info.el.style.borderColor = 'green';
+                    info.el.style.backgroundColor = 'rgb(30, 216, 30)';  // Cor para planejadas
+                    info.el.style.borderColor = 'rgb(30, 216, 30)';
                 } else {
-                    info.el.style.backgroundColor = 'blue';  // Cor padrão para outras ordens
-                    info.el.style.borderColor = 'blue';
+                    info.el.style.backgroundColor = 'rgb(85, 217, 250)';  // Cor padrão para outras ordens
+                    info.el.style.borderColor = 'rgb(85, 217, 250)';
                 }
             }
         });

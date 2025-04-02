@@ -98,7 +98,7 @@
         });
 
         $('#id_maquina').select2({
-            placeholder: "Selecione o equipamento em falha",
+            placeholder: "Selecione a máquina",
             allowClear: true,
             width: '100%'
         });
@@ -110,6 +110,11 @@
         var eqEmFalha = document.getElementById('id_equipamento_em_falha');
         var ferramentaSolda = document.getElementById('ferramentas');
         var maquinaGeral = document.getElementById('maquina-geral');
+        var selectMaquina = document.getElementById('id_maquina');
+        var selectImpactoProd = document.getElementById('id_impacto_producao');
+
+        //Tornando o impacto produção como obrigatório
+        selectImpactoProd.required = true;
 
         // Verifica se os elementos existem antes de continuar
         if (!setor || !eqEmFalha) {
@@ -119,6 +124,9 @@
         // Função para mostrar/ocultar campos com base no setor selecionado
         function toggleFieldsSolda() {
             var selectTextSetor = setor.options[setor.selectedIndex].textContent;
+
+            //Definindo inicialmente o select de máquina como required
+            selectMaquina.required = true;
 
             if (selectTextSetor === 'Solda') {
                 soldaEqEmFalha.style.display = 'block';
@@ -131,17 +139,19 @@
                     document.getElementById('id_codigo_ferramenta').value = '';
                 } else if (eqEmFalha.value === 'ferramentas') {
                     ferramentaSolda.style.display = 'block';
+                    selectMaquina.required = false;
                     maquinaGeral.style.display = 'none';
                     soldaMaqLocal.style.display = 'none';
                     document.getElementById('id_setor_maq_solda').value = '';
                 } else if (eqEmFalha.value === 'robo_kuka' || eqEmFalha.value === 'outros') {
-                    // maquinaGeral.style.display = 'none';
+                    maquinaGeral.style.display = 'block';
                     soldaMaqLocal.style.display = 'none';
                     document.getElementById('id_setor_maq_solda').value = '';
                     ferramentaSolda.style.display = 'none';
                     document.getElementById('id_tipo_ferramenta').value = '';
                     document.getElementById('id_codigo_ferramenta').value = '';
                 } else {
+                    selectMaquina.required = true;
                     soldaMaqLocal.style.display = 'none';
                     document.getElementById('id_tipo_ferramenta').value = '';
                     document.getElementById('id_codigo_ferramenta').value = '';
@@ -155,6 +165,7 @@
                 document.getElementById('id_setor_maq_solda').value = '';
                 ferramentaSolda.style.display = 'none';
                 maquinaGeral.style.display = 'block';
+                
             }
         }
 

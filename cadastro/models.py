@@ -16,7 +16,7 @@ class Maquina(models.Model):
                            ('b','B'),
                            ('c','C'))
 
-    TIPO_CHOICES = (('monovia','Monovia'),)
+    TIPO_CHOICES = (('monovia','Monovia'),('maquina_de_solda','Máquina de Solda'),('robo_kuka','ROBÔ KUKA'),('outros','Outros'))
 
     codigo = models.CharField(max_length=30)
     descricao = models.CharField(max_length=100, blank=True, null=True)
@@ -27,6 +27,7 @@ class Maquina(models.Model):
     criticidade = models.CharField(max_length=2, choices=CRITICIDADE_CHOICES)
     foto = models.ImageField(upload_to='fotos/', null=True, blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, blank=True, null=True)
+    maquina_critica = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

@@ -6,7 +6,8 @@
     <h2>Lista de Máquinas</h2>
     <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
     <div class="text-end">
-        <a href="{% url 'criar_maquina' %}" class="badge btn btn-primary mb-3">+ Adicionar</a>
+        <!-- <a href="{% url 'criar_maquina' %}" class="badge btn btn-primary mb-3">+ Adicionar</a> -->
+        <button type="button" onclick="abrirModalAdicionarMaquina(this)" class="badge btn btn-primary mb-3">+ Adicionar</button>
     </div>
     <div class="table-responsive">
         <table id="maquinasCadastradas" class="table table-bordered table-striped table-sm">
@@ -16,10 +17,12 @@
                     <th>Descrição</th>
                     <th>Apelido</th>
                     <th>Setor</th>
+                    <th>Tipo</th>
                     <th>Foto</th>
                     <th>Área</th>
                     <th>Tombamento</th>
                     <th>Criticidade</th>
+                    <th>Máquina Crítica</th>
                     <th>Ação</th>
                 </tr>
             </thead>
@@ -29,10 +32,308 @@
         </table>
     </div>
 </div>
+
+
+<div class="modal fade" style="min-height: 100vh;" id="adicionarMaquinaModal" tabindex="-1" aria-labelledby="adicionarMaquinaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow rounded" style="background-color: #ffffff; border-radius: 10px;">
+            <div class="modal-header">
+                <h4 class="modal-title text-center mb-4" id="adicionarMaquinaModalLabel" style="font-weight: 600; color: #333;">Adicionar Máquina</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id ="formAddMaquina" action="{%url 'criar_maquina' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <!--Form será carregado na abertura do modal-->
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" style="min-height: 100vh;" id="editarMaquinaModal" tabindex="-1" aria-labelledby="editarMaquinaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content shadow rounded" style="background-color: #ffffff; border-radius: 10px;">
+            <div class="modal-header">
+                <h4 class="modal-title text-center mb-4" id="editarMaquinaModalLabel" style="font-weight: 600; color: #333;">Editar Máquina</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id ="formEditarMaquina" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <!--Form será carregado na abertura do modal-->
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="notificacaoSucesso" class="toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 p-3" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+    <div class="d-flex">
+        <div class="toast-body">
+            
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+</div>
+
+<div id="notificacaoErro" class="toast align-items-center text-white bg-danger border-0 position-fixed bottom-0 end-0 p-3" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+    <div class="d-flex">
+        <div class="toast-body">
+            
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 
 <script src="{% static 'js/datatable-list-maquina.js' %}"></script>
+<script>
+    console.log('teste');
+    function desabilitarTipo(idTipo){
+        $(idTipo.parent()).css('display','none');
+        $(idTipo).prop('disabled',true);
+        $(idTipo).prop('required',false);
+    }
+
+    function habilitarTipo(idTipo){
+        $(idTipo.parent()).css('display','block');
+        $(idTipo).prop('disabled',false);
+        $(idTipo).prop('required',true);
+    }
+
+    function abrirModalAdicionarMaquina(button){
+        
+        var url = `{% url 'criar_maquina' %}`; 
+      
+        $.ajax({
+            url: url,  // A URL para onde os dados serão enviados
+            type: 'GET',
+            beforeSend: function(){
+                button.textContent = 'Carregando...';
+                button.disabled = true;
+            },
+            success: function(response) {
+
+                response = '{% csrf_token %}'+response + `<div class="d-grid" >
+                                        <button type="submit" id="buttonSubmitAddMaquina" class="btn btn-primary py-2" style="font-size: 1rem; font-weight: 500;">Salvar</button>
+                                        </div>`;
+                let form = document.getElementById('formAddMaquina');
+                form.innerHTML = response;
+                
+                let tipoMaquina = $('#adicionarMaquinaModal #id_tipo');
+
+                desabilitarTipo(tipoMaquina);
+      
+                let modal = document.getElementById('adicionarMaquinaModal');
+                var confirmaModal = new bootstrap.Modal(modal);
+                confirmaModal.show();
+      
+            },
+            error: function(xhr, status, error) {
+                console.error("Erro ao enviar dados:", error);
+            },
+            complete: function(xhr, status) {
+                button.textContent = '+ Adicionar';
+                button.disabled = false;
+            }
+        });
+      
+    }
+
+    function editarMaquina(button){
+        const id = button.getAttribute('data-id');
+        var url = `{% url 'edit_maquina' pk=0 %}`.replace('0',id);
+      
+        $.ajax({
+            url: url,
+            type: 'GET',
+            beforeSend: function(){
+                button.disabled = true;
+            },
+            success: function(response) {
+                response = '{% csrf_token %}'+response + `<div class="d-grid" >
+                                        <button type="submit" id="buttonSubmitEditMaquina" class="btn btn-primary py-2" style="font-size: 1rem; font-weight: 500;">Salvar</button>
+                                        </div>`;
+                let form = document.getElementById('formEditarMaquina');
+                form.action = url;
+                form.innerHTML = response;
+                
+                var selectElementEdit = $("#editarMaquinaModal #id_setor");
+                let tipoMaquinaEdit = $('#editarMaquinaModal #id_tipo');
+
+                var userArea = $('#user-area').val();
+
+                if(userArea === 'predial'){
+                    desabilitarTipo(tipoMaquinaEdit);
+                }else if (selectElementEdit.length) {
+                    var textoSelecionado = $("#editarMaquinaModal #id_setor option:selected").text();
+                    if (textoSelecionado == "Solda"){
+                        habilitarTipo(tipoMaquinaEdit);
+                    }else{
+                        desabilitarTipo(tipoMaquinaEdit);
+                    }
+                }
+
+                let modal = document.getElementById('editarMaquinaModal');
+                var confirmaModal = new bootstrap.Modal(modal);
+                confirmaModal.show();
+      
+            },
+            error: function(xhr, status, error) {
+                console.error("Erro ao enviar dados:", error);
+            },
+            complete: function(xhr, status) {
+                // button.textContent = '+ Adicionar';
+                button.disabled = false;
+            }
+        });
+      
+    }
+
+
+    $('#editarMaquinaModal').on('shown.bs.modal', function () {
+        var selectElementEdit = $("#editarMaquinaModal #id_setor");
+
+        let tipoMaquinaEdit = $('#editarMaquinaModal #id_tipo');
+        var userArea = $('#user-area').val();
+
+        if(userArea === 'predial'){
+            desabilitarTipo(tipoMaquinaEdit);
+
+        }else if (selectElementEdit.length) {
+            console.log('teste123');
+            selectElementEdit.on('change', function() {
+            var textoSelecionado = $("#editarMaquinaModal #id_setor option:selected").text();
+            console.log(textoSelecionado);
+            if (textoSelecionado == "Solda"){
+                habilitarTipo(tipoMaquinaEdit);
+            }else{
+                desabilitarTipo(tipoMaquinaEdit);
+            }
+            });
+        } else {
+            console.log("Select não encontrado no modal");
+        }
+    });
+
+    $('#adicionarMaquinaModal').on('shown.bs.modal', function () {
+        var selectElementAdd = $("#adicionarMaquinaModal #id_setor");
+        let tipoMaquina = $('#adicionarMaquinaModal #id_tipo');
+        var userArea = $('#user-area').val();
+
+        if(userArea == 'predial'){
+            desabilitarTipo(tipoMaquina);
+        }else if (selectElementAdd.length) {
+            selectElementAdd.on('change', function() {
+                var textoSelecionado = $("#adicionarMaquinaModal #id_setor option:selected").text();
+                if (textoSelecionado == "Solda"){
+                    console.log(tipoMaquina);
+                    habilitarTipo(tipoMaquina);
+                }else{
+                    desabilitarTipo(tipoMaquina);
+                }
+            });
+        } else {
+            console.log("Select não encontrado no modal");
+        }
+    });
+
+
+    $('#formAddMaquina').on('submit',function(event){
+        event.preventDefault();
+        
+        var url = $(this).attr('action');
+        let formAddMaquinaData = $(this).serialize();
+        let buttonSubmitAddMaquina = document.getElementById('buttonSubmitAddMaquina');
+    
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formAddMaquinaData,
+            beforeSend: function(){
+                buttonSubmitAddMaquina.textContent = 'Carregando...';
+                buttonSubmitAddMaquina.disabled = true;
+            },
+            success: function(response){
+                console.log('Máquina criada com sucesso!',response);
+
+                var confirmaAddMaquinaModal = bootstrap.Modal.getInstance(document.getElementById('adicionarMaquinaModal'));
+                confirmaAddMaquinaModal.hide();
+
+                tableMaq.ajax.reload();
+
+                var notificacaoRequisicao = document.getElementById('notificacaoSucesso');
+                notificacaoRequisicao.textContent = "Máquina adicionada com sucesso!";
+                var toastSucesso = new bootstrap.Toast(notificacaoRequisicao);
+                
+                toastSucesso.show();
+            
+            },
+            error: function(xhr, status, error){
+                console.error('Erro ao enviar o formulário:', error);
+                var notificacaoErro = document.getElementById('notificacaoErro');
+                notificacaoErro.textContent = xhr.responseJSON.erro;
+                var toastErro = new bootstrap.Toast(notificacaoErro);
+                toastErro.show();
+            },
+            complete: function(xhr, status) {
+                buttonSubmitAddMaquina.textContent = 'Salvar';
+                buttonSubmitAddMaquina.disabled = false;
+            }
+        
+        });
+    });
+
+    $('#formEditarMaquina').on('submit',function(event){
+        event.preventDefault();
+        
+        var url = $(this).attr('action');
+        let formEditMaquinaData = $(this).serialize();
+        let buttonSubmitEditMaquina = document.getElementById('buttonSubmitEditMaquina');
+    
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formEditMaquinaData,
+            beforeSend: function(){
+                buttonSubmitEditMaquina.textContent = 'Carregando...';
+                buttonSubmitEditMaquina.disabled = true;
+            },
+            success: function(response){
+                console.log('Máquina atualizada com sucesso!',response);
+
+                var confirmaEditMaquinaModal = bootstrap.Modal.getInstance(document.getElementById('editarMaquinaModal'));
+                confirmaEditMaquinaModal.hide();
+
+                tableMaq.ajax.reload();
+
+                var notificacaoRequisicao = document.getElementById('notificacaoSucesso')
+                notificacaoRequisicao.textContent = "Máquina atualizada com sucesso!";
+                var toastSucesso = new bootstrap.Toast(notificacaoRequisicao);
+                
+                toastSucesso.show();
+            
+            },
+            error: function(xhr,status,error){
+                console.error('Erro ao enviar o formulário:', error);
+                var notificacaoErro = document.getElementById('notificacaoErro');
+                notificacaoErro.textContent = xhr.responseJSON.erro;
+                var toastErro = new bootstrap.Toast(notificacaoErro);
+                toastErro.show();
+            },
+            complete: function(xhr, status) {
+                buttonSubmitEditMaquina.textContent = 'Salvar';
+                buttonSubmitEditMaquina.disabled = false;
+            }
+        
+        });
+    });
+
+
+
+</script>
 
 {% endblock %}

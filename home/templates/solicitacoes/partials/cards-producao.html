@@ -1,7 +1,12 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
-
+<style>
+    .flags{
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+</style>
 <div class="col-md-12">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -25,15 +30,40 @@
         </div>
         <div class="card-body">
             <h6 class="card-title d-flex justify-content-between align-items-center">
-                <div class="d-flex flex-column">
-                    <span title="{{ solicitacao.setor.nome }}" class="fw-bold">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
-                    <span class="text-secondary">{{ solicitacao.solicitante.nome }}</span>
-                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }} impacto na produção</span>
-                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span></small>
+                <div class="d-flex flex-row flex-wrap gap-4"> 
+                    <!-- <div class="d-flex flex-column flex-wrap gap-4 "> -->
+                        <span title="{{ solicitacao.setor.nome }}" class="flags fw-bold badge bg-success">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
+                        
+                    <!-- </div> -->
+                    <!-- <div class="d-flex flex-column flex-wrap gap-4"> -->
+                        {% if solicitacao.get_impacto_producao_display %}
+                            {% if solicitacao.get_impacto_producao_display == 'Alto'%}
+                                <span class="flags badge bg-danger">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% elif solicitacao.get_impacto_producao_display == 'Médio'%}
+                                <span class="flags badge text-bg-warning">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% elif solicitacao.get_impacto_producao_display == 'Baixo'%}
+                                <span class="flags badge bg-info">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if solicitacao.maquina.descricao %}
+                            <span title="{{ solicitacao.maquina.descricao }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span>
+                        {% else %}
+                            <span title="{{ solicitacao.maquina.codigo }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.codigo }}</span>
+                        {% endif %}
+                        <!-- </div> -->
+
+                    <div class="gap-4" style="width: 100%;">
+                        <span title="{{ solicitacao.solicitante.nome }}" class="flags fw-bold badge text-bg-light">{{ solicitacao.solicitante.nome}}</span><br><br>
+                        <span title="{{ solicitacao.descricao }}" class="text-secondary"  style="text-align: justify; font-size: 0.9rem;">
+                            <strong>Motivo:</strong> {{ solicitacao.descricao }}
+                        </span>
+                    </div>
+                    
                 </div>
                 
                 {% if solicitacao.status_andamento != 'finalizada' %}
-                    <div class="d-flex flex-column align-items-end">
+                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
                         {% if solicitacao.maq_parada %}
                             <div class="d-flex align-items-center text-danger mb-1">
                                 <!-- Ícone SVG de Exclamação -->
@@ -63,7 +93,7 @@
                             {% endif %}
                     </div>
                 {% else %}
-                    <div class="d-flex flex-column align-items-end">
+                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
                         {% if solicitacao.satisfacao_registrada %}
                             <small title="Respondido pelo solicitante" class="text-success ms-2">
                                 <i class="bi bi-check-circle-fill"></i>Respondido
@@ -109,7 +139,7 @@
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% if not solicitacao.status_andamento == 'finalizada' %}
-                        <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+                        <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item visualizarOrdem" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
                             data-bs-target="#executarModal{{ solicitacao.pk }}">
                             {% if request.user.tipo_acesso == 'solicitante' %}
                             Visualizar
@@ -303,16 +333,19 @@
                                 </select>
                             </div>
 
+                            <div class="mb-3" id="maquina_parada_text{{ solicitacao.pk }}" style="display: none;">
+                                <p class="fw-bold">Já existe ordem com esta máquina parada</p>
+                            </div>
                             <!-- Check Máquina Parada -->
                             {% if solicitacao.ultima_execucao_n < 1 %} 
                                 <div class="mb-3">
                                     <label for="id_che_maq_parada" class="form-label">Ao chegar a máquina estava parada?</label>
                                     <div class="form-check form-check-inline">
-                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_sim" name="che_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
+                                        <input type="radio" class="form-check-input yes-check" id="id_che_maq_parada_sim" name="che_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
                                         <label class="form-check-label" for="id_che_maq_parada_sim">Sim</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input type="radio" class="form-check-input" id="id_che_maq_parada_nao" name="che_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
+                                        <input type="radio" class="form-check-input no-check" id="id_che_maq_parada_nao" name="che_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
                                         <label class="form-check-label" for="id_che_maq_parada_nao">Não</label>
                                     </div>
                                 </div>
@@ -322,11 +355,11 @@
                             <div class="mb-3">
                                 <label for="id_exec_maq_parada" class="form-label">A execução foi feita com máquina parada?</label>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_sim" name="exec_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
+                                    <input type="radio" class="form-check-input yes-check" id="id_exec_maq_parada_sim" name="exec_maq_parada" value="sim" {% if solicitacao.maq_parada %} checked {% endif %}>
                                     <label class="form-check-label" for="id_exec_maq_parada_sim">Sim</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_exec_maq_parada_nao" name="exec_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
+                                    <input type="radio" class="form-check-input no-check" id="id_exec_maq_parada_nao" name="exec_maq_parada" value="nao" {% if solicitacao.maq_parada %} disabled {% endif %}>
                                     <label class="form-check-label" for="id_exec_maq_parada_nao">Não</label>
                                 </div>
                             </div>
@@ -335,11 +368,11 @@
                             <div class="mb-3">
                                 <label for="id_apos_exec_maq_parada" class="form-label">Após a execução a máquina ficou parada?</label>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_apos_exec_maq_parada_sim" name="apos_exec_maq_parada" value="sim">
+                                    <input type="radio" class="form-check-input yes-check" id="id_apos_exec_maq_parada_sim" name="apos_exec_maq_parada" value="sim">
                                     <label class="form-check-label" for="id_apos_exec_maq_parada_sim">Sim</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input type="radio" class="form-check-input" id="id_apos_exec_maq_parada_nao" name="apos_exec_maq_parada" value="nao">
+                                    <input type="radio" class="form-check-input no-check" id="id_apos_exec_maq_parada_nao" name="apos_exec_maq_parada" value="nao">
                                     <label class="form-check-label" for="id_apos_exec_maq_parada_nao">Não</label>
                                 </div>
                             </div>

@@ -14,7 +14,7 @@ from .utils import criar_solicitacoes_aleatorias
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
 from .models import Foto, Solicitacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
-from execucao.models import Execucao
+from execucao.models import Execucao, MaquinaParada
 from preventiva.models import PlanoPreventiva
 
 import json
@@ -177,13 +177,46 @@ def atualizar_status_maq_parada(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         solicitacao_id = data.get('solicitacao_id')
-        maq_parada = data.get('maq_parada')
+        cod_maq_json = data.get('cod_maquina')
+        
+        # maq_parada = data.get('maq_parada')
 
         try:
+
             solicitacao = Solicitacao.objects.get(id=solicitacao_id)
-            solicitacao.maq_parada = maq_parada
-            solicitacao.save()
-            return JsonResponse({'success': True})
+            if cod_maq_json:
+                codigo_maquina = cod_maq_json
+            else:
+                if solicitacao.maquina == '' or solicitacao.maquina is None:
+                    print('Lidando com uma Ferramenta')
+                    return JsonResponse({'success': True,
+                                    'parada': False})
+                codigo_maquina = solicitacao.maquina.id
+            maquina_parada = MaquinaParada.objects.filter(ordem__maquina__id=codigo_maquina, data_fim__isnull=True)
+
+            # Verifica se a solicitação que está pra ser executada é a que deixou a máquina parada
+            solicitacao_inicial_maquina_parada = False
+            if maquina_parada.filter(ordem=solicitacao).exists():
+                print('Solicitação que será executada é da máquina que está parada!')
+                solicitacao_inicial_maquina_parada = True
+
+            # print("Quantidade ordens:",len(maquina_parada))
+            if maquina_parada and not solicitacao_inicial_maquina_parada:
+                print("Esta máquina já está parada!")
+                return JsonResponse({'success': True,
+                                     'parada' : True})
+            else:
+                print("Máquina funcionando")
+                return JsonResponse({'success': True,
+                                    'parada': False})
+            # print(execucoes)
+            # for execucao in execucoes:
+            #     print(execucao.ordem.maquina.codigo)
+            #     print(execucao.ordem.descricao)
+            # solicitacao.maq_parada = maq_parada
+            # solicitacao.save()
+
+            
         except Solicitacao.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Solicitação não encontrada.'})
     return JsonResponse({'success': False, 'error': 'Método não permitido.'})
@@ -235,7 +268,14 @@ def get_maquina_by_eq_em_falha(request):
 def get_maquinas(request):
     maquinas = Maquina.objects.filter(area='producao').values('id', 'codigo','descricao')
     if maquinas.exists():
-        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['codigo'] + " - " + maquina['descricao']} for maquina in maquinas]
+        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['codigo'] + " - " + maquina['descricao'] if maquina['descricao'] else maquina['codigo']} for maquina in maquinas]
+        return JsonResponse({'results': maquinas_serializadas}, safe=False)
+    return JsonResponse({'error': 'Nenhuma máquina encontrada'}, status=404)
+
+def get_maquinas_setor(request, setor_id):
+    maquinas = Maquina.objects.filter(area='producao',setor__id=setor_id).values('id', 'codigo','descricao')
+    if maquinas.exists():
+        maquinas_serializadas = [{'id': maquina['id'], 'text': maquina['codigo'] + " - " + maquina['descricao'] if maquina['descricao'] else maquina['codigo']} for maquina in maquinas]
         return JsonResponse({'results': maquinas_serializadas}, safe=False)
     return JsonResponse({'error': 'Nenhuma máquina encontrada'}, status=404)
 
@@ -376,3 +416,21 @@ def criar_tarefa_rotina(request):
     tarefas_existentes = TipoTarefas.objects.all()
 
     return render(request, "tarefa-rotina/add-tarefa.html", {"tarefas_existentes":tarefas_existentes}) 
+
+# def obter_choices(request):
+#     # Pegando as opções do campo 'meu_atributo'
+#     form = SolicitacaoForm()
+
+#     # O campo 'meu_atributo' é um ChoiceField, então podemos pegar as opções
+#     equipamento_em_falha = form.fields['equipamento_em_falha'].choices
+#     setor_maq_solda = form.fields['setor_maq_solda'].choices
+#     tipo_ferramenta = form.fields['tipo_ferramenta'].choices
+
+#     print(equipamento_em_falha)
+#     print(setor_maq_solda)
+#     print(tipo_ferramenta)
+    
+#     # Retornamos essas opções como um JSON
+#     return JsonResponse({'equipamento_em_falha': equipamento_em_falha,
+#                          'setor_maq_solda': setor_maq_solda,
+#                          'tipo_ferramenta': tipo_ferramenta})

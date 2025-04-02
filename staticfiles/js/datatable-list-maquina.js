@@ -1,8 +1,8 @@
+let tableMaq;
 $(document).ready(function () {
-
   var userArea = $('#user-area').val();
 
-  $('#maquinasCadastradas').DataTable({
+  tableMaq = $('#maquinasCadastradas').DataTable({
     processing: true,
     serverSide: true,
     ajax: {
@@ -14,6 +14,7 @@ $(document).ready(function () {
       { data: 'descricao' },        // Descrição da máquina
       { data: 'apelido' },          // Apelido da máquina
       { data: 'setor' },            // Setor da máquina
+      { data: 'tipo' },             // Tipo da máquina
       { data: 'foto',               // Foto
         render: function (data, type, row) {
           if (data) {
@@ -25,25 +26,25 @@ $(document).ready(function () {
       { data: 'area' },             // Área (Predial ou Produção)
       { data: 'tombamento' },       // Código de tombamento
       { data: 'criticidade' },      // Criticidade (A, B, C)
+      { data: 'maquina_critica' },   // Máquina Crítica?
       {
         // Coluna de Editar e Criar Plano
         data: 'id',
         render: function (data, type, row) {
           if (userArea === 'predial'){
 
-            return `
-              <a href="/maquina/editar/${data}/" class="badge btn btn-sm btn-primary">
-                <i class="fas fa-edit"></i>
-              </a>
-            `;
+            return `<button type="button" id="buttonEdit" data-id="${data}" onclick="editarMaquina(this)" class="badge btn btn-sm btn-primary">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    `;
 
           } else {
 
             return `
                   <div class="d-flex justify-content-start">
-                    <a href="/maquina/editar/${data}/" class="badge btn btn-sm btn-primary me-2">
+                    <button type="button" id="buttonEdit" data-id="${data}" onclick="editarMaquina(this)"class="badge btn btn-sm btn-primary me-2">
                       <i class="fas fa-edit"></i>
-                    </a>
+                    </button>
                     <a href="/plano-preventiva/criar/${data}/" class="badge btn btn-sm btn-success">
                       <i class="fas fa-plus"></i>
                     </a>
@@ -60,4 +61,6 @@ $(document).ready(function () {
       search: "Procurar por código da máquina:"  // Personaliza a label do campo de busca
     }
   });
+
 });
+

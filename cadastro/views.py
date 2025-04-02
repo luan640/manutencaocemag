@@ -1,27 +1,45 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.db.utils import IntegrityError
+
 
 from .forms import MaquinaForm, AddOperadorForm
 from .models import Maquina, Operador, Setor
+import psycopg2
+from psycopg2 import errors
 
 import pandas as pd
 
 def criar_maquina(request):
     if request.method == 'POST':
         form = MaquinaForm(request.POST, request.FILES)
-        if form.is_valid():
+        try:
+            if form.is_valid():
+                maquina = form.save(commit=False)  
+                maquina.area = request.user.area 
+                maquina.save()  
+                
+                return redirect('list_maquina')
+        except IntegrityError as e:
+            print("Já existe uma máquina com esse código",e)
+            return JsonResponse({
+                'erro': 'ERRO! Já existe uma máquina com esse código!'
+            },status=400)
+        except Exception as e2:
+            print("Algo deu errado!",e2) 
+            return JsonResponse({
+                'erro': 'Algo deu errado! Tente novamente!'
+            },status=500)
 
-            maquina = form.save(commit=False)  
-            maquina.area = request.user.area 
-            maquina.save()  
-            
-            return redirect('list_maquina')
     else:
         form = MaquinaForm()
-    return render(request, 'maquina/add.html', {'form': form})
+        form = form.as_p()
+    # return render(request, 'maquina/add.html', {'form': form})
+    
 
+    return HttpResponse(form)
 def edit_maquina(request, pk):
     # Obtém a instância de Maquina correspondente ao 'pk' ou retorna 404 se não existir
     maquina = get_object_or_404(Maquina, pk=pk)
@@ -29,16 +47,32 @@ def edit_maquina(request, pk):
     if request.method == 'POST':
         # Carrega os dados POST no formulário, junto com os arquivos (foto, por exemplo)
         form = MaquinaForm(request.POST, request.FILES, instance=maquina)
-        
-        if form.is_valid():
-            # Salva o formulário e atualiza a instância da Maquina
-            form.save()
-            return redirect('list_maquina')  # Redireciona para a lista de máquinas ou para outra página
+        try:
+            if form.is_valid():
+                # Salva o formulário e atualiza a instância da Maquina
+                form.save()
+                # return redirect('list_maquina')  # Redireciona para a lista de máquinas ou para outra página
+                return JsonResponse({
+                    'status': 'sucesso'
+                })
+        except IntegrityError as e:
+            print("Já existe uma máquina com esse código",e)
+            return JsonResponse({
+                'erro': 'ERRO! Já existe uma máquina com esse código!'
+                },status=400)
+        except Exception as e2:
+            print("Algo deu errado!",e2) 
+            return JsonResponse({
+                'erro': 'Algo deu errado! Tente novamente!'
+                },status=500)
     else:
         # Caso não seja POST, simplesmente exibe o formulário com os dados atuais da Maquina
         form = MaquinaForm(instance=maquina)
+        form = form.as_p()
+    # return render(request, 'maquina/edit.html', {'form': form})
     
-    return render(request, 'maquina/edit.html', {'form': form})
+
+    return HttpResponse(form)
 
 def list_maquina(request):
     
@@ -64,7 +98,7 @@ def processar_maquina(request):
         'tombamento',
         'area',
         'criticidade',
-        'foto',
+        'foto'
     ]
     
     order_column = columns[order_column_index]
@@ -94,16 +128,19 @@ def processar_maquina(request):
 
     data = []
     for maquina in maquinas_page:
+        print("maq-crit ",maquina.maquina_critica)
         data.append({
             'id': maquina.pk,
             'codigo': maquina.codigo,
-            'descricao': maquina.descricao,
-            'apelido': maquina.apelido,
+            'descricao': maquina.descricao if maquina.descricao else 'N/A',
+            'apelido': maquina.apelido if maquina.apelido else 'N/A',
             'setor': str(maquina.setor),
+            'tipo': maquina.tipo if maquina.tipo else 'N/A',
             'foto': maquina.foto.url if maquina.foto else '',
-            'tombamento': maquina.tombamento,
+            'tombamento': maquina.tombamento if maquina.tombamento else 'N/A',
             'area': maquina.get_area_display(),
             'criticidade': maquina.get_criticidade_display(),
+            'maquina_critica': 'Sim' if maquina.maquina_critica else 'Não'
         })
 
     return JsonResponse({

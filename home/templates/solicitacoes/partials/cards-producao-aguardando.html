@@ -21,13 +21,47 @@
         </div>
         <div class="card-body">
             <h6 class="card-title d-flex justify-content-between align-items-center">
-                <div class="d-flex flex-column">
+                <!-- <div class="d-flex flex-column">
                     <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
                     <span class="fw-bold">{{ solicitacao.solicitante.nome }}</span>
                     <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }} impacto na produção</span>
                     <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:20 }}</span></small>
+                    <span title="{{ solicitacao.descricao }}" class="text-secondary" style="text-align: justify; font-size: 0.9rem; margin-top: 8px;">
+                        <strong>Motivo:</strong> {{ solicitacao.descricao }}
+                    </span>
+                </div> -->
+                <div class="d-flex flex-row flex-wrap gap-4"> 
+                    <!-- <div class="d-flex flex-column flex-wrap gap-4 "> -->
+                        <span title="{{ solicitacao.setor.nome }}" class="flags fw-bold badge bg-success">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
+                        
+                    <!-- </div> -->
+                    <!-- <div class="d-flex flex-column flex-wrap gap-4"> -->
+                        {% if solicitacao.get_impacto_producao_display %}
+                            {% if solicitacao.get_impacto_producao_display == 'Alto'%}
+                                <span class="flags badge bg-danger">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% elif solicitacao.get_impacto_producao_display == 'Médio'%}
+                                <span class="flags badge text-bg-warning">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% elif solicitacao.get_impacto_producao_display == 'Baixo'%}
+                                <span class="flags badge bg-info">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if solicitacao.maquina.descricao %}
+                            <span title="{{ solicitacao.maquina.descricao }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span>
+                        {% else %}
+                            <span title="{{ solicitacao.maquina.codigo }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.codigo }}</span>
+                        {% endif %}
+                        <!-- </div> -->
+
+                    <div class="gap-4" style="width: 100%;">
+                        <span title="{{ solicitacao.solicitante.nome }}" class="flags fw-bold badge text-bg-light">{{ solicitacao.solicitante.nome}}</span><br><br>
+                        <span title="{{ solicitacao.descricao }}" class="text-secondary"  style="text-align: justify; font-size: 0.9rem;">
+                            <strong>Motivo:</strong> {{ solicitacao.descricao }}
+                        </span>
+                    </div>
+                    
                 </div>
-                <div class="d-flex flex-column align-items-end">
+                <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
                     {% if solicitacao.maq_parada %}
                         <div class="d-flex align-items-center text-danger mb-1">
                             <!-- Ícone SVG de Exclamação -->
@@ -76,7 +110,7 @@
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                     {% if not solicitacao.status_andamento == 'finalizada' %}
                     <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}">
+                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}" onclick="toggleMaqParada('{{ solicitacao.id }}')">
                         {% if request.user.tipo_acesso == 'solicitante' %}
                         Visualizar
                         {% else %}
@@ -152,7 +186,7 @@
                             Informações gerais
                         </a>
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="flagMaqParada" id="maqParadaToggle{{ solicitacao.id }}" {% if solicitacao.maq_parada %} checked {% endif %}>
+                            <input class="form-check-input" type="checkbox" name="flagMaqParada" id="maqParadaToggle{{ solicitacao.id }}" onchange="checkMaquinaParada('{{ solicitacao.id }}','id_maquina_{{ solicitacao.id }}')" {% if solicitacao.maq_parada %} checked {% endif %}>
                             <div class="text-danger">
                                 <!-- Ícone SVG de Exclamação -->
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
@@ -164,12 +198,18 @@
                             </div>
                         </div>
                     </h2>
+                    <p id="returnTextMaquinaParada{{ solicitacao.pk }}" class="fw-bold text-end"style="display: none;">A máquina já se encontra parada!</p>
+
+                    <div class="row mb-3">
+                        <small class="required">* Campos Obrigatórios </small>
+                    </div>
                     
                     <div class="collapse show" id="collapseInformacoesGerais">
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <label for="setor_info">Setor</label>
+                                <label for="setor_info">Setor <span class="required">*</span></label>
                                 <div id="editarSetor_{{solicitacao.pk}}">
+                                    <input class="form-control" type="hidden" value="{{solicitacao.setor.id}}">
                                     <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" readonly>
                                     <small><a href="#" id="habilitarEdicaoSetor">Editar</a></small>
                                 </div>
@@ -178,58 +218,144 @@
                                 <label for="solicitante_info">Solicitante</label>
                                 <input class="form-control" type="text"
                                     value="{{solicitacao.solicitante.matricula}} - {{solicitacao.solicitante.nome}}"
-                                    readonly>
+                                    readonly disabled>
                             </div>
                         </div>
+                        {% if solicitacao.equipamento_em_falha != 'ferramentas' %}
                         <div class="row mb-3">
                             <div class="col-sm-12">
-                                <label for="">Máquina</label>
+                                <label for="">Máquina <span class="required">*</span></label>
                                 <div id="editarMaquina_{{solicitacao.pk}}">
                                     <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
                                     <small><a href="#" id="habilitarEdicaoMaquina">Editar</a></small>
                                 </div>
                             </div>
                         </div>
-                        {% if solicitacao.setor.nome == 'Solda' %}
+                        {% else %}
                         <div class="row mb-3">
-                            <div class="col-sm-6">
-                                <label for="">Equipamento em falha</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}">
-                            </div>
-                            <div class="col-sm-6">
-                                <label for="">Setor máquina de solda</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
-                                    readonly>
+                            <div class="col-sm-12">
+                                <label for="">Máquina</label>
+                                <div id="editarMaquina_{{solicitacao.pk}}">
+                                    <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" readonly>
+                                    <!-- <small><a href="#" id="habilitarEdicaoMaquina">Editar</a></small> -->
+                                </div>
                             </div>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-6">
-                                <label for="">Tipo da ferramenta</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
-                                    readonly>
+                        {% endif %}
+
+                        {% if solicitacao.setor.nome == 'Solda' %}
+                        <div class="row mb-3 div-solda">
+                            <div class="col-sm-6 div-eq-falha">
+                                <label for="">Equipamento em falha <span class="required">*</span></label>
+                                <!-- <input class="form-control input-solda input-eq-falha" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}" readonly> -->
+                                <select class="form-control select2_eq_falha" name="eq_falha" id="eq_falha_{{ solicitacao.pk }}" required>
+                                    <option value="maquina_de_solda" {% if solicitacao.equipamento_em_falha == 'maquina_de_solda' %}selected{% endif %}>Máquina de Solda</option>
+                                    <option value="monovia" {% if solicitacao.equipamento_em_falha == 'monovia' %}selected{% endif %}>Monovia</option>
+                                    <option value="ferramentas" {% if solicitacao.equipamento_em_falha == 'ferramentas' %}selected{% endif %}>Ferramentas</option>
+                                    <option value="robo_kuka" {% if solicitacao.equipamento_em_falha == 'robo_kuka' %}selected{% endif %}>SO-RB-01 - ROBÔ - KUKA</option>
+                                    <option value="outros" {% if solicitacao.equipamento_em_falha == 'outros' %}selected{% endif %}>Outros</option>
+                                </select>
                             </div>
-                            <div class="col-sm-6">
+                            {% if solicitacao.equipamento_em_falha == 'maquina_de_solda' %}
+                            <div class="col-sm-6 div-setor-maq-solda">
+                                <label for="">Setor máquina de solda <span class="required">*</span></label>
+                                <!-- <input class="form-control input-solda input-setor-maq-solda" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
+                                    readonly> -->
+                                    <select class="form-control select2_setor_maq_solda" name="setor_maq_solda" id="setor_maq_solda_{{ solicitacao.pk }}" required>
+                                        <option value="laterais" {% if solicitacao.setor_maq_solda == 'laterais' %}selected{% endif %}>Laterais</option>
+                                        <option value="eixos" {% if solicitacao.setor_maq_solda == 'eixos' %}selected{% endif %}>Eixos</option>
+                                        <option value="icamentos" {% if solicitacao.setor_maq_solda == 'icamentos' %}selected{% endif %}>Içamentos</option>
+                                        <option value="plataforma" {% if solicitacao.setor_maq_solda == 'plataforma' %}selected{% endif %}>Plataforma</option>
+                                        <option value="chassi" {% if solicitacao.setor_maq_solda == 'chassi' %}selected{% endif %}>Chassi</option>
+                                        <option value="tanque" {% if solicitacao.setor_maq_solda == 'tanque' %}selected{% endif %}>Tanque</option>
+                                        <option value="cacamba" {% if solicitacao.setor_maq_solda == 'cacamba' %}selected{% endif %}>Caçamba</option>
+                                        <option value="serralheria" {% if solicitacao.setor_maq_solda == 'serralheria' %}selected{% endif %}>Serralheria</option>
+                                        <option value="fueiro" {% if solicitacao.setor_maq_solda == 'fueiro' %}selected{% endif %}>Fueiro</option>
+                                    </select>       
+                            </div>
+
+                            {% else %}
+                            <div class="col-sm-6 div-setor-maq-solda" style="display: none;">
+                                <label for="">Setor máquina de solda <span class="required">*</span></label>
+                                <input class="form-control input-solda input-setor-maq-solda" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
+                                    readonly disabled>
+                            </div>
+                            {% endif %}
+                        </div>
+                            {% if solicitacao.equipamento_em_falha == 'ferramentas' %}
+                            <div class="row mb-3 div-solda">
+                                <div class="col-sm-6 div-tipo-ferramenta">
+                                    <label for="">Tipo da ferramenta <span class="required">*</span></label>
+                                    <!-- <input class="form-control input-solda input-tipo-ferramenta" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
+                                        readonly> -->
+                                    <select class="form-control select2_tipo_ferramenta" name="tipo_ferramenta" id="tipo_ferramenta_{{ solicitacao.pk }}" required>
+                                        <option value="esmerilhadeira" {% if solicitacao.tipo_ferramenta == 'esmerilhadeira' %}selected{% endif %}>Esmerilhadeira</option>
+                                        <option value="tocha" {% if solicitacao.tipo_ferramenta == 'tocha' %}selected{% endif %}>Tocha</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6 div-cod-ferramenta">
+                                    <label for="">Código da ferramenta</label>
+                                    <input class="form-control input-solda input-cod-ferramenta" name="codigo_ferramenta" type="text" value="{{ solicitacao.codigo_ferramenta }}">
+                                </div>
+
+                            </div>
+                            {% else %}
+                            <div class="row mb-3 div-solda" style="display: none;">
+                                <div class="col-sm-6 div-tipo-ferramenta" style="display: none;">
+                                    <label for="">Tipo da ferramenta <span class="required">*</span></label>
+                                    <input class="form-control input-solda input-tipo-ferramenta" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
+                                        readonly disabled>
+                                </div>
+                                <div class="col-sm-6 div-cod-ferramenta" style="display: none;">
+                                    <label for="">Código da ferramenta</label>
+                                    <input class="form-control input-solda input-cod-ferramenta" name="codigo_ferramenta" type="text" value="{{ solicitacao.codigo_ferramenta }}" disabled>
+                                </div>
+    
+                            </div>
+                            {% endif %}
+                        {% else %}
+                        <div class="row mb-3 div-solda" style="display: none;">
+                            <div class="col-sm-6 div-eq-falha" style="display: none;">
+                                <label for="">Equipamento em falha <span class="required">*</span></label>
+                                <input class="form-control input-solda input-eq-falha" type="text" value="{{ solicitacao.get_equipamento_em_falha_display }}" disabled>
+                                <!-- <select class="form-select select2_eq_falha" name="eq_falha" id="eq_falha_{{ solicitacao.pk }}" required>
+                                    <option value="">{{ solicitacao.get_equipamento_em_falha_display }}</option>
+                                </select> -->
+                            </div>
+                            <div class="col-sm-6 div-setor-maq-solda" style="display: none;">
+                                <label for="">Setor máquina de solda <span class="required">*</span></label>
+                                <input class="form-control input-solda input-setor-maq-solda" type="text" value="{{ solicitacao.get_setor_maq_solda_display }}"
+                                    readonly disabled>
+                            </div>
+                        </div>
+                        <div class="row mb-3 div-solda" style="display: none;">
+                            <div class="col-sm-6 div-tipo-ferramenta" style="display: none;">
+                                <label for="">Tipo da ferramenta <span class="required">*</span></label>
+                                <input class="form-control input-solda input-tipo-ferramenta" type="text" value="{{ solicitacao.get_tipo_ferramenta_display }}"
+                                    readonly disabled>
+                            </div>
+                            <div class="col-sm-6 div-cod-ferramenta" style="display: none;">
                                 <label for="">Código da ferramenta</label>
-                                <input class="form-control" type="text" value="{{ solicitacao.codigo_ferramenta }}">
+                                <input class="form-control input-solda input-cod-ferramenta" name="codigo_ferramenta" type="text" value="{{ solicitacao.codigo_ferramenta }}" disabled>
                             </div>
 
                         </div>
                         {% endif %}
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <label for="data_abertura_info">Data de abertura</label>
+                                <label for="data_abertura_info">Data de abertura <span class="required">*</span></label>
                                 <input class="form-control" type="datetime-local" id="data_abertura_info" name="data_abertura" value="{{ solicitacao.data_abertura|date:'Y-m-d\\TH:i' }}">
                             </div>
                             <div class="col-sm-6">
                                 <label for="data_abertura_info">Impacto na produção</label>
                                 <input class="form-control" type="text" value="{{solicitacao.get_impacto_producao_display}}"
-                                    readonly>
+                                    readonly disabled>
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <label for="tipo_manutencao" class="form-label">Tipo de manutenção</label>
+                                <label for="tipo_manutencao" class="form-label">Tipo de manutenção <span class="required">*</span></label>
                             
                                 {% with info=solicitacao.info_solicitacao.first %}
                                 <select class="form-control" name="tipo_manutencao_display" id="tipo_manutencao_{{solicitacao.pk}}" 
@@ -248,7 +374,7 @@
                             {% endwith %}
                             </div>
                             <div class="col-sm-6">
-                                <label for="area_manutencao" class="form-label">Área de manutenção</label>
+                                <label for="area_manutencao" class="form-label">Área de manutenção <span class="required">*</span></label>
                                 <select class="form-control" name="area_manutencao" id="area_manutencao_{{solicitacao.pk}}" required>
                                     <option value=""></option>
                                     {% for area in area_manutencao %}
@@ -259,27 +385,31 @@
                         </div>
                         <div id="rowEscolhaPlano" style="display: none;" class="row mb-3">
                             <div class="col-sm-12">
+                                {% if solicitacao.maquina.pk %}
                                 <label for="">Escolha o plano</label>
                                 <select class="form-control" name="escolherPlanoPreventiva" id="escolherPlanoPreventiva" data-id-maquina="{{solicitacao.maquina.pk}}">
                                     <option value="">Carregando...</option>
                                 </select>
                                 <a class="form-control" href="{% url 'criar_plano_preventiva' solicitacao.maquina.pk %}">Criar novo plano</a>
+                                {% endif %}
                             </div>
                         </div>
-                        
                         <div class="row mb-3">
                             <div class="col-sm-6">
                                 <label for="descricao_usuario">Descrição do usuário</label>
-                                <textarea rows="7" class="form-control" name="descricao_usuario" id="descricao_usuario" readonly>{{solicitacao.descricao}}</textarea>
+                                <textarea rows="4" class="form-control" name="descricao_usuario" id="descricao_usuario" readonly disabled>{{solicitacao.descricao}}</textarea>
                             </div>
                             <div class="col-sm-6">
                                 <label for="comentario_manutencao">Comentário do PCM</label>
-                                <textarea rows="7" class="form-control" name="comentario_manutencao" id="comentario_manutencao"></textarea>
+                                <textarea rows="4" class="form-control" name="comentario_manutencao" id="comentario_manutencao"></textarea>
+                                <div id="comentarioPcmBlock" class="form-text">
+                                    Campo Opcional.
+                                </div>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-sm-6">
-                                <label for="status_inicial_{{solicitacao.pk}}">Status</label>
+                                <label for="status_inicial_{{solicitacao.pk}}">Status <span class="required">*</span></label>
                                 <select class="form-control" name="status_inicial" id="status_inicial_{{solicitacao.pk}}" required>
                                     <option value="">----------</option>
                                     <option value="rejeitar">Rejeitar</option>
@@ -287,14 +417,15 @@
                                 </select>
                             </div>
                             <div style="display: none;" id="campoProgramacao_{{solicitacao.pk}}" class="col-sm-6">
-                                <label for="data_programacao_{{solicitacao.pk}}">Programação</label>
-                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" class="form-control" type="date">
+                                <label for="data_programacao_{{solicitacao.pk}}">Programação <span class="required">*</span></label>
+                                <input name="data_programacao" id="data_programacao_{{solicitacao.pk}}" onchange="verificaOrdensDia(this)" class="form-control" type="date">
+                                <p style="font-weight: bold;" id="quantidade_ordens_dia{{solicitacao.pk}}"></p>
                             </div>
                         </div>
                         <div id="rowAtribuirOperador_{{solicitacao.pk}}" style="display: none;">
                             <div class="row mb-3">
                                 <div class="col-sm-6">
-                                    <label for="operador_{{solicitacao.pk}}" class="form-label">Responsável</label>
+                                    <label for="operador_{{solicitacao.pk}}" class="form-label">Responsável <span class="required">*</span></label>
                                     <select class="form-control" name="operador" id="operador_{{solicitacao.pk}}">
                                         <option value="">----------</option>
                                         {% for operador in operadores %}
@@ -304,7 +435,7 @@
                                 </div>
                             
                                 <div class="col-sm-6">
-                                    <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade</label>
+                                    <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade <span class="required">*</span></label>
                                     <select class="form-control" name="prioridade" id="prioridade_{{solicitacao.pk}}">
                                         <option value="">----------</option>
                                         <option value="alto">Alto</option>
@@ -318,7 +449,7 @@
                     <hr>
                     {% if not request.user.tipo_acesso == 'solicitante' %}
                     <div class="text-end">
-                        <button id="salvarPrimeiraExecucao" type="submit" class="btn btn-primary">Salvar</button>
+                        <button id="salvarPrimeiraExecucao_{{solicitacao.pk}}" type="submit" class="btn btn-primary">Salvar</button>
                     </div>
                     {% endif %}
                 </form>

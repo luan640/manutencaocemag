@@ -1428,5 +1428,36 @@
     });
 
 </script>
+<script>
+    function verificaOrdensDia(input){
+        const idOrdem = input.id.split('_')[2];
+        const ordensDia = document.getElementById(`quantidade_ordens_dia${idOrdem}`);
+
+        ordensDia.textContent = "Carregando..."
+
+        // Usando fetch para obter dados de uma URL
+        fetch(`/programacao/ordens-programadas/predial/?data_prog=${input.value}`)
+        .then(response => {
+            // Verificando se a resposta foi bem-sucedida (status 200)
+            if (!response.ok) {
+                throw new Error('Erro ao buscar os dados');
+            }
+            return response.json(); // Converte a resposta para formato JSON
+        })
+        .then(data => {
+            console.log('Dados recebidos:', data); // Exibe os dados no console
+            if (data.countData == 0){
+                ordensDia.textContent =`Não existem ordens programadas para este dia!`;
+            }else{
+                ordensDia.textContent =`Existem ${data.countData} ordens já programadas para este dia!`;
+            }
+            
+        })
+        .catch(error => {
+            console.error('Erro:', error); // Lida com erros, caso ocorra algum
+        });
+
+            }
+</script>
 
 {% endblock %}

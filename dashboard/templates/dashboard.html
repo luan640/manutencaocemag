@@ -111,6 +111,10 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="form-check form-switch mb-3" style="display: flex; justify-content: flex-end; align-items: center;">
+                <input class="form-check-input" type="checkbox" name="maquinaCriticaCheck" id="maquinaCriticaCheck" style="margin-right: 5px;">
+                <label class="form-check-label" for="maquinaCriticaCheck">Máquina Crítica</label>
+            </div>
             <div class="col-12 d-flex justify-content-end">
                 <button id="btnFilter" type="submit" class="btn btn-primary">Aplicar Filtros</button>
             </div>
@@ -373,20 +377,6 @@
         </div>
     </div>
 
-    <!-- Disponibilidade maquinas críticas -->
-    <div class="card shadow mb-3">
-        <div class="card-header">
-            Disponibilidade por Máquina Crítica
-        </div>
-        <div class="card-body">
-            <div class="scroll-container" style="position: relative;">
-                <canvas id="graficoDisponibilidadeMaquinaCritica"></canvas>
-                <button id="dadosDispMaquinaCritica" class="btn btn-download" title="Download Excel">
-                    <i class="fa fa-download"></i>
-                </button>
-            </div>
-        </div>
-    </div>
 
     {% endif %}
     
@@ -404,6 +394,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let graficoMtbf, graficoMttr, graficoOrdensPrazo,graficoHorasTrabalhadasSetor,graficoHorasTrabalhadasTipo,graficoOrdensPrazo2, graficoTipoOrdem, graficoMaquinasParadas, graficoSolicitacaoSetor, graficoDisponibilidadeMaquina, graficoDisponibilidadeMaquinaCritica;
 
     const area = document.getElementById('area').value;
+    const maquinaCritica = document.getElementById('maquinaCriticaCheck').checked;
 
     // Calcula as datas de início e fim
     function getDefaultDates() {
@@ -418,12 +409,12 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    async function promiseCharts(dataInicial = '', dataFinal = '', setorSelect = '', area=area) {
+    async function promiseCharts(dataInicial = '', dataFinal = '', setorSelect = '', area=area, maquinaCritica = maquinaCritica) {
         // Usa Promise.all para aguardar todas as requisições antes de concluir a execução
         if (area === 'producao')
         {
             return Promise.all([
-                fetch(`/mtbf-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/mtbf-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         const maquinas = data.map(item => item.maquina);
@@ -437,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-mtbf')),
 
-                fetch(`/mttr-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/mttr-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         const maquinas = data.map(item => item.maquina);
@@ -451,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-mttr')),
 
-                fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         
@@ -463,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-ordens-prazo')),
                 
-                fetch(`/horas-trabalhadas-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/horas-trabalhadas-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         
@@ -479,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-ordens-prazo')),
                 
-                fetch(`/horas-trabalhadas-tipo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/horas-trabalhadas-tipo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         
@@ -495,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-ordens-prazo')),
                 
-                fetch(`/relacao-tipo-ordem?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/relacao-tipo-ordem?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         
@@ -509,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-tipo-ordem')),
 
-                fetch(`/tempo-maquina-parada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/tempo-maquina-parada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         
@@ -523,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-maquinas-paradas')),
 
-                fetch(`/solicitacao-por-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/solicitacao-por-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
 
@@ -537,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-solicitacao-setor')),
 
-                fetch(`/disponibilidade-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/disponibilidade-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         if (graficoDisponibilidadeMaquina) {
@@ -549,21 +540,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
                     })
                     .catch(error => handleError(error, 'loading-disponibilidade')),
-                
-                fetch(`/disponibilidade-maq-criticas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
-                    .then(handleResponse)
-                    .then(data => {
-                        if (graficoDisponibilidadeMaquinaCritica) {
-                            graficoDisponibilidadeMaquinaCritica.destroy();
-                        }
-                        
-                        const maquinas = data.map(item => item.maquina);
-                        const disponibilidade = data.map(item => item.disponibilidade);
-                        graficoDisponibilidadeMaquinaCritica = criarGraficoBar('graficoDisponibilidadeMaquinaCritica', 'Disponibilidade %', disponibilidade, maquinas);
-                    })
-                    .catch(error => handleError(error, 'loading-disponibilidade-criticas')),
 
-                fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-abertas').innerHTML = data.data;
@@ -571,7 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-abertas')),
 
-                fetch(`/ordens-finalizada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-finalizada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-finalizadas').innerHTML = data.data;
@@ -579,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-finalizadas')),
 
-                fetch(`/ordens-aguardando-material?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-aguardando-material?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-aguardando-material').innerHTML = data.data;
@@ -587,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-aguardando-material')),
 
-                fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-atrasada').innerHTML = data.data;
@@ -595,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-atrasadas')),
 
-                fetch(`/ordens-em-execucao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/ordens-em-execucao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-execucao').innerHTML = data.data;
@@ -603,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
                 
-                fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-tmf').innerHTML = data.data;
@@ -611,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
                 
-                fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-tma').innerHTML = data.data;
@@ -619,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .catch(error => handleError(error, 'loading-execucao')),
                 
-                fetch(`/disponibilidade-geral?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                fetch(`/disponibilidade-geral?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
                     .then(handleResponse)
                     .then(data => {
                         document.getElementById('card-disp-media').innerHTML = data.data;
@@ -832,7 +810,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function criarGraficoPie(elementId, titulo, labels, valores) {
         const ctx = document.getElementById(elementId).getContext('2d');
-        const cores = labels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
+        
+        let opcoes = ['#2196F3', '#F44336', '#FFEB3B', '#4CAF50','#9C27B0','#FF5722','#00BCD4','#8BC34A'];
+        let cores = [];
+        for (let i = 0; i < labels.length ; i++){
+            cores[i] = opcoes[i];
+        }
+        
+        // backgroundColor: ['#2196F3', '#F44336', '#FFEB3B', '#4CAF50'], // Azul, Vermelho, Amarelo e Verde
+        // const cores = labels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
 
         return new Chart(ctx, {
             type: 'pie',
@@ -940,7 +926,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('endDate').value = dataFinal;
 
     // Inicialize os gráficos com as datas padrão
-    promiseCharts(dataInicial, dataFinal, setorSelect, area); 
+    promiseCharts(dataInicial, dataFinal, setorSelect, area, maquinaCritica); 
 
     // Evento do formulário para aplicar filtros
     document.getElementById('filterForm').addEventListener('submit', async function (event) {
@@ -954,8 +940,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataFinal = document.getElementById('endDate').value;
         const setorSelect = document.getElementById('setorSelect').value;
         const area = document.getElementById('area').value;
+        const maquinaCritica = document.getElementById('maquinaCriticaCheck').checked;
 
-        await promiseCharts(dataInicial, dataFinal, setorSelect, area); // Aguarda as requisições finalizarem
+        await promiseCharts(dataInicial, dataFinal, setorSelect, area, maquinaCritica); // Aguarda as requisições finalizarem
 
         btnFilter.innerHTML = 'Aplicar Filtros';
         btnFilter.disabled = false;
@@ -1002,9 +989,6 @@ document.addEventListener('DOMContentLoaded', function () {
             exportar('/exportar-disponibilidade-maquina/')
         });
 
-        document.getElementById('dadosDispMaquinaCritica').addEventListener('click', () => {
-            exportar('/exportar-disponibilidade-maq-criticas/')
-        });
 
     }
 

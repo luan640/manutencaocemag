@@ -271,6 +271,19 @@ def editar_plano_preventiva(request, pk):
 
 def ordens_programadas(request,area):
 
+    #Verificar a quantidade de ordens para uma data específica
+    if request.GET.get('data_prog'):
+        ordens = Solicitacao.objects.filter(
+            programacao__isnull=False,
+            area=area,
+            programacao = request.GET.get('data_prog')
+        ).exclude(status_andamento='finalizada')
+
+        return JsonResponse({
+            "countData": len(ordens)
+        })
+        
+
     ordens = Solicitacao.objects.filter(
         programacao__isnull=False,
         area=area
@@ -552,4 +565,32 @@ def historico_preventivas(request):
             'recordsFiltered': paginator.count,
             'data': data
         })
+    
+
+def maquina_critica(request):
+    planos_maquinas_criticas = PlanoPreventiva.objects.filter(ativo=True)
+    print(planos_maquinas_criticas)
+    data = []
+    print('Carregando...')
+    for plano in planos_maquinas_criticas:
+        #pegar o id da maquina que possui plano de preventiva ativo
+        id_maquina_critica = plano.maquina.id
+        maq_critica = Maquina.objects.get(pk=id_maquina_critica)
+        maq_critica.maquina_critica = True
+        maq_critica.save()
+
+        print(maq_critica, 'Trocado para maquina crítica')
+        #modificar a coluna maquina_critica da maquina (Tabela Maquina)
+        data.append({
+            'codigo': plano.maquina.codigo,
+            'descricao': plano.maquina.descricao,
+            'ativo': plano.ativo,
+            'id_maquina': id_maquina_critica,
+            'maquina_critica': maq_critica.maquina_critica,
+            
+        })
+    return JsonResponse({
+        'data': data,
+        'quantidade': len(planos_maquinas_criticas)
+    })
 

@@ -26,5 +26,8 @@ urlpatterns = [
 
     path('historico-preventiva/', views.historico_preventivas, name='historico_preventivas'),
 
+    # modificar a coluna maquina_critica da tabela maquina para as maquinas que possuem plano de preventiva ativo
+    path('maquina-critica/',views.maquina_critica, name='maquina_critica'),
+
 
 ]
