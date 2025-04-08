@@ -36,5 +36,6 @@ urlpatterns = [
 
     path('executar-tarefa-rotina/', views.criar_execucao_rotina, name='criar_execucao_rotina'),
     path('criar-tarefa-rotina/', views.criar_tarefa_rotina, name='criar_tarefa_rotina'),
+    path('reprogramar-ordem/<int:solicitacao_id>/', views.reprogramar_ordem, name='reprogramar_ordem'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

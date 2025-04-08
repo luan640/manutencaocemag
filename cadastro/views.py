@@ -128,7 +128,7 @@ def processar_maquina(request):
 
     data = []
     for maquina in maquinas_page:
-        print("maq-crit ",maquina.maquina_critica)
+        # print("maq-crit ",maquina.maquina_critica)
         data.append({
             'id': maquina.pk,
             'codigo': maquina.codigo,

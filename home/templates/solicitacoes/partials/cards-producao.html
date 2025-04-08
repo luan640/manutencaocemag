@@ -156,6 +156,15 @@
                         data-bs-target="#maisDetalhesModal{{ solicitacao.pk }}">
                         Detalhes
                     </a>
+                    {% if solicitacao.planejada %}
+                        {% if not solicitacao.status_andamento == 'finalizada' %}
+                            {% if solicitacao.programacao < today %}
+                                <a id="btnReprogramarOrdem_{{ solicitacao.pk }}" class="dropdown-item" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
+                                data-bs-target="#reprogramarModal{{ solicitacao.pk }}">
+                                Reprogramar</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -488,6 +497,131 @@
             </div>
             <div class="modal-body" id="bodyMaisDetalhes_{{solicitacao.pk}}" style="min-height: 200px; max-height: 700px; overflow-y: auto;">
 
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de reprogramação de ordem de máquina crítica atrasada -->
+<div class="modal fade" id="reprogramarModal{{ solicitacao.pk }}"
+    aria-labelledby="reprogramarModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reprogramarModalLabel{{ solicitacao.pk }}">Reprogramar Ordem #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form class="formReprogramarOrdemProducao" data-ordem-id="{{ solicitacao.pk }}" data-modal-id="reprogramarModal{{ solicitacao.pk }}" method="post" action="{% url 'reprogramar_ordem' solicitacao.pk %}">
+                    {% csrf_token %}
+
+                    <!-- Collapse para Informações Gerais -->
+                    <h2 class="fs-5">
+                        <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseInformacoesGerais"
+                            role="button" aria-expanded="false" aria-controls="collapseInformacoesGerais">
+                            Informações gerais
+                        </a>
+                    </h2>
+                    <div class="collapse show" id="collapseInformacoesGerais">
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="setor_info">Setor</label>
+                                <input class="form-control" type="text" value="{{solicitacao.setor.nome}}" disabled>
+
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="solicitante_info">Solicitante</label>
+                                <input class="form-control" type="text"
+                                    value="{{solicitacao.solicitante.matricula}} - {{solicitacao.solicitante.nome}}"
+                                    disabled>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-12">
+                                <label for="maquina_info">Máquina</label>
+                                <input class="form-control" type="text" value="{{solicitacao.maquina.codigo}} - {{solicitacao.maquina.descricao}}" disabled>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <label for="data_abertura_info">Impacto na produção</label>
+                                <input class="form-control" type="text" value="{{solicitacao.get_impacto_producao_display}}"
+                                disabled>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label>Motivo</label>
+                                <textarea rows="5" class="form-control" disabled>{{solicitacao.descricao}}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                        <!-- Collapse para Detalhes sobre máquina de solda -->
+                        {% if solicitacao.setor.nome == 'Solda' %}
+                        <h2>
+                            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseDetalheSetorSolda" role="button"
+                                aria-expanded="false" aria-controls="collapseDetalheSetorSolda">
+                                Detalhes sobre setor de Solda
+                            </a>
+                        </h2>
+                        <div class="collapse" id="collapseDetalheSetorSolda">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="equipamento_em_falha" class="form-label">Equipamento em falha</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.get_equipamento_em_falha_display }}" disabled>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="setor_maq_solda" class="form-label">Setor da máquina de solda</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.get_setor_maq_solda_display}}" disabled>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <label for="tipo_ferramenta" class="form-label">Tipo da ferramenta</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.tipo_ferramenta}}" disabled>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="codigo_ferramenta" class="form-label">Código da ferramenta</label>
+                                    <input class="form-control" type="text" value="{{solicitacao.codigo_ferramenta}}" disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        {% endif %}
+                        <h2 class="fs-5">
+                            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseReprogramar" role="button"
+                                aria-expanded="false" aria-controls="collapseReprogramar">
+                                Reprogramar
+                            </a>
+                        </h2>
+                        <div class="collapse" id="collapseReprogramar">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="mb-3">
+                                        <label for="id_data_abertura" class="form-label">Data de Abertura</label>
+                                        <input type="datetime-local" class="form-control data-inicio" id="id_data_abertura_{{solicitacao.pk}}"
+                                             value="{{ solicitacao.data_abertura|date:'Y-m-d\\TH:i' }}" disabled>
+                                    </div>
+                                </div>
+                                
+                                <!-- Data de Programação -->
+                                <div class="col-sm-6">
+                                    <div class="mb-3">
+                                        <label for="data_programacao_{{solicitacao.pk}}" class="form-label">Programação <span class="required">*</span></label>
+                                        <input type="date" class="form-control data-fim" id="data_programacao_{{solicitacao.pk}}" 
+                                        onchange="verificaOrdensDia(this), validaDataProg(this)" name="data_programacao" value="" required>
+                                        <span style="font-weight: bold;" id="quantidade_ordens_dia_{{solicitacao.pk}}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>       
+                        <!-- Botão de Envio -->
+                        <div class="d-flex justify-content-between">
+                            <span id="erroMensagemDataProg_{{solicitacao.pk}}" style="color: red; visibility: hidden; "></span>
+                            <button type="submit" id='saveReprogramarSolicitacaoButton_{{solicitacao.pk}}'class="btn btn-primary">Salvar</button>
+                        </div>
+                </form>
             </div>
         </div>
     </div>

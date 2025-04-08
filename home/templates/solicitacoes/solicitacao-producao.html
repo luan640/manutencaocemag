@@ -396,6 +396,7 @@
                 "loadMoreSolicitacoes",           // ID do botão de 'load more'
                 params,                           // Parâmetros do filtro
                 [
+                    attachReprogramarOrdemEventListeners,
                     attachExecutarOrdemEventListeners,
                     mudancaStatusFinalizada,
                     attachStatusReenviarWpp,
@@ -740,6 +741,7 @@
                                     : Promise.resolve(),
 
                                 loadSection("solicitacoes/", "solicitacoes-container", [
+                                    attachReprogramarOrdemEventListeners,
                                     attachExecutarOrdemEventListeners,
                                     mudancaStatusFinalizada,
                                     attachStatusReenviarWpp,
@@ -870,6 +872,7 @@
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
 
                             loadSection("solicitacoes/", "solicitacoes-container", [
+                                attachReprogramarOrdemEventListeners,
                                 attachExecutarOrdemEventListeners,
                                 mudancaStatusFinalizada,
                                 attachStatusReenviarWpp,
@@ -909,6 +912,128 @@
                             icon: 'error',
                             title: 'Erro',
                             text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            confirmButtonText: 'OK'
+                        });
+                    });
+                });
+            });
+        }
+
+        // Função para adicionar event listeners aos formulários de finalizar ordem
+        function attachReprogramarOrdemEventListeners() {
+            const forms = document.querySelectorAll('.formReprogramarOrdemProducao');
+            forms.forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Impede o envio tradicional do formulário
+
+                    // Obter a URL de envio
+                    const url = form.getAttribute('action');
+                    const modalId = form.dataset.modalId;
+
+                    // Criar um objeto FormData para capturar os dados do formulário
+                    const formData = new FormData(form);
+                    console.log(modalId);
+
+                    // Exibe o modal de carregamento
+                    Swal.fire({
+                        title: 'Processando...',
+                        text: 'Aguarde enquanto processamos sua solicitação.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading(); // Exibe o spinner de carregamento
+                        }
+                    });
+
+                    // Enviar a requisição AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    // .then(response => {
+                    //     if (response.ok) {
+                    //         return response.json();
+                    //     } else {
+                    //         throw new Error('Erro ao finalizar a ordem.');
+                    //     }
+                    // })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json(); // Continua para o próximo .then com os dados do JSON
+                        } else {
+                            // Tenta capturar a mensagem de erro do backend no formato JSON
+                            return response.json()
+                                .then(errorData => {
+                                    console.log(errorData);
+                                    throw new Error(errorData.error || 'Erro ao reprogramar a ordem.'); // Lança o erro com a mensagem específica do backend
+                                })
+                                .catch(() => {
+                                    throw new Error('Erro ao reprogramar a ordem.'); // Lança uma mensagem genérica se o JSON falhar
+                                });
+                        }
+                    })
+                    .then(data => {
+
+                        if (data.success) {
+                            Promise.all([
+
+                            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                                ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [
+                                    attachExecutar1OrdemEventListeners,
+                                    attachStatusChangeListeners,
+                                    escolherPlanoPreventiva,
+                                    attachModalEventListeners,
+                                    
+                                ])
+                                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+                            
+                            document.getElementById('headingMaquinasParadas') 
+                                ? loadSection("maquinas-paradas/", "maquinas-paradas-container")
+                                : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
+
+                            loadSection("solicitacoes/", "solicitacoes-container", [
+                                attachReprogramarOrdemEventListeners,
+                                attachExecutarOrdemEventListeners,
+                                mudancaStatusFinalizada,
+                                attachStatusReenviarWpp,
+                                attachModalEventListeners,
+                                attachSelect2Operador,
+                                // attachVerificarData,
+                                attachHistorico,
+                                attachMaisDetalhes
+                            ]),
+
+
+
+                            ]).then(() => {
+                            }).catch(error => {
+                                console.error("Erro ao carregar as seções:", error);
+                            });
+
+                            // Fechar o modal
+                            const modal = document.getElementById(modalId);
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+                            
+                            // Mostrar o popup de sucesso
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Ordem reprogramada com sucesso!',
+                                confirmButtonText: 'OK'
+                            });
+
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Ocorreu um erro ao reprogramar a ordem. Tente novamente.');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro',
+                            text: 'Ocorreu um erro ao reprogramar a ordem. Tente novamente.',
                             confirmButtonText: 'OK'
                         });
                     });
@@ -1941,6 +2066,7 @@
             // loadSection("solicitacoes/", "solicitacoes-container", [attachExecutarOrdemEventListeners, mudancaStatusFinalizada, attachStatusReenviarWpp]),
             
             fetchSolicitacoes("solicitacoes/", "solicitacoes-container", "loadMoreSolicitacoes", params='', [
+                attachReprogramarOrdemEventListeners,
                 attachExecutarOrdemEventListeners,
                 mudancaStatusFinalizada,
                 attachStatusReenviarWpp,
@@ -2043,12 +2169,17 @@
 
     function verificaOrdensDia(input){
         const idOrdem = input.id.split('_')[2];
-        const ordensDia = document.getElementById(`quantidade_ordens_dia${idOrdem}`);
+        var ordensDia = document.getElementById(`quantidade_ordens_dia${idOrdem}`);
+        let data_prog = input.value;
+
+        if (!ordensDia){
+            ordensDia = document.getElementById(`quantidade_ordens_dia_${idOrdem}`);
+        }
 
         ordensDia.textContent = "Carregando..."
 
         // Usando fetch para obter dados de uma URL
-        fetch(`/programacao/ordens-programadas/producao/?data_prog=${input.value}`)
+        fetch(`/programacao/ordens-programadas/producao/?data_prog=${data_prog}`)
         .then(response => {
             // Verificando se a resposta foi bem-sucedida (status 200)
             if (!response.ok) {
@@ -2057,7 +2188,7 @@
             return response.json(); // Converte a resposta para formato JSON
         })
         .then(data => {
-            console.log('Dados recebidos:', data); // Exibe os dados no console
+            // console.log('Dados recebidos:', data); // Exibe os dados no console
             if (data.countData == 0){
                 ordensDia.textContent =`Não existem ordens programadas para este dia!`;
             }else{
@@ -2068,9 +2199,34 @@
             console.error('Erro:', error); // Lida com erros, caso ocorra algum
         });
 
-        }
+    }
 
-// data-modal-id="executarModal{{ solicitacao.pk }}"
+    function validaDataProg(input){
+        
+        const idOrdem = input.id.split('_')[2];
+        var dataAberturaInput = document.getElementById(`id_data_abertura_${idOrdem}`);
+        const saveReprogramarButton = document.getElementById(`saveReprogramarSolicitacaoButton_${idOrdem}`);
+        const erroMensagemDataProg = document.getElementById(`erroMensagemDataProg_${idOrdem}`);
+
+        let data_prog = input.value;
+        let data_abertura = dataAberturaInput.value.split('T')[0];
+        let data_atual = new Date().toISOString().split('T')[0];
+        // console.log(data_atual);
+
+
+        if(data_prog < data_abertura){
+            saveReprogramarButton.disabled = true;
+            erroMensagemDataProg.textContent = 'A Data de Programação não pode ser menor que a Data de Abertura.'
+            erroMensagemDataProg.style.visibility = 'visible';
+        }else if(data_prog < data_atual){
+            saveReprogramarButton.disabled = true;
+            erroMensagemDataProg.textContent = 'A Data de Programação não pode ser menor que a Data Atual.';
+            erroMensagemDataProg.style.visibility = 'visible';
+        }else{
+            erroMensagemDataProg.style.visibility = 'hidden';
+            saveReprogramarButton.disabled = false;
+        }
+    }
     // Função a ser chamada ao abrir o modal (com Bootstrap)
     let modalIdClose;
     function verificarMaquinaParadaExecucao(button) {

@@ -16,6 +16,7 @@ from .models import Foto, Solicitacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
 from execucao.models import Execucao, MaquinaParada
 from preventiva.models import PlanoPreventiva
+from datetime import datetime
 
 import json
 import requests
@@ -417,20 +418,30 @@ def criar_tarefa_rotina(request):
 
     return render(request, "tarefa-rotina/add-tarefa.html", {"tarefas_existentes":tarefas_existentes}) 
 
-# def obter_choices(request):
-#     # Pegando as opções do campo 'meu_atributo'
-#     form = SolicitacaoForm()
+def reprogramar_ordem(request, solicitacao_id):
+    solicitacao = get_object_or_404(Solicitacao, pk=solicitacao_id)
+    data_atual = datetime.now()
+    print("Solicitacao: ", solicitacao)
+    print(data_atual)
+    if request.method == 'POST':
+        data_programacao = request.POST.get('data_programacao')
+        data_prog_obj = datetime.strptime(data_programacao,"%Y-%m-%d")
 
-#     # O campo 'meu_atributo' é um ChoiceField, então podemos pegar as opções
-#     equipamento_em_falha = form.fields['equipamento_em_falha'].choices
-#     setor_maq_solda = form.fields['setor_maq_solda'].choices
-#     tipo_ferramenta = form.fields['tipo_ferramenta'].choices
+        if data_prog_obj < solicitacao.data_abertura:
+            return JsonResponse({
+                'success': False,
+                'error':'A Data de Programação não pode ser menor que a Data de Abertura.'
+            },status=400)
+        elif data_prog_obj < data_atual:
+            return JsonResponse({
+                'success': False,
+                'error':'A Data de Programação não pode ser menor que a Data Atual.'
+            },status=400)
+        
+        solicitacao.programacao = data_programacao
+        solicitacao.save()
 
-#     print(equipamento_em_falha)
-#     print(setor_maq_solda)
-#     print(tipo_ferramenta)
-    
-#     # Retornamos essas opções como um JSON
-#     return JsonResponse({'equipamento_em_falha': equipamento_em_falha,
-#                          'setor_maq_solda': setor_maq_solda,
-#                          'tipo_ferramenta': tipo_ferramenta})
+
+    return JsonResponse({
+        'success': True
+    },status=200)
