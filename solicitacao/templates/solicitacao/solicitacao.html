@@ -94,13 +94,18 @@
         $('#id_equipamento_em_falha').select2({
             placeholder: "Selecione o equipamento em falha",
             allowClear: true,
-            width: '100%'
+            width: '100%',
         });
 
         $('#id_maquina').select2({
             placeholder: "Selecione a máquina",
             allowClear: true,
-            width: '100%'
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return "Nenhuma máquina foi encontrada nesse setor!";
+                }
+    }
         });
         
         // Captura elementos
@@ -172,16 +177,20 @@
         // Chama a função ao carregar a página
         toggleFieldsSolda();
 
-        function ajax(url, callback) {
+        function ajax(url, callback, onError) {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', url, true);
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     callback(JSON.parse(xhr.responseText));
-                }
+                }else {
+                console.error('Erro na resposta HTTP:', xhr.status, xhr.statusText);
+                if (onError) onError(new Error('Erro HTTP ' + xhr.status));
+            }
             };
             xhr.onerror = function() {
                 console.error('Erro na requisição AJAX.');
+                if (onError) onError(new Error('Erro de rede'));
             };
             xhr.send();
         }
@@ -233,9 +242,17 @@
                             });
                             maquinaSelect.disabled = false;
                         } else {
-                            maquinaSelect.innerHTML = '<option>Nenhuma máquina encontrada</option>';
+                            maquinaSelect.disabled = false;
+                            maquinaSelect.placeholder = "Nenhuma máquina encontrada";
+                            maquinaSelect.innerHTML = '<option selected value="">Nenhuma máquina encontrada</option>';
                             console.error('Nenhuma máquina encontrada.');
                         }
+                    },
+                    function(error){
+                        maquinaSelect.disabled = false;
+                        maquinaSelect.placeholder = "Nenhuma máquina encontrada";
+                        maquinaSelect.innerHTML = '<option value="">Erro ao carregar máquinas</option>';
+                        console.error('Erro durante a requisição AJAX:', error);
                     }
                 );
             }
@@ -268,8 +285,13 @@
                         });
                         maquinaSelect.disabled = false;
                     } else {
+                        maquinaSelect.disabled = false;
                         console.error('Nenhuma máquina encontrada.');
                     }
+                },function (error) {
+                    maquinaSelect.disabled = false;
+                    maquinaSelect.innerHTML = '<option value="">Erro ao carregar máquinas</option>';
+                    console.error('Erro durante a requisição AJAX:', error);
                 });
             }
         });
