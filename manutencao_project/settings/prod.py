@@ -4,7 +4,11 @@ import os
 
 # Configurações específicas de produção
 DEBUG = False
-ALLOWED_HOSTS = ['manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'manutencaocemag.com.br',
+    'www.manutencaocemag.com.br',
+    'manutencaocemag-4fu7.onrender.com',]
 
 # Banco de dados para produção
 DATABASES = {

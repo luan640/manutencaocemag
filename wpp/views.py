@@ -58,7 +58,7 @@ class AccountView(APIView):
             return Response({"error": "Campos obrigatórios ausentes."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Endpoint do cliente oficial da Meta (ou seu container rodando a API oficial)
-        whatsapp_api_url = "https://manutencaocemag-4fu7.onrender.com/v1/account"
+        whatsapp_api_url = "http://localhost:8080/v1/account"
 
         payload = {
             "cc": cc,

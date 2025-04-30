@@ -2,7 +2,12 @@ from .base import *
 
 # Configurações específicas de desenvolvimento
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '07fd-177-19-132-134.ngrok-free.app']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'manutencaocemag.com.br',
+    'www.manutencaocemag.com.br',
+    'manutencaocemag-4fu7.onrender.com',]
+
 CSRF_TRUSTED_ORIGINS = [
     'https://07fd-177-19-132-134.ngrok-free.app',
 ]
@@ -24,7 +29,7 @@ DATABASES = {
         'HOST': env('DB_HOST'),
         'PORT': env('DB_PORT'),
         'OPTIONS': {
-            'options': '-c search_path=manutencao_testes',
+            'options': '-c search_path=manutencao_v3',
         },
     }
 }
