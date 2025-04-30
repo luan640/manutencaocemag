@@ -660,11 +660,6 @@ def editar_execucao(request, pk):
                     .first()  # Pega o primeiro resultado (a próxima execução com o maior número de execução)
                 )
 
-                print('proxima_exec: ',proxima_execucao.n_execucao)
-
-
-                print("ult_exec: ",ultima_execucao_anterior.n_execucao)
-
                 # Validar as novas datas em relação à última execução anterior
                 if ultima_execucao_anterior:
                     # Normalizar as datas (remover ou adicionar fuso horário conforme necessário)

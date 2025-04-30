@@ -128,9 +128,9 @@ def criar_execucao(request, solicitacao_id):
                         'ordem': solicitacao.pk,
                         'data_abertura': solicitacao.data_abertura,
                         'data_fechamento': execucao.data_fim,
-                        'maquina': solicitacao.maquina.codigo,
+                        'maquina': solicitacao.maquina.codigo if solicitacao.maquina else solicitacao.tipo_ferramenta,
                         'motivo': solicitacao.descricao,
-                        'descricao': solicitacao.maquina.descricao,
+                        'descricao': solicitacao.maquina.descricao if solicitacao.maquina else solicitacao.codigo_ferramenta,
                         'link': link_satisfacao
                     }
 

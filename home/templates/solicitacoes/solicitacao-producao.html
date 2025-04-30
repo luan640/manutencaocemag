@@ -1236,7 +1236,11 @@
                                     placeholder: "Selecione a máquina",
                                     allowClear: true,
                                     width: '100%',
-                                    dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                                    dropdownParent: $(`#editarMaquina_${solicitacaoPk}`), // Garante que o dropdown esteja contido no modal
+                                    language: {
+                                        noResults: function() {
+                                            return "Nenhuma máquina foi encontrada nesse setor!";
+                                        }}
                                 });
                                 
                                 $(`#id_maquina_${solicitacaoPk}`).on('change', function() {
@@ -2335,12 +2339,16 @@
                         placeholder: "Selecione a máquina",
                         allowClear: true,
                         width: '100%',
-                        dropdownParent: $(`#editarMaquina_${solicitacaoPk}`) // Garante que o dropdown esteja contido no modal
+                        dropdownParent: $(`#editarMaquina_${solicitacaoPk}`), // Garante que o dropdown esteja contido no modal
+                        language: {
+                            noResults: function() {
+                                return "Nenhuma máquina foi encontrada nesse setor !";
+                        }}
                     });
                 } else {
                     console.error('Nenhuma máquina encontrada.');
                     divMaquina.innerHTML = `
-                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" disabled>
+                        <select class="form-control select2_maquina" name="id_maquina" id="id_maquina_${solicitacaoPk}" required>
                             <option value="">Nenhuma máquina encontrada</option>
                         </select>
                     `;
