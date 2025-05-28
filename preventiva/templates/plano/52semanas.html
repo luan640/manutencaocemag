@@ -118,124 +118,182 @@ Manutenções Semanais
 <div id="semanas-container" class="semanas-container"></div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/manutencoes-semana/')
-            .then(response => response.json())
-            .then(data => {
-                // data é um array de objetos, cada um com:
-                // { maquina, plano, data_base, semanas: [ { semana, inicio, fim, manutencoes: [...] }, ... ] }
-                let globalWeeks = [];
-                // Se houver pelo menos um plano, usamos a estrutura de semanas do primeiro como "template"
-                if (data.length > 0) {
-                    globalWeeks = data[0].semanas.map(week => ({
-                        semana: week.semana,
-                        inicio: week.inicio,
-                        fim: week.fim,
-                        manutencoes: []
-                    }));
-                }
-                
-                // Itera por cada plano e agrupa as manutenções na semana correspondente
-                data.forEach(plan => {
-                    plan.semanas.forEach(week => {
-                        if (week.manutencoes && week.manutencoes.length > 0) {
-                            week.manutencoes.forEach(event => {
-                                // globalWeeks é indexado por (semana - 1)
-                                globalWeeks[week.semana - 1].manutencoes.push({
-                                    maquina: event.maquina,
-                                    plano: event.plano,
-                                    data: event.data
-                                });
+
+document.addEventListener('DOMContentLoaded', function () {
+    fetch('/manutencoes-semana/')
+        .then(response => response.json())
+        .then(data => {
+            // data é um array de objetos, cada um com:
+            // { maquina, plano, data_base, semanas: [ { semana, inicio, fim, manutencoes: [...] }, ... ] }
+            let globalWeeks = [];
+            // Se houver pelo menos um plano, usamos a estrutura de semanas do primeiro como "template"
+            if (data.length > 0) {
+                globalWeeks = data[0].semanas.map(week => ({
+                    semana: week.semana,
+                    inicio: week.inicio,
+                    fim: week.fim,
+                    manutencoes: []
+                }));
+            }
+            
+            // Itera por cada plano e agrupa as manutenções na semana correspondente
+            data.forEach(plan => {
+                plan.semanas.forEach(week => {
+                    if (week.manutencoes && week.manutencoes.length > 0) {
+                        week.manutencoes.forEach(event => {
+                            // globalWeeks é indexado por (semana - 1)
+                            globalWeeks[week.semana - 1].manutencoes.push({
+                                maquina: event.maquina,
+                                plano: event.plano,
+                                data: event.data,
+                                status_manutencao: event.status_manutencao,
+                                status_aprovacao: event.status_aprovacao
                             });
-                        }
-                    });
+                        });
+                    }
                 });
-                
-                const semanaAtual = getSemanaAtual();
-                renderSemanas(globalWeeks, semanaAtual);
-            })
-            .catch(error => console.error('Erro ao carregar os dados:', error));
-        
-        function renderSemanas(weeks, semanaAtual) {
-            const container = document.getElementById('semanas-container');
-            container.innerHTML = '';  // Limpa o container
-
-            weeks.forEach(week => {
-                const semanaCard = document.createElement('div');
-                semanaCard.classList.add('semana-card');
-
-                // Adiciona uma classe referente ao mês (para estilo)
-                const mesClasse = getMesClasse(week.inicio);
-                semanaCard.classList.add(mesClasse);
-
-                // Se for a semana atual, adiciona destaque
-                if (week.inicio === semanaAtual) {
-                    semanaCard.classList.add('semana-atual');
-                }
-
-                // Cria o título do card com o número da semana
-                const titulo = document.createElement('h3');
-                titulo.textContent = `Semana ${week.semana}`;
-                semanaCard.appendChild(titulo);
-
-                // Cria a área para listar as manutenções
-                const manutencoesDiv = document.createElement('div');
-                manutencoesDiv.classList.add('manutencoes');
-
-                if (week.manutencoes.length === 0) {
-                    manutencoesDiv.innerHTML = `<em>Sem manutenções</em>`;
-                } else {
-                    week.manutencoes.forEach(manutencao => {
-                        const manutencaoItem = document.createElement('div');
-                        manutencaoItem.textContent = `🔧 ${manutencao.maquina} - ${manutencao.plano} (${manutencao.data})`;
-                        manutencoesDiv.appendChild(manutencaoItem);
-                    });
-                }
-
-                semanaCard.appendChild(manutencoesDiv);
-                container.appendChild(semanaCard);
             });
+            
+            const semanaAtual = getSemanaAtual();
+            renderSemanas(globalWeeks, semanaAtual);
+        })
+        .catch(error => console.error('Erro ao carregar os dados:', error));
+    
+    function renderSemanas(weeks, semanaAtual) {
+        const container = document.getElementById('semanas-container');
+        container.innerHTML = '';  // Limpa o container
 
-            // Atualiza o cabeçalho com a semana atual
-            document.getElementById('semana-atual-info').textContent = `Semana Atual: ${getSemanaAtualNumero()}`;
-        }
+        weeks.forEach(week => {
+            const semanaCard = document.createElement('div');
+            semanaCard.classList.add('semana-card');
 
-        // Retorna a classe CSS do mês correspondente à data (para fins de estilo)
-        function getMesClasse(dataString) {
-            const meses = [
-                'janeiro', 'fevereiro', 'marco', 'abril',
-                'maio', 'junho', 'julho', 'agosto',
-                'setembro', 'outubro', 'novembro', 'dezembro'
-            ];
-            const mesIndex = new Date(dataString).getMonth();
-            return meses[mesIndex];
-        }
+            // Adiciona uma classe referente ao mês (para estilo)
+            const mesClasse = getMesClasse(week.inicio);
+            semanaCard.classList.add(mesClasse);
 
-        // Calcula e retorna a data (segunda-feira) da semana atual no formato YYYY-MM-DD
-        function getSemanaAtual() {
-            const hoje = new Date();
-            const diaDaSemana = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
-            // Ajusta: se hoje é domingo, trata como se fosse o último dia da semana anterior
-            const diffSegunda = hoje.getDate() - (diaDaSemana === 0 ? 6 : diaDaSemana - 1);
-            const segundaFeira = new Date(hoje);
-            segundaFeira.setDate(diffSegunda);
-            return segundaFeira.toISOString().split('T')[0];
-        }
+            // Se for a semana atual, adiciona destaque
+            if (week.inicio === semanaAtual) {
+                semanaCard.classList.add('semana-atual');
+            }
 
-        function getSemanaAtualNumero() {
-            const hoje = new Date();
-            // Copia a data para não alterar o original e ajusta para UTC
-            const d = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
-            // Ajusta para a quinta-feira da semana atual (ISO: a semana é definida pela quinta-feira)
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-            // Calcula o número da semana
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return weekNo;
-        }
-    });
+            // Cria o título do card com o número da semana
+            const titulo = document.createElement('h3');
+            titulo.textContent = `Semana ${week.semana}`;
+            semanaCard.appendChild(titulo);
+
+            // Cria a área para listar as manutenções
+            const manutencoesDiv = document.createElement('div');
+            manutencoesDiv.classList.add('manutencoes');
+
+            if (week.manutencoes.length === 0) {
+                manutencoesDiv.innerHTML = `<em>Sem manutenções</em>`;
+            } else {
+                week.manutencoes.forEach(manutencao => {
+                    console.log(manutencao);
+                    const manutencaoItem = document.createElement('div');
+                    
+                    // Função para formatar o status de forma mais legível
+                    const formatarStatus = (statusManutencao, statusAprovacao) => {
+                        // Se o status de aprovação for "rejeitar", mostra apenas "Rejeitada"
+                        if (statusAprovacao === 'rejeitar') {
+                            return '🚫 Rejeitada';
+                        }
+                        
+                        // Se for "aprovar" ou null, mostra apenas o status da manutenção
+                        let statusTexto = '';
+                        
+                        if (statusManutencao) {
+                            switch(statusManutencao) {
+                                case 'finalizada':
+                                    statusTexto = '✅ Finalizada';
+                                    break;
+                                case 'em_espera':
+                                    statusTexto = '⏳ Em espera';
+                                    break;
+                                case 'não encontrada':
+                                    statusTexto = '❌ Não encontrada';
+                                    break;
+                                default:
+                                    statusTexto = statusManutencao;
+                            }
+                        }
+                        
+                        return statusTexto || '❓ Status indefinido';
+                    };
+                    
+                    const statusFormatado = formatarStatus(manutencao.status_manutencao, manutencao.status_aprovacao);
+                    
+                    manutencaoItem.innerHTML = `
+                        🔧 <strong>${manutencao.maquina}</strong> - ${manutencao.plano} 
+                        <br><small>📅 ${manutencao.data}</small>
+                        <br><small>${statusFormatado}</small>
+                    `;
+                    
+                    // Adiciona classes CSS baseadas no status para estilização
+                    if (manutencao.status_aprovacao === 'rejeitar') {
+                        manutencaoItem.style.borderLeft = '4px solid #9C27B0';
+                        manutencaoItem.style.backgroundColor = '#f3e5f5';
+                    } else if (manutencao.status_manutencao === 'finalizada') {
+                        manutencaoItem.style.borderLeft = '4px solid #4CAF50';
+                        manutencaoItem.style.backgroundColor = '#f1f8e9';
+                    } else if (manutencao.status_manutencao === 'em_espera') {
+                        manutencaoItem.style.borderLeft = '4px solid #FF9800';
+                        manutencaoItem.style.backgroundColor = '#fff3e0';
+                    } else if (manutencao.status_manutencao === 'não encontrada') {
+                        manutencaoItem.style.borderLeft = '4px solid #f44336';
+                        manutencaoItem.style.backgroundColor = '#ffebee';
+                    }
+                    
+                    manutencaoItem.style.padding = '8px';
+                    manutencaoItem.style.margin = '4px 0';
+                    manutencaoItem.style.borderRadius = '4px';
+                    
+                    manutencoesDiv.appendChild(manutencaoItem);
+                });
+            }
+
+            semanaCard.appendChild(manutencoesDiv);
+            container.appendChild(semanaCard);
+        });
+
+        // Atualiza o cabeçalho com a semana atual
+        document.getElementById('semana-atual-info').textContent = `Semana Atual: ${getSemanaAtualNumero()}`;
+    }
+
+    // Retorna a classe CSS do mês correspondente à data (para fins de estilo)
+    function getMesClasse(dataString) {
+        const meses = [
+            'janeiro', 'fevereiro', 'marco', 'abril',
+            'maio', 'junho', 'julho', 'agosto',
+            'setembro', 'outubro', 'novembro', 'dezembro'
+        ];
+        const mesIndex = new Date(dataString).getMonth();
+        return meses[mesIndex];
+    }
+
+    // Calcula e retorna a data (segunda-feira) da semana atual no formato YYYY-MM-DD
+    function getSemanaAtual() {
+        const hoje = new Date();
+        const diaDaSemana = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
+        // Ajusta: se hoje é domingo, trata como se fosse o último dia da semana anterior
+        const diffSegunda = hoje.getDate() - (diaDaSemana === 0 ? 6 : diaDaSemana - 1);
+        const segundaFeira = new Date(hoje);
+        segundaFeira.setDate(diffSegunda);
+        return segundaFeira.toISOString().split('T')[0];
+    }
+
+    function getSemanaAtualNumero() {
+        const hoje = new Date();
+        // Copia a data para não alterar o original e ajusta para UTC
+        const d = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
+        // Ajusta para a quinta-feira da semana atual (ISO: a semana é definida pela quinta-feira)
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        // Calcula o número da semana
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return weekNo;
+    }
+});
 </script>
-
-
 
 {% endblock %}

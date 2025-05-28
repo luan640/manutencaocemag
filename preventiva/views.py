@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.forms import formset_factory
 from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Max
 from django.utils.timezone import datetime, timedelta, now
+from django.db import connection
 
 from .models import PlanoPreventiva, TarefaPreventiva, SolicitacaoPreventiva
 from .forms import PlanoPreventivaForm, TarefaPreventivaForm, SolicitacaoPreventivaForm, TarefaPreventivaFormSet
@@ -316,34 +317,129 @@ def planejamento_anual(request):
 
     return render(request, 'plano/52semanas.html')
 
+# def calcular_manutencoes_semanais(request):
+
+#     """
+#     Para cada plano preventivo ativo (exceto os da máquina 'ETE'),
+#     gera um cronograma de 52 semanas a partir de 01/01 do ano do plano e
+#     calcula as datas de manutenção com base na periodicidade, iniciando
+#     em data_base + periodicidade.
+#     """
+
+#     from datetime import datetime, timedelta
+#     from django.http import JsonResponse
+
+#     # Filtra os planos ativos (exceto os da máquina com código 'ETE')
+#     planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
+#     response_data = []
+
+#     for plano in planos:
+
+#         # verifica se o plano.id e maquina_id existe dentro da consulta
+#         # caso exista, guardar o status para posteriormente juntar com as informações e da um drop na consulta para não gerar duplicadas.
+#         # caso não exista, guardar o status como não encontrada
+
+#         # Define o ano com base na data_base do plano; se não houver, usa o ano atual
+#         if plano.data_inicio:
+#             plano_data_base = datetime.combine(plano.data_inicio, datetime.min.time())
+#             year = datetime.today().year
+#         else:
+#             year = datetime.today().year
+#             plano_data_base = datetime(year, 1, 1)
+        
+#         # Define o início global do ano e o final considerando 52 semanas
+#         global_start = datetime(year, 1, 1)
+#         global_end = global_start + timedelta(days=52*7 - 1)
+
+#         # Gera o cronograma de 52 semanas a partir de 01/01 do ano
+#         weeks = []
+#         for week_num in range(52):
+#             week_start = global_start + timedelta(days=week_num * 7)
+#             week_end = week_start + timedelta(days=6)
+#             weeks.append({
+#                 'semana': week_num + 1,
+#                 'inicio': week_start.strftime('%Y-%m-%d'),
+#                 'fim': week_end.strftime('%Y-%m-%d'),
+#                 'manutencoes': []
+#             })
+
+#         # Calcula as manutenções a partir de data_base + periodicidade
+#         maintenance_date = plano_data_base + timedelta(days=plano.periodicidade)
+#         while maintenance_date <= global_end:
+#             # Calcula a posição da semana no cronograma global
+#             offset_days = (maintenance_date - global_start).days
+#             week_index = offset_days // 7  # 0-indexado
+#             if 0 <= week_index < 52:
+#                 weeks[week_index]['manutencoes'].append({
+#                     'maquina': plano.maquina.codigo,
+#                     'plano': plano.nome,
+#                     'data': maintenance_date.strftime('%Y-%m-%d')
+#                 })
+#             maintenance_date += timedelta(days=plano.periodicidade)
+
+#         response_data.append({
+#             'maquina': plano.maquina.codigo,
+#             'plano': plano.nome,
+#             'data_base': plano_data_base.strftime('%Y-%m-%d'),
+#             'semanas': weeks
+#         })
+
+#     return JsonResponse(response_data, safe=False)
+
 def calcular_manutencoes_semanais(request):
     """
-    Para cada plano preventivo ativo (exceto os da máquina 'ETE'),
-    gera um cronograma de 52 semanas a partir de 01/01 do ano do plano e
-    calcula as datas de manutenção com base na periodicidade, iniciando
-    em data_base + periodicidade.
+    Agora linka as execuções reais sem depender da data exata: 
+    usa apenas a combinação (máquina, plano) e remove a ordem da lista 
+    conforme for usando.
     """
-    from datetime import datetime, timedelta
-    from django.http import JsonResponse
 
-    # Filtra os planos ativos (exceto os da máquina com código 'ETE')
-    planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
+    # 1️⃣ Executa a consulta para buscar todas as execuções reais
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                ss.id,
+                ss.maquina_id,
+                pp.id AS plano_id,
+                ss.status_andamento,
+                ss.status AS status_aprovacao
+            FROM manutencao_v3.solicitacao_solicitacao ss
+            LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps ON ss.id = ps.ordem_id
+            LEFT JOIN manutencao_v3.execucao_execucao ee ON ss.id = ee.ordem_id
+            LEFT JOIN manutencao_v3.cadastro_maquina cm ON cm.id = ss.maquina_id
+            LEFT JOIN manutencao_v3.preventiva_planopreventiva pp ON pp.id = ps.plano_id 
+            WHERE 
+                ss.planejada 
+                AND (pp.dias_antecedencia + ps.data) >= '2025-01-01'
+                AND ss.area = 'producao'
+                AND (
+                    ss.status = 'rejeitar' OR
+                    ee.n_execucao = (
+                        SELECT MAX(ee2.n_execucao)
+                        FROM manutencao_v3.execucao_execucao ee2
+                        WHERE ee2.ordem_id = ss.id
+                    )
+                )
+                AND ss.maquina_id <> 31
+            ORDER BY ss.data_abertura;
+        """)
+        columns = [col[0] for col in cursor.description]
+        ordens_realizadas = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    # 2️⃣ Agora, ao invés de indexar, vamos deixar como lista e ir removendo conforme usamos!
     response_data = []
+    planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
 
     for plano in planos:
-        # Define o ano com base na data_base do plano; se não houver, usa o ano atual
         if plano.data_inicio:
             plano_data_base = datetime.combine(plano.data_inicio, datetime.min.time())
             year = datetime.today().year
         else:
             year = datetime.today().year
             plano_data_base = datetime(year, 1, 1)
-        
-        # Define o início global do ano e o final considerando 52 semanas
+
         global_start = datetime(year, 1, 1)
         global_end = global_start + timedelta(days=52*7 - 1)
 
-        # Gera o cronograma de 52 semanas a partir de 01/01 do ano
         weeks = []
         for week_num in range(52):
             week_start = global_start + timedelta(days=week_num * 7)
@@ -355,18 +451,33 @@ def calcular_manutencoes_semanais(request):
                 'manutencoes': []
             })
 
-        # Calcula as manutenções a partir de data_base + periodicidade
         maintenance_date = plano_data_base + timedelta(days=plano.periodicidade)
         while maintenance_date <= global_end:
-            # Calcula a posição da semana no cronograma global
             offset_days = (maintenance_date - global_start).days
-            week_index = offset_days // 7  # 0-indexado
+            week_index = offset_days // 7
             if 0 <= week_index < 52:
+                # Procura a primeira ordem real para essa máquina/plano
+                ordem_index = next((
+                    i for i, ordem in enumerate(ordens_realizadas)
+                    if ordem['maquina_id'] == plano.maquina.id and ordem['plano_id'] == plano.id
+                ), None)
+
+                if ordem_index is not None:
+                    ordem = ordens_realizadas.pop(ordem_index)
+                    status = ordem['status_andamento']
+                    status_aprovacao = ordem['status_aprovacao']
+                else:
+                    status = 'não encontrada'
+                    status_aprovacao = None
+
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
                     'plano': plano.nome,
-                    'data': maintenance_date.strftime('%Y-%m-%d')
+                    'data': maintenance_date.strftime('%Y-%m-%d'),
+                    'status_manutencao': status,
+                    'status_aprovacao': status_aprovacao
                 })
+
             maintenance_date += timedelta(days=plano.periodicidade)
 
         response_data.append({

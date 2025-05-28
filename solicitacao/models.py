@@ -73,6 +73,7 @@ class Solicitacao(models.Model):
     status_andamento = models.CharField(max_length=30, choices=STATUS_ANDAMENTO_CHOICES, default='aguardando_atendimento', db_index=True)
     programacao = models.DateField(null=True, blank=True)
     atribuido = models.ForeignKey(Operador, on_delete=models.CASCADE, related_name='operador_atribuido', null=True, blank=True)
+    
 
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'
