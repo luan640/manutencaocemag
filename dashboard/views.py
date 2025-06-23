@@ -66,7 +66,7 @@ def mtbf_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -141,7 +141,7 @@ def exportar_mtbf_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -229,7 +229,7 @@ def mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -282,7 +282,7 @@ def exportar_mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -348,7 +348,7 @@ def disponibilidade_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -419,7 +419,7 @@ def exportar_disponibilidade_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -503,7 +503,7 @@ def ordens_prazo(request):
     """
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -555,7 +555,7 @@ def relacao_por_tipo_ordem(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -589,7 +589,7 @@ def maquina_parada(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -642,7 +642,7 @@ def exportar_maquina_parada_excel(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -702,7 +702,7 @@ def solicitacao_setor(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -738,7 +738,7 @@ def exportar_solicitacao_setor(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -791,7 +791,7 @@ def quantidade_abertura_ordens(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -816,7 +816,7 @@ def quantidade_finalizada(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -840,7 +840,7 @@ def quantidade_aguardando_material(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -880,7 +880,7 @@ def quantidade_atrasada_view(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -899,7 +899,7 @@ def quantidade_em_execucao(request):
 
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -921,7 +921,7 @@ def tempo_medio_finalizar(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -969,7 +969,7 @@ def tempo_medio_abertura(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -1017,7 +1017,7 @@ def tempo_medio_abertura(request):
 def horas_trabalhadas_setor(request):
 
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -1056,7 +1056,7 @@ def horas_trabalhadas_setor(request):
 def exportar_horas_trabalhadas_setor(request):
     
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -1107,7 +1107,7 @@ def exportar_horas_trabalhadas_setor(request):
 def horas_trabalhadas_tipo(request):
 
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -1151,7 +1151,7 @@ def horas_trabalhadas_tipo(request):
 def exportar_horas_trabalhadas_tipo(request):
     
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
@@ -1209,7 +1209,7 @@ def disponibilidade_geral(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',False)
+    maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
