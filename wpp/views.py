@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.http import HttpResponse
-from wpp.utils import tratar_numero_wa, OrdemServiceWpp
+from wpp.utils import OrdemServiceWpp
 
+from datetime import datetime
 import requests
 
 class WhatsAppWebhookView(APIView):
@@ -25,23 +26,36 @@ class WhatsAppWebhookView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        print(data)
 
-        if 'contacts' in data['entry'][0]['changes'][0]['value']:
-            recipient_number = data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
-            recipient_number_tratado = self.ordem_service.tratar_numero_wa(recipient_number)
+        change = data.get('entry', [{}])[0].get('changes', [{}])[0].get('value', {})
 
-            # Verifique se a mensagem contém uma resposta interativa
-            if 'messages' in data['entry'][0]['changes'][0]['value']:
-                message = data['entry'][0]['changes'][0]['value']['messages'][0]
+        # Verifica se existem atualizações de status
+        if 'statuses' in change:
+            for status_entry in change['statuses']:
+                message_id = status_entry.get('id')
+                status_msg = status_entry.get('status')  # sent, delivered, read, failed
+                timestamp = status_entry.get('timestamp')
+                recipient_id = status_entry.get('recipient_id')  # número do destinatário
+                descricao_erro = status_entry.get('errors', [{}])[0].get('title') if 'errors' in status_entry else None
 
-                # Se for uma resposta interativa
-                if message['type'] == 'interactive' and 'button' in message['interactive']:
-                    resposta = message['interactive']['button']['reply']['title']
-                    self.ordem_service.processar_resposta(recipient_number_tratado, resposta)
+                # Converte timestamp (string em segundos) para datetime
+                try:
+                    data_status = datetime.fromtimestamp(int(timestamp))
+                except Exception as e:
+                    print(f"Erro ao converter timestamp: {e}")
+                    data_status = None
+
+                # Salva ou atualiza no banco
+                if message_id and data_status:
+                    self.ordem_service.atualizar_status_envio_wa(
+                        numero=recipient_id,
+                        message_id=message_id,
+                        status=status_msg,
+                        data_status=data_status,
+                        descricao_erro=descricao_erro
+                    )
                 else:
-                    # Caso a mensagem não seja interativa, pode ser tratada de outra forma
-                    print(f"Mensagem não interativa recebida: {message}")
+                    print("❌ Dados incompletos para salvar o status da mensagem.")
 
         return Response(status=status.HTTP_200_OK)
 

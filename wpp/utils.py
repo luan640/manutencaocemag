@@ -2,6 +2,8 @@ import requests
 import json
 from datetime import datetime
 
+from .models import StatusMensagemWhatsApp
+
 # openai.api_key = aqui seu token
 
 def tratar_numero_wa(wa_id):
@@ -174,7 +176,6 @@ class OrdemServiceWpp:
         response = requests.post(self.url, headers=self.headers, data=json.dumps(payload))
         return response.status_code, response.json()
 
-
     def mensagem_atribuir_ordem(self, recipient_number, kwargs):
         # Extraindo os valores de kwargs
         ordem = str(kwargs.get('ordem', 'N/A'))
@@ -249,7 +250,6 @@ class OrdemServiceWpp:
 
         return response.status_code, response.json()
 
-
     def enviar_mensagem(self, mensagem):
         # Envia a mensagem para a API do WhatsApp
         try:
@@ -261,3 +261,23 @@ class OrdemServiceWpp:
         except Exception as e:
             print(f"Erro ao enviar mensagem: {e}")
             return None, str(e)
+        
+    def atualizar_status_envio_wa(numero, message_id, status, data_status, descricao_erro=None):
+        """
+        Atualiza ou cria o status da mensagem do WhatsApp com base no message_id.
+        
+        :param numero: Número do destinatário (wa_id)
+        :param message_id: ID único da mensagem enviada
+        :param status: Status recebido (sent, delivered, read, failed, etc)
+        :param data_status: datetime da mudança de status
+        :param descricao_erro: (opcional) mensagem de erro caso haja falha
+        """
+        StatusMensagemWhatsApp.objects.update_or_create(
+            message_id=message_id,
+            defaults={
+                "telefone": numero,
+                "status": status,
+                "data_status": data_status,
+                "descricao_erro": descricao_erro
+            }
+        )
