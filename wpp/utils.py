@@ -23,6 +23,7 @@ def tratar_numero_wa(wa_id):
         return wa_id
     
 class OrdemServiceWpp:
+
     def __init__(self):
         # self.url = "https://graph.facebook.com/v20.0/442779352254085/messages"
         self.url = "https://graph.facebook.com/v20.0/492194993966377/messages"
@@ -262,7 +263,7 @@ class OrdemServiceWpp:
             print(f"Erro ao enviar mensagem: {e}")
             return None, str(e)
         
-    def atualizar_status_envio_wa(numero, message_id, status, data_status, descricao_erro=None):
+    def atualizar_status_envio_wa(self, numero, message_id, status, data_status, descricao_erro=None):
         """
         Atualiza ou cria o status da mensagem do WhatsApp com base no message_id.
         
