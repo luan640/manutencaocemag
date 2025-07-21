@@ -45,6 +45,9 @@ class WhatsAppWebhookView(APIView):
                     print(f"Erro ao converter timestamp: {e}")
                     data_status = None
 
+                # Informa que o número é apenas para mensagens automáticas, e redirecionar para outro whatsapp.
+                print(data)
+
                 # Salva ou atualiza no banco
                 if message_id and data_status:
                     self.ordem_service.atualizar_status_envio_wa(
