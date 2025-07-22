@@ -13,7 +13,7 @@ AUTH_USER_MODEL = 'funcionario.Funcionario'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-ALLOWED_HOSTS = ['07fd-177-19-132-134.ngrok-free.app', 'localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com']
+ALLOWED_HOSTS = ['ship-coupled-recreational-pressure.trycloudflare.com', 'localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com']
 LOGOUT_REDIRECT_URL = 'login'  # Redireciona para a página de login
 
 INSTALLED_APPS = [

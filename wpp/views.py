@@ -26,8 +26,24 @@ class WhatsAppWebhookView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-
+        
         change = data.get('entry', [{}])[0].get('changes', [{}])[0].get('value', {})
+
+        metadata = data.get('entry', [{}])[0].get('changes', [{}])[0].get('value', {}).get('metadata', {})
+        phone_number_id = metadata.get('phone_number_id')
+
+        # se o usuario enviar algo, devolver uma mensagem informando que é apenas um número para mensagens automáticas
+        for mensagem in change.get('messages', []):
+            # if mensagem.get('type') != 'text':
+            #     continue  # Ignora mensagens que não sejam de texto
+
+            wa_id = mensagem.get('from')
+            msg_text = mensagem.get('text', {}).get('body', '')
+
+            print(f"📨 Usuário {wa_id} enviou: {msg_text}")
+
+            # Envia resposta automática apenas para mensagens válidas
+            self.ordem_service.responder_automaticamente(wa_id, phone_number_id)
 
         # Verifica se existem atualizações de status
         if 'statuses' in change:
@@ -44,9 +60,6 @@ class WhatsAppWebhookView(APIView):
                 except Exception as e:
                     print(f"Erro ao converter timestamp: {e}")
                     data_status = None
-
-                # Informa que o número é apenas para mensagens automáticas, e redirecionar para outro whatsapp.
-                print(data)
 
                 # Salva ou atualiza no banco
                 if message_id and data_status:

@@ -262,7 +262,32 @@ class OrdemServiceWpp:
         except Exception as e:
             print(f"Erro ao enviar mensagem: {e}")
             return None, str(e)
-        
+    
+    def responder_automaticamente(self, wa_id, phone_number_id):
+        url = f"https://graph.facebook.com/v20.0/{phone_number_id}/messages"
+        headers = {
+            "Authorization": "Bearer EAAwIFMrHx4cBOZBCakd7M5mav5ZBAJfUFZB2y8bTakplZBeKXPiFkRLQkA40ZCqstZASwTGbzywAVOZABRgV3GN2MW4klZBnqwnlU8LluSktpEV7yM2lRPJMiNt2WCOh5jyTOHhI5COFVwiafVh2TmqAVOJQJrtkPbMb00qAo3G28kRAtYSbupo3aZCCri4oinkD7kAZDZD",  # Token de acesso fornecido na inicialização
+            "Content-Type": "application/json"
+        }
+
+        mensagem = {
+            "messaging_product": "whatsapp",
+            "to": wa_id,
+            "type": "text",
+            "text": {
+                "body": (
+                    "*Olá!* 👋\n\n"
+                    "Esse número é usado apenas para *mensagens automáticas*.\n"
+                    "Se quiser conversar com o setor *RH*, clique no botão abaixo:\n\n"
+                    "📞 *RH*: https://wa.me/5585998330227\n\n"
+                    "_Agradecemos o seu contato!_ 💛"
+                )
+            }
+        }
+
+        response = requests.post(url, headers=headers, json=mensagem)
+        print(f"✅ Resposta automática enviada para {wa_id}. Status: {response.status_code}")
+
     def atualizar_status_envio_wa(self, numero, message_id, status, data_status, descricao_erro=None):
         """
         Atualiza ou cria o status da mensagem do WhatsApp com base no message_id.

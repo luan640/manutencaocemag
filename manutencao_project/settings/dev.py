@@ -6,10 +6,12 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'manutencaocemag.com.br',
     'www.manutencaocemag.com.br',
-    'manutencaocemag-4fu7.onrender.com',]
+    'manutencaocemag-4fu7.onrender.com',
+    'automatically-a-homework-applies.trycloudflare.com']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://07fd-177-19-132-134.ngrok-free.app',
+    'https://07fd-177-19-132-134.ngrok-free.app'
+    'https://automatically-a-homework-applies.trycloudflare.com',
 ]
 
 # Banco de dados para desenvolvimento
