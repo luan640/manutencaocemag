@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 
 from .forms import MaquinaForm, AddOperadorForm
@@ -10,6 +11,7 @@ from .models import Maquina, Operador, Setor
 import psycopg2
 from psycopg2 import errors
 
+import json
 import pandas as pd
 
 def criar_maquina(request):
@@ -152,48 +154,85 @@ def processar_maquina(request):
 
 def list_operador(request):
 
-    operadores = Operador.objects.all()
-
-    return render(request,'operador/list.html', {'operadores':operadores})
+    return render(request,'operador/list.html')
 
 def add_operador(request):
     
     if request.method == 'POST':
-        form = AddOperadorForm(request.POST)  
-        if form.is_valid():
-            
-            operador = form.save(commit=False)
-            operador.status = 'ativo'
+        try:
+            dados = json.loads(request.body)
 
-            operador.save()  
-            
-            return redirect('list_operador')  
-        else:
-            print(form.errors)
+            nome = dados['nome']
+            matricula = dados['matricula']
+            area = request.user.area
+
+            operador = Operador.objects.create(
+                nome=nome,
+                matricula=matricula,
+                area=area,
+                status='ativo'
+            )
+
+            return JsonResponse({'message': 'Operador criado com sucesso'}, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        except KeyError as e:
+            return JsonResponse({'error': f'Campo ausente: {str(e)}'}, status=400)
+        except ValidationError as e:
+                return JsonResponse({'error': str(e)}, status=400)
+        except IntegrityError:
+            return JsonResponse({'error': 'Matrícula já cadastrada'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
-        form = AddOperadorForm()  
-
-    return render(request, 'operador/add.html', {'form': form})
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
 
 def edit_operador(request,pk):
 
-    operador = get_object_or_404(Operador, pk=pk)
+    try:
+        operador = get_object_or_404(Operador, pk=pk)
 
-    if request.method == 'POST':
+        if request.method == 'PUT':
+            try:
+                dados = json.loads(request.body)
 
-        form = AddOperadorForm(request.POST, instance=operador)
+                if operador.matricula != dados['matricula']:
+                    operador.matricula = dados['matricula']
+                if operador.nome != dados['nome']:
+                    operador.nome = dados['nome']
+                operador.save()
 
-        if form.is_valid():
+                return JsonResponse({'message': 'Ok'}, status=200)
 
-            form.save()
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'JSON inválido'}, status=400)
+            except KeyError as e:
+                return JsonResponse({'error': f'Campo ausente: {str(e)}'}, status=400)
+            except ValidationError as e:
+                return JsonResponse({'error': str(e)}, status=400)
+            except IntegrityError:
+                return JsonResponse({'error': 'Matrícula já cadastrada'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        elif request.method == 'PATCH':
+            try:          
+                if operador.status != 'inativo':
+                    operador.status = 'inativo'
+                    operador.save()
 
-            return redirect('list_operador')
-        else:
-            print(form.errors)
-    else:
-        form = AddOperadorForm(instance=operador)
+                return JsonResponse({'message': 'Ok'}, status=200)
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'JSON inválido'}, status=400)
+            except KeyError as e:
+                return JsonResponse({'error': f'Campo ausente: {str(e)}'}, status=400)
+            except (ValidationError, IntegrityError) as e:
+                return JsonResponse({'error': str(e)}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
 
-    return render(request, 'operador/edit.html', {'form':form})
+    except Http404:
+        return JsonResponse({'error': 'Operador não encontrado'}, status=404)
 
 def importar_csv_maquina(request):
     
@@ -225,4 +264,10 @@ def importar_csv_maquina(request):
 
     return render(request, 'maquina/add_emcarga.html')
 
+def api_operadores(request):
+    if request.user.tipo_acesso == 'administrador' and not request.user.is_staff:
+        operadores = list(Operador.objects.filter(area=request.user.area).values())
+    else:
+        operadores = list(Operador.objects.all().values())
 
+    return JsonResponse({'operadores': operadores})

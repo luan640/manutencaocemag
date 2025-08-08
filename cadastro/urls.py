@@ -11,6 +11,6 @@ urlpatterns = [
     path('operador/list', list_operador, name='list_operador'),
     path('operador/add', add_operador, name='add_operador'),
     path('operador/edit/<int:pk>', edit_operador, name='edit_operador'),
-
+    path('api/operadores/', api_operadores, name='api_operadores'),
 
 ]

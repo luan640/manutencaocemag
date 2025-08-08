@@ -5,7 +5,8 @@
 <div class="container mt-5">
     <h2>Operadores</h2>
     <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
-    <a class="badge btn btn-primary mb-3" href="{% url 'add_operador' %}">Adicionar operador</a>
+    <span class="badge btn btn-primary mb-3" id="addOperador">Adicionar operador</span>
+
 
     <div class="table-responsive">
         <table id="tableOperadores" class="table table-bordered table-striped table-sm">
@@ -20,26 +21,22 @@
                 </tr>
             </thead>
             <tbody>
-                {% for operador in operadores %}
-                <tr data-id="{{ operador.id }}">
-                    <td>{{ operador.nome }}</td>
-                    <td>{{ operador.matricula }}</td>
-                    <td>{{ operador.salario }}</td>
-                    <td>{{ operador.status }}</td>
-                    <td>{{ operador.area }}</td>
-                    <td>
-                        <a class="badge btn btn-warning" href="{% url 'edit_operador' operador.pk %}">Editar</a>
-                    </td>
-                </tr>
-                {% endfor %}
+                <!-- Dados serão gerados dinamicamente -->
             </tbody>
         </table>
     </div>
+    <div id="overlayLoading" style="text-align: center;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span class="ms-2">Carregando...</span>
+    </div>
 </div>
 
+{% include 'operador/operador_modals.html' %}
 {% endblock %}
 
 {% block scripts %}
 
-<script src="{% static 'js/datatable-list-operador.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="module" src="{% static 'js/datatable-list-operador.js' %}"></script>
+<script type="module" src="{% static 'js/operador-crud.js' %}"></script>
 {% endblock %}
