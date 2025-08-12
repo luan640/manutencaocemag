@@ -14,13 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 function eventosPagina(){
-    const editBtns = document.querySelectorAll('[id^="btnEditOperador-"]');
-    const desativaBtns = document.querySelectorAll('[id^="btnDesativarOperador-"]');
+    // const editBtns = document.querySelectorAll('[id^="btnEditOperador-"]');
+    // const desativaBtns = document.querySelectorAll('[id^="btnDesativarOperador-"]');
     const addOperadorBtn = document.getElementById('addOperador');
 
     const matriculaOperadorModalInput = document.getElementById('matriculaOperador');
     const nomeOperadorModalInput = document.getElementById('nomeOperador');
     const nomeOperadorSpan = document.getElementById('operadorDesativar');
+    const tableOperadores = document.getElementById('tableOperadores');
 
     // Adicionar Operador Btn
     addOperadorBtn.addEventListener('click',function(event){
@@ -29,35 +30,42 @@ function eventosPagina(){
 
     })
 
-    // Editar Btn
-    editBtns.forEach(function(btn) {
-        btn.addEventListener('click', function (event) {
-            btn.disabled = true;
+    tableOperadores.addEventListener('click', function(event) {
+        const btnEdit = event.target.closest('.btnEditOperador');
 
-            botaoClicado = this;
+        const btnDesativa = event.target.closest('.btnDesativarOperador');
 
-            let idOperador = btn.id.split('-')[1];
+        console.log(btnEdit, btnDesativa);
+
+        if (!btnEdit && !btnDesativa) return; // Se não for um botão de ação, sai da função
+
+
+        if (btnEdit){
+            btnEdit.disabled = true;
+
+            botaoClicado = btnEdit;
+
+            let idOperador = btnEdit.id.split('-')[1];
             //Preenchendo inputs
             matriculaOperadorModalInput.value = document.getElementById(`operadorMatricula-${idOperador}`).textContent;
             nomeOperadorModalInput.value = document.getElementById(`operadorNome-${idOperador}`).textContent;
 
             modalEditOperador.show();
-            console.log(event.target.id);
-        });
-    });
+            // console.log(event.target.id);
+        }
 
-    // Desativar Btn
-    desativaBtns.forEach(function(btn) {
-        btn.addEventListener('click', function (event) {     
-            modalDesativarOperador.show();
-            botaoClicado = this;
+        if (btnDesativa){
+            btnDesativa.disabled = true;
 
-            let idOperador = btn.id.split('-')[1];
+            botaoClicado = btnDesativa;
+
+            let idOperador = btnDesativa.id.split('-')[1];
             nomeOperadorSpan.textContent = document.getElementById(`operadorNome-${idOperador}`).textContent;
-            console.log(event.target.id);
-        });
-    });
+            modalDesativarOperador.show();
+            // console.log(event.target.id);
+        }
 
+    })
 
 
     

@@ -1,11 +1,3 @@
-// $(document).ready(function() {
-//   $('#tableOperadores').DataTable({
-//       "info": true,             // Informação sobre os registros
-//       "autoWidth": false,       // Desativa ajuste automático da largura
-//       "responsive": true        // Responsividade
-//   });
-// });
-
 export async function carregarTabela() {
 
   if ( $.fn.DataTable.isDataTable('#tableOperadores') ) {
@@ -28,8 +20,8 @@ export async function carregarTabela() {
               <td id="operadorStatus-${ operador.id }">${ operador.status }</td>
               <td id="operadorArea-${ operador.id }">${ operador.area }</td>
               <td>
-                  <span class="badge btn btn-warning" id="btnEditOperador-${ operador.id }">Editar</span>
-                  <span class="badge btn btn-danger" id="btnDesativarOperador-${ operador.id }">Desativar</span>
+                  <span class="badge btn btn-warning btnEditOperador" id="btnEditOperador-${ operador.id }">Editar</span>
+                  <span class="badge btn btn-danger btnDesativarOperador" id="btnDesativarOperador-${ operador.id }">Desativar</span>
               </td>
           </tr>`;
         tbody.insertAdjacentHTML('beforeend', row);
@@ -41,7 +33,11 @@ export async function carregarTabela() {
         "info": true,
         "autoWidth": false,
         "responsive": true,
-        "processing": true
+        "processing": true,
+        pageLength: 5,
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
+        },
       });
     });
 }
