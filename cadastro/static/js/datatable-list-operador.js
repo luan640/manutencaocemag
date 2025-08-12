@@ -34,7 +34,6 @@ export async function carregarTabela() {
         "autoWidth": false,
         "responsive": true,
         "processing": true,
-        pageLength: 5,
         language: {
           url: "//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json"
         },
