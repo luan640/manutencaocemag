@@ -14,7 +14,7 @@ from cadastro.models import Maquina, Setor
 from preventiva.models import PlanoPreventiva
 
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime, time
 import pandas as pd
 
 def dashboard(request):
@@ -66,125 +66,251 @@ def mtbf_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    maquinas_criticas = request.GET.get('maquina-critica', "False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
+    # Considera 9 horas de expediente por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
 
-
-    # Tempo de atividade esperada: 9 horas por dia
-    # dias_mes = (data_fim - data_inicio).days + 1
-    # tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
-    tempo_atividade_esperada = tempo_util(data_inicio,data_fim)/3600
-
-    filtros = {
-            'data_inicio__gte': data_inicio,
-            'data_fim__lte': data_fim,
-            'ordem__area': area,
-        }
+    # Filtros base para consultas
+    filtros_base = {
+        'ordem__area': area
+    }
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
-
+        filtros_base['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_base['ordem__maquina__maquina_critica'] = maquinas_criticas
 
-    # paradas = (
-    #     MaquinaParada.objects.filter(**filtros)
-    #     .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-    #     .values('ordem__maquina__codigo') # Agrupa pelo codigo da máquina
-    #     .annotate(
-    #         total_paradas=Sum('duracao'),  # Soma das durações das paradas
-    #         quantidade_paradas=Count('id')  # Contagem de paradas
-    #     )
-    # )
+    # Buscar as paradas considerando paradas ativas (data_fim nula)
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,  # Paradas que começaram até o fim do período
+    })
 
-    # Buscar as paradas do mês atual e calcular a duração de cada uma
-    paradas = (
-        MaquinaParada.objects.filter(**filtros)
-        .values('ordem__maquina__codigo')
-        .annotate(
-            quantidade_paradas=Count('id')
-        ) # Agrupa pelo codigo da máquina
-    )
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
 
-    print(paradas)
-    
-    # Preparar os dados para o JSON
-    resultados = []
-    
-    for parada in paradas:
-        filtros['ordem__maquina__codigo'] = parada['ordem__maquina__codigo']
-        total_duracao = sum(tempo_util(p.data_inicio, p.data_fim) for p in MaquinaParada.objects.filter(**filtros))
-        tempo_total_paradas_horas = total_duracao / 3600
-        # tempo_total_paradas_horas = parada['total_paradas'].total_seconds() / 3600  # Converter para horas
-        quantidade_paradas = parada['quantidade_paradas']
+    maquinas_paradas = {}
 
-        # Cálculo do MTBF
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas_horas) / quantidade_paradas
-        # print("Tempo atividade esperada: ",tempo_atividade_esperada)
-        # print("Tempo parada: ",tempo_total_paradas_horas)
-        # print("Quantidade de paradas: ",quantidade_paradas)
-        # print("mtbf: ",mtbf)
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
 
-        resultados.append({
-            'maquina': parada['ordem__maquina__codigo'],
-            'mtbf': round(mtbf, 2)
+        # Se data_fim é NULL, considera a parada até o fim do período consultado
+        data_fim_parada = parada.data_fim if parada.data_fim else data_fim
+
+        # Ajustar início e fim da parada ao período filtrado
+        data_inicio_parada = max(parada.data_inicio, data_inicio)
+        data_fim_parada = min(data_fim_parada, data_fim)
+
+        if data_fim_parada <= data_inicio_parada:
+            continue  # Paradas fora do período ignoradas
+
+        duracao_total = timedelta()
+
+        dia_atual = data_inicio_parada.date()
+        fim_parada = data_fim_parada
+
+        while dia_atual <= fim_parada.date():
+            # Define jornada diária (9h): Segunda a Sexta 8:00-17:00, Sábado 8:00-12:00, Domingo sem expediente
+            if dia_atual.weekday() < 5:  # Segunda a Sexta
+                inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+                fim_jornada = datetime.combine(dia_atual, time(17, 0))
+            elif dia_atual.weekday() == 5:  # Sábado
+                inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+                fim_jornada = datetime.combine(dia_atual, time(12, 0))
+            else:  # Domingo
+                dia_atual += timedelta(days=1)
+                continue
+
+            inicio_intersecao = max(data_inicio_parada, inicio_jornada)
+            fim_intersecao = min(fim_parada, fim_jornada)
+
+            if fim_intersecao > inicio_intersecao:
+                duracao_total += fim_intersecao - inicio_intersecao
+
+            dia_atual += timedelta(days=1)
+
+        # Acumula resultados por máquina
+        if codigo_maquina not in maquinas_paradas:
+            maquinas_paradas[codigo_maquina] = {'total_paradas': timedelta(), 'quantidade_paradas': 0}
+
+        maquinas_paradas[codigo_maquina]['total_paradas'] += duracao_total
+        maquinas_paradas[codigo_maquina]['quantidade_paradas'] += 1
+
+    # Criar lista com totais e quantidades por máquina
+    paradas = []
+    for codigo, dados in maquinas_paradas.items():
+        paradas.append({
+            'ordem__maquina__codigo': codigo,
+            'total_paradas': dados['total_paradas'],
+            'quantidade_paradas': dados['quantidade_paradas'],
         })
 
-    resultados = sorted(resultados, key=lambda x: x['mtbf'], reverse=True)
+    # Garantir que todas as máquinas do filtro estejam na lista, mesmo sem paradas
+    filtros_maquinas = {
+        'area': area,
+    }
+    if setor:
+        filtros_maquinas['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_maquinas['maquina_critica'] = True
+
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+
+    mtbf_dict = {}
+    for codigo in todas_maquinas:
+        mtbf_dict[codigo] = (0, 0)
+
+    for parada in paradas:
+        codigo = parada['ordem__maquina__codigo']
+        total_horas = parada['total_paradas'].total_seconds() / 3600
+        qtd_paradas = parada['quantidade_paradas']
+        mtbf_dict[codigo] = (total_horas, qtd_paradas)
+
+    # Calcular MTBF para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        if qtd_paradas == 0:
+            mtbf = None  # Ou definir como 0, ou outro valor conforme regra de negócio
+        else:
+            mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas
+            if mtbf < 0:
+                mtbf = 0
+
+        resultados.append({
+            'maquina': maquina,
+            'mtbf': round(mtbf, 2) if mtbf is not None else None
+        })
+
+    resultados = sorted(resultados, key=lambda x: (x['mtbf'] is not None, x['mtbf']), reverse=True)
 
     return JsonResponse(resultados, safe=False)
-
+    
 def exportar_mtbf_maquina(request):
 
     data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    maquinas_criticas = request.GET.get('maquina-critica', "False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    # Tempo de atividade esperada: 9 horas por dia
+    # Considera 9 horas de expediente por dia
     dias_mes = (data_fim - data_inicio).days + 1
     tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
 
-    filtros = {
-            'data_inicio__gte': data_inicio,
-            'data_fim__lte': data_fim,
-            'ordem__area': area,
-        }
+    # Filtros base para consultas
+    filtros_base = {
+        'ordem__area': area
+    }
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_base['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_base['ordem__maquina__maquina_critica'] = maquinas_criticas
 
-    # Buscar as paradas do mês atual e calcular a duração de cada uma
-    paradas = (
-        MaquinaParada.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')  # Agrupa pelo codigo da máquina
-        .annotate(
-            total_paradas=Sum('duracao'),  # Soma das durações das paradas
-            quantidade_paradas=Count('id')  # Contagem de paradas
-        )
-    )
+    # Buscar as paradas considerando paradas ativas (data_fim nula)
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,  # Paradas que começaram até o fim do período
+    })
 
-    # Preparar os dados para o JSON
-    resultados = []
-    for parada in paradas:
-        tempo_total_paradas_horas = parada['total_paradas'].total_seconds() / 3600  # Converter para horas
-        quantidade_paradas = parada['quantidade_paradas']
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
 
-        # Cálculo do MTBF
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas_horas) / quantidade_paradas
+    maquinas_paradas = {}
 
-        resultados.append({
-            'maquina': parada['ordem__maquina__codigo'],
-            'mtbf': round(mtbf, 2)
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
+
+        # Se data_fim é NULL, considera a parada até o fim do período consultado
+        data_fim_parada = parada.data_fim if parada.data_fim else data_fim
+
+        # Ajustar início e fim da parada ao período filtrado
+        data_inicio_parada = max(parada.data_inicio, data_inicio)
+        data_fim_parada = min(data_fim_parada, data_fim)
+
+        if data_fim_parada <= data_inicio_parada:
+            continue  # Paradas fora do período ignoradas
+
+        duracao_total = timedelta()
+
+        dia_atual = data_inicio_parada.date()
+        fim_parada = data_fim_parada
+
+        while dia_atual <= fim_parada.date():
+            # Define jornada diária (9h): Segunda a Sexta 8:00-17:00, Sábado 8:00-12:00, Domingo sem expediente
+            if dia_atual.weekday() < 5:  # Segunda a Sexta
+                inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+                fim_jornada = datetime.combine(dia_atual, time(17, 0))
+            elif dia_atual.weekday() == 5:  # Sábado
+                inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+                fim_jornada = datetime.combine(dia_atual, time(12, 0))
+            else:  # Domingo
+                dia_atual += timedelta(days=1)
+                continue
+
+            inicio_intersecao = max(data_inicio_parada, inicio_jornada)
+            fim_intersecao = min(fim_parada, fim_jornada)
+
+            if fim_intersecao > inicio_intersecao:
+                duracao_total += fim_intersecao - inicio_intersecao
+
+            dia_atual += timedelta(days=1)
+
+        # Acumula resultados por máquina
+        if codigo_maquina not in maquinas_paradas:
+            maquinas_paradas[codigo_maquina] = {'total_paradas': timedelta(), 'quantidade_paradas': 0}
+
+        maquinas_paradas[codigo_maquina]['total_paradas'] += duracao_total
+        maquinas_paradas[codigo_maquina]['quantidade_paradas'] += 1
+
+    # Criar lista com totais e quantidades por máquina
+    paradas = []
+    for codigo, dados in maquinas_paradas.items():
+        paradas.append({
+            'ordem__maquina__codigo': codigo,
+            'total_paradas': dados['total_paradas'],
+            'quantidade_paradas': dados['quantidade_paradas'],
         })
 
-    resultados = sorted(resultados, key=lambda x: x['mtbf'], reverse=True)
+    # Garantir que todas as máquinas do filtro estejam na lista, mesmo sem paradas
+    filtros_maquinas = {
+        'area': area,
+    }
+    if setor:
+        filtros_maquinas['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_maquinas['maquina_critica'] = True
+
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+
+    mtbf_dict = {}
+    for codigo in todas_maquinas:
+        mtbf_dict[codigo] = (0, 0)
+
+    for parada in paradas:
+        codigo = parada['ordem__maquina__codigo']
+        total_horas = parada['total_paradas'].total_seconds() / 3600
+        qtd_paradas = parada['quantidade_paradas']
+        mtbf_dict[codigo] = (total_horas, qtd_paradas)
+
+    # Calcular MTBF para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        if qtd_paradas == 0:
+            mtbf = None  # Ou definir como 0, ou outro valor conforme regra de negócio
+        else:
+            mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas
+            if mtbf < 0:
+                mtbf = 0
+
+        resultados.append({
+            'maquina': maquina,
+            'mtbf': round(mtbf, 2) if mtbf is not None else None
+        })
+
+    resultados = sorted(resultados, key=lambda x: (x['mtbf'] is not None, x['mtbf']), reverse=True)
 
     df = pd.DataFrame(resultados)
 
@@ -229,50 +355,61 @@ def mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    maquinas_criticas = request.GET.get('maquina-critica', "False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
         'data_fim__lte': data_fim,
-        'ordem__area': area
+        'ordem__area': area,
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
         filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
-    # Buscar execuções finalizadas no mês atual
     execucoes = (
         Execucao.objects.filter(**filtros)
         .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
         .values('ordem__maquina__codigo')
         .annotate(
-            total_tempo_reparo=Sum('duracao'),  # Soma das durações
-            quantidade_reparos=Count('id')  # Contagem de execuções
+            total_tempo_reparo=Sum('duracao'),
+            quantidade_reparos=Count('id')
         )
     )
 
-    # Preparar os dados para o JSON
-    resultados = []
+    # Dicionário inicial com todas máquinas no filtro para garantir todas no resultado
+    filtros_maquinas = {'area': area}
+    if setor:
+        filtros_maquinas['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_maquinas['maquina_critica'] = True
+
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+    mttr_dict = {codigo: (None, 0) for codigo in todas_maquinas}
+
+    # Preenche com dados de execuções encontradas
     for execucao in execucoes:
-        tempo_total_reparo_horas = execucao['total_tempo_reparo'].total_seconds() / 3600  # Converter para horas
-        quantidade_reparos = execucao['quantidade_reparos']
+        codigo = execucao['ordem__maquina__codigo']
+        total_segundos = execucao['total_tempo_reparo'].total_seconds() if execucao['total_tempo_reparo'] else 0
+        qtd_reparos = execucao['quantidade_reparos']
+        mttr_dict[codigo] = (total_segundos / 3600 if qtd_reparos > 0 else None, qtd_reparos)
 
-        # Verificar se há reparos para evitar divisão por zero
-        if quantidade_reparos > 0:
-            mttr = tempo_total_reparo_horas / quantidade_reparos
+    resultados = []
+    for maquina, (tempo_horas, qtd) in mttr_dict.items():
+        if tempo_horas is None or qtd == 0:
+            mttr_val = 'Sem dados'
         else:
-            mttr = None  # Não há execuções para calcular o MTTR
+            mttr_val = round(tempo_horas / qtd, 2)
 
-        # Adicionar no resultado
-        resultados.append({
-            'maquina': execucao['ordem__maquina__codigo'],
-            'mttr': round(mttr, 2) if mttr is not None else 'Sem dados'
-        })
+        resultados.append({'maquina': maquina, 'mttr': mttr_val})
 
-    resultados = sorted(resultados, key=lambda x: x['mttr'], reverse=True)
+    # Ordena tratando 'Sem dados' para o fim da lista
+    def chave_ordem(x):
+        return x['mttr'] if isinstance(x['mttr'], (int, float)) else -1
+
+    resultados = sorted(resultados, key=chave_ordem, reverse=True)
 
     return JsonResponse(resultados, safe=False)
 
@@ -282,50 +419,61 @@ def exportar_mttr_maquina(request):
     data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    maquinas_criticas = request.GET.get('maquina-critica', "False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'data_inicio__gte': data_inicio,
         'data_fim__lte': data_fim,
-        'ordem__area': area
+        'ordem__area': area,
     }
     if setor:
         filtros['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
         filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
 
-    # Buscar execuções finalizadas no mês atual
     execucoes = (
         Execucao.objects.filter(**filtros)
         .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
         .values('ordem__maquina__codigo')
         .annotate(
-            total_tempo_reparo=Sum('duracao'),  # Soma das durações
-            quantidade_reparos=Count('id')  # Contagem de execuções
+            total_tempo_reparo=Sum('duracao'),
+            quantidade_reparos=Count('id')
         )
     )
 
-    # Preparar os dados para o JSON
-    resultados = []
+    # Dicionário inicial com todas máquinas no filtro para garantir todas no resultado
+    filtros_maquinas = {'area': area}
+    if setor:
+        filtros_maquinas['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_maquinas['maquina_critica'] = True
+
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+    mttr_dict = {codigo: (None, 0) for codigo in todas_maquinas}
+
+    # Preenche com dados de execuções encontradas
     for execucao in execucoes:
-        tempo_total_reparo_horas = execucao['total_tempo_reparo'].total_seconds() / 3600  # Converter para horas
-        quantidade_reparos = execucao['quantidade_reparos']
+        codigo = execucao['ordem__maquina__codigo']
+        total_segundos = execucao['total_tempo_reparo'].total_seconds() if execucao['total_tempo_reparo'] else 0
+        qtd_reparos = execucao['quantidade_reparos']
+        mttr_dict[codigo] = (total_segundos / 3600 if qtd_reparos > 0 else None, qtd_reparos)
 
-        # Verificar se há reparos para evitar divisão por zero
-        if quantidade_reparos > 0:
-            mttr = tempo_total_reparo_horas / quantidade_reparos
+    resultados = []
+    for maquina, (tempo_horas, qtd) in mttr_dict.items():
+        if tempo_horas is None or qtd == 0:
+            mttr_val = 'Sem dados'
         else:
-            mttr = None  # Não há execuções para calcular o MTTR
+            mttr_val = round(tempo_horas / qtd, 2)
 
-        # Adicionar no resultado
-        resultados.append({
-            'maquina': execucao['ordem__maquina__codigo'],
-            'mttr': round(mttr, 2) if mttr is not None else 'Sem dados'
-        })
+        resultados.append({'maquina': maquina, 'mttr': mttr_val})
 
-    resultados = sorted(resultados, key=lambda x: x['mttr'], reverse=True)
+    # Ordena tratando 'Sem dados' para o fim da lista
+    def chave_ordem(x):
+        return x['mttr'] if isinstance(x['mttr'], (int, float)) else -1
+
+    resultados = sorted(resultados, key=chave_ordem, reverse=True)
 
     df = pd.DataFrame(resultados)
 
@@ -356,60 +504,119 @@ def disponibilidade_maquina(request):
     dias_mes = (data_fim - data_inicio).days + 1
     tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
 
-    filtros = {
-        'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
+    # Filtros base
+    filtros_base = {
         'ordem__area': area
+    }
+    
+    if setor:
+        filtros_base['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_base['ordem__maquina__maquina_critica'] = maquinas_criticas
 
+    # ==== BUSCAR E CALCULAR PARADAS (MTBF) COM TRATAMENTO DE data_fim NULL ====
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,  # Paradas que começam até o fim do período
+    })
+
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
+
+    # Processar paradas individualmente para lidar com data_fim NULL
+    maquinas_paradas = {}
+
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
+
+        # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
+        data_fim_parada = parada.data_fim if parada.data_fim else data_fim
+
+        # Ajusta data_inicio e data_fim ao período consultado
+        data_inicio_parada = max(parada.data_inicio, data_inicio)
+        data_fim_parada = min(data_fim_parada, data_fim)
+
+        if data_fim_parada <= data_inicio_parada:
+            continue  # ignora paradas fora do período
+
+        # Calcula a duração apenas dentro das 9h/dia
+        duracao_total = timedelta()
+
+        dia_atual = data_inicio_parada.date()
+        fim_parada = data_fim_parada
+
+        while dia_atual <= fim_parada.date():
+            # Define janela de trabalho do dia (9h)
+            inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
+            fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
+
+            # Calcula a interseção entre a parada e a jornada
+            inicio_intersecao = max(data_inicio_parada, inicio_jornada)
+            fim_intersecao = min(fim_parada, fim_jornada)
+
+            if fim_intersecao > inicio_intersecao:
+                duracao_total += fim_intersecao - inicio_intersecao
+
+            # Passa para o próximo dia
+            dia_atual += timedelta(days=1)
+
+        # Acumula resultados por máquina
+        if codigo_maquina not in maquinas_paradas:
+            maquinas_paradas[codigo_maquina] = {'total_paradas': timedelta(), 'quantidade_paradas': 0}
+
+        maquinas_paradas[codigo_maquina]['total_paradas'] += duracao_total
+        maquinas_paradas[codigo_maquina]['quantidade_paradas'] += 1
+
+    # Build paradas list outside the loop
+    paradas = []
+    for codigo, dados in maquinas_paradas.items():
+        paradas.append({
+            'ordem__maquina__codigo': codigo,
+            'total_paradas': dados['total_paradas'],
+            'quantidade_paradas': dados['quantidade_paradas']
+        })
+
+    # Remover cálculo de MTTR - não é mais necessário
+
+    # Organizar os dados das paradas
+    mtbf_dict = {}
+
+    # Ensure all machines that match the filter appear (even with zero stops)
+    filtros_maquinas = {
+        'area': area,
     }
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_maquinas['setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_maquinas['maquina_critica'] = True
 
-    # Buscar e calcular MTBF
-    paradas = (
-        MaquinaParada.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
-    )
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+    for codigo in todas_maquinas:
+        mtbf_dict[codigo] = (0, 0)
 
-    # Buscar e calcular MTTR
-    execucoes = (
-        Execucao.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
-    )
-
-    # Organizar os dados em dicionários para fácil acesso
-    mtbf_dict = {
-        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
-        for parada in paradas
-    }
-    mttr_dict = {
-        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
-        for execucao in execucoes
-    }
+    # Fill with data for machines that had stops
+    for parada in paradas:
+        codigo = parada['ordem__maquina__codigo']
+        total_horas = parada['total_paradas'].total_seconds() / 3600
+        qtd_paradas = parada['quantidade_paradas']
+        mtbf_dict[codigo] = (total_horas, qtd_paradas)
 
     # Calcular a disponibilidade para cada máquina
     resultados = []
     for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
-        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
-
-        if mtbf + mttr > 0:
-            disponibilidade = (mtbf / (mtbf + mttr)) * 100
-        else:
-            disponibilidade = 0
+        # Fórmula simplificada de disponibilidade
+        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
 
         resultados.append({
             'maquina': maquina,
-            'disponibilidade': round(disponibilidade, 2)
+            'disponibilidade': disponibilidade * 100,
+            'tempo_perfeito': tempo_atividade_esperada,
+            'tempo_total_paradas_horas': tempo_total_paradas,
+            'qtd_paradas': qtd_paradas
         })
 
     resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
+    
+    print(resultados)
 
     return JsonResponse(resultados, safe=False)
 
@@ -427,57 +634,114 @@ def exportar_disponibilidade_maquina(request):
     dias_mes = (data_fim - data_inicio).days + 1
     tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
 
-    filtros = {
-        'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
+    # Filtros base
+    filtros_base = {
         'ordem__area': area
+    }
+    
+    if setor:
+        filtros_base['ordem__setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_base['ordem__maquina__maquina_critica'] = maquinas_criticas
 
+    # ==== BUSCAR E CALCULAR PARADAS (MTBF) COM TRATAMENTO DE data_fim NULL ====
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,  # Paradas que começam até o fim do período
+    })
+
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
+
+    # Processar paradas individualmente para lidar com data_fim NULL
+    maquinas_paradas = {}
+
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
+
+        # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
+        data_fim_parada = parada.data_fim if parada.data_fim else data_fim
+
+        # Ajusta data_inicio e data_fim ao período consultado
+        data_inicio_parada = max(parada.data_inicio, data_inicio)
+        data_fim_parada = min(data_fim_parada, data_fim)
+
+        if data_fim_parada <= data_inicio_parada:
+            continue  # ignora paradas fora do período
+
+        # Calcula a duração apenas dentro das 9h/dia
+        duracao_total = timedelta()
+
+        dia_atual = data_inicio_parada.date()
+        fim_parada = data_fim_parada
+
+        while dia_atual <= fim_parada.date():
+            # Define janela de trabalho do dia (9h)
+            inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
+            fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
+
+            # Calcula a interseção entre a parada e a jornada
+            inicio_intersecao = max(data_inicio_parada, inicio_jornada)
+            fim_intersecao = min(fim_parada, fim_jornada)
+
+            if fim_intersecao > inicio_intersecao:
+                duracao_total += fim_intersecao - inicio_intersecao
+
+            # Passa para o próximo dia
+            dia_atual += timedelta(days=1)
+
+        # Acumula resultados por máquina
+        if codigo_maquina not in maquinas_paradas:
+            maquinas_paradas[codigo_maquina] = {'total_paradas': timedelta(), 'quantidade_paradas': 0}
+
+        maquinas_paradas[codigo_maquina]['total_paradas'] += duracao_total
+        maquinas_paradas[codigo_maquina]['quantidade_paradas'] += 1
+
+    # Build paradas list outside the loop
+    paradas = []
+    for codigo, dados in maquinas_paradas.items():
+        paradas.append({
+            'ordem__maquina__codigo': codigo,
+            'total_paradas': dados['total_paradas'],
+            'quantidade_paradas': dados['quantidade_paradas']
+        })
+
+    # Remover cálculo de MTTR - não é mais necessário
+
+    # Organizar os dados das paradas
+    mtbf_dict = {}
+
+    # Ensure all machines that match the filter appear (even with zero stops)
+    filtros_maquinas = {
+        'area': area,
     }
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_maquinas['setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_maquinas['maquina_critica'] = True
 
-    # Buscar e calcular MTBF
-    paradas = (
-        MaquinaParada.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_paradas=Sum('duracao'), quantidade_paradas=Count('id'))
-    )
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+    for codigo in todas_maquinas:
+        mtbf_dict[codigo] = (0, 0)
 
-    # Buscar e calcular MTTR
-    execucoes = (
-        Execucao.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .values('ordem__maquina__codigo')
-        .annotate(total_tempo_reparo=Sum('duracao'), quantidade_reparos=Count('id'))
-    )
-
-    # Organizar os dados em dicionários para fácil acesso
-    mtbf_dict = {
-        parada['ordem__maquina__codigo']: (parada['total_paradas'].total_seconds() / 3600, parada['quantidade_paradas'])
-        for parada in paradas
-    }
-    mttr_dict = {
-        execucao['ordem__maquina__codigo']: (execucao['total_tempo_reparo'].total_seconds() / 3600, execucao['quantidade_reparos'])
-        for execucao in execucoes
-    }
+    # Fill with data for machines that had stops
+    for parada in paradas:
+        codigo = parada['ordem__maquina__codigo']
+        total_horas = parada['total_paradas'].total_seconds() / 3600
+        qtd_paradas = parada['quantidade_paradas']
+        mtbf_dict[codigo] = (total_horas, qtd_paradas)
 
     # Calcular a disponibilidade para cada máquina
     resultados = []
     for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
-        mttr = mttr_dict.get(maquina, (0, 1))[0] / mttr_dict.get(maquina, (0, 1))[1]  # Evitar divisão por 0
-        mtbf = (tempo_atividade_esperada - tempo_total_paradas) / qtd_paradas if qtd_paradas > 0 else 0  # Tempo esperado de 9h/dia
-
-        if mtbf + mttr > 0:
-            disponibilidade = (mtbf / (mtbf + mttr)) * 100
-        else:
-            disponibilidade = 0
+        # Fórmula simplificada de disponibilidade
+        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
 
         resultados.append({
             'maquina': maquina,
-            'disponibilidade': round(disponibilidade, 2)
+            'disponibilidade': disponibilidade * 100,
+            'tempo_perfeito': tempo_atividade_esperada,
+            'tempo_total_paradas_horas': tempo_total_paradas,
+            'qtd_paradas': qtd_paradas
         })
 
     resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
@@ -593,48 +857,62 @@ def maquina_parada(request):
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    filtros = {
-        'data_inicio__gte': data_inicio,
+    # NOVA LÓGICA baseada em disponibilidade_maquina:
+    # - considera paradas com data_fim NULL até o fim do período
+    # - computa apenas horas na janela 08:00–17:00 (9h/dia)
+    # - inclui máquinas sem paradas com 0 horas
+
+    # Filtros base para paradas
+    filtros_base = {
         'ordem__area': area
     }
-
-    # Adiciona o filtro para data_fim, mas permite que ela seja NULL para o cálculo posterior
-    filtros['data_fim__lte'] = data_fim
-
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_base['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_base['ordem__maquina__maquina_critica'] = True
 
-    # Calcular a duração (diferença entre início e fim), usando Coalesce para lidar com valores nulos em data_fim
-    total_por_maquina = (
-        MaquinaParada.objects
-        .filter(**filtros)
-        .annotate(
-            data_fim_real=Coalesce('data_fim', Value(timezone.now())),  # Substitui NULL por a data e hora atual
-            duracao=ExpressionWrapper(
-                F('data_fim_real') - F('data_inicio'), output_field=DurationField()
-            )
-        )
-        .values('ordem__maquina__codigo')  # Agrupa pelo código da máquina
-        .annotate(total_duracao=Sum('duracao'))  # Soma a duração por máquina
-        # .order_by('-total_duracao')
-    )
-    
-    for maq in total_por_maquina:
-        filtros['ordem__maquina__codigo'] = maq['ordem__maquina__codigo']
-        total_duracao = sum(tempo_util(p.data_inicio, p.data_fim) for p in MaquinaParada.objects.filter(**filtros))
-        maq['total_duracao'] = total_duracao / 3600 if total_duracao else 0
-    # Converter o resultado para uma lista de dicionários com as durações em horas
-    resultado = [
-        {
-            'maquina': item['ordem__maquina__codigo'],
-            # 'total_horas': item['total_duracao'].total_seconds() / 3600 if item['total_duracao'] else 0
-            'total_horas': item['total_duracao']
-        }
-        for item in total_por_maquina
-    ]
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,
+    })
 
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
+
+    totais_por_maquina = {}
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
+
+        fim_real = parada.data_fim if parada.data_fim else data_fim
+        inicio_real = max(parada.data_inicio, data_inicio)
+        fim_real = min(fim_real, data_fim)
+
+        if fim_real <= inicio_real:
+            continue
+
+        duracao_total = timedelta()
+        dia_atual = inicio_real.date()
+        while dia_atual <= fim_real.date():
+            inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+            fim_jornada = datetime.combine(dia_atual, time(17, 0))
+
+            inicio_inter = max(inicio_real, inicio_jornada)
+            fim_inter = min(fim_real, fim_jornada)
+
+            if fim_inter > inicio_inter:
+                duracao_total += fim_inter - inicio_inter
+
+            dia_atual += timedelta(days=1)
+
+        totais_por_maquina[codigo_maquina] = totais_por_maquina.get(codigo_maquina, timedelta()) + duracao_total
+
+    # Apenas máquinas com parada (excluir as sem paradas)
+    resultado = []
+    for codigo, total_td in totais_por_maquina.items():
+        total_horas = round(total_td.total_seconds() / 3600, 2)
+        if total_horas > 0:
+            resultado.append({'maquina': codigo, 'total_horas': total_horas})
+
+    resultado = sorted(resultado, key=lambda x: x['total_horas'], reverse=True)
     return JsonResponse({'data': resultado })
 
 def exportar_maquina_parada_excel(request):
@@ -646,42 +924,64 @@ def exportar_maquina_parada_excel(request):
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    filtros = {
-        'data_inicio__gte': data_inicio,
+    # NOVA LÓGICA baseada em disponibilidade_maquina:
+    # - considera paradas com data_fim NULL até o fim do período
+    # - computa apenas horas na janela 08:00–17:00 (9h/dia)
+    # - inclui máquinas sem paradas com 0 horas
+
+    # Filtros base para paradas
+    filtros_base = {
         'ordem__area': area
     }
-
-    filtros['data_fim__lte'] = data_fim
-
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_base['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_base['ordem__maquina__maquina_critica'] = True
 
-    # Obter os dados
-    total_por_maquina = (
-        MaquinaParada.objects
-        .filter(**filtros)
-        .annotate(
-            data_fim_real=Coalesce('data_fim', Value(timezone.now())),
-            duracao=ExpressionWrapper(
-                F('data_fim_real') - F('data_inicio'), output_field=DurationField()
-            )
-        )
-        .values('ordem__maquina__codigo')
-        .annotate(total_duracao=Sum('duracao'))
-        .order_by('-total_duracao')
-    )
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,
+    })
 
-    # Converter os dados em um DataFrame do pandas
-    dados = [
-        {
-            'Máquina': item['ordem__maquina__codigo'],
-            'Total de Horas': round(item['total_duracao'].total_seconds() / 3600, 2) if item['total_duracao'] else 0
-        }
-        for item in total_por_maquina
-    ]
-    df = pd.DataFrame(dados)
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
+
+    totais_por_maquina = {}
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
+
+        fim_real = parada.data_fim if parada.data_fim else data_fim
+        inicio_real = max(parada.data_inicio, data_inicio)
+        fim_real = min(fim_real, data_fim)
+
+        if fim_real <= inicio_real:
+            continue
+
+        duracao_total = timedelta()
+        dia_atual = inicio_real.date()
+        while dia_atual <= fim_real.date():
+            inicio_jornada = datetime.combine(dia_atual, time(8, 0))
+            fim_jornada = datetime.combine(dia_atual, time(17, 0))
+
+            inicio_inter = max(inicio_real, inicio_jornada)
+            fim_inter = min(fim_real, fim_jornada)
+
+            if fim_inter > inicio_inter:
+                duracao_total += fim_inter - inicio_inter
+
+            dia_atual += timedelta(days=1)
+
+        totais_por_maquina[codigo_maquina] = totais_por_maquina.get(codigo_maquina, timedelta()) + duracao_total
+
+    # Apenas máquinas com parada (excluir as sem paradas)
+    resultado = []
+    for codigo, total_td in totais_por_maquina.items():
+        total_horas = round(total_td.total_seconds() / 3600, 2)
+        if total_horas > 0:
+            resultado.append({'maquina': codigo, 'total_horas': total_horas})
+
+    resultado = sorted(resultado, key=lambda x: x['total_horas'], reverse=True)
+
+    df = pd.DataFrame(resultado)
 
     # Criar o arquivo Excel na memória
     output = BytesIO()
@@ -1213,55 +1513,125 @@ def disponibilidade_geral(request):
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    # Filtros básicos
-    filtros = {
-        'data_inicio__gte': data_inicio,
-        'data_fim__lte': data_fim,
+    # Tempo de atividade esperada: 9 horas por dia
+    dias_mes = (data_fim - data_inicio).days + 1
+    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    # Filtros base
+    filtros_base = {
         'ordem__area': area
     }
+    
     if setor:
-        filtros['ordem__setor_id'] = int(setor)
+        filtros_base['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros_base['ordem__maquina__maquina_critica'] = maquinas_criticas
 
-    # Obtém todas as máquinas e calcula o tempo de atividade esperada por máquina
-    maquinas = MaquinaParada.objects.filter(**filtros).values_list('ordem__maquina', flat=True).distinct()
+    # ==== BUSCAR E CALCULAR PARADAS (MTBF) COM TRATAMENTO DE data_fim NULL ====
+    filtros_paradas = filtros_base.copy()
+    filtros_paradas.update({
+        'data_inicio__lte': data_fim,  # Paradas que começam até o fim do período
+    })
 
-    tempo_atividade_esperada = 0
-    for maquina in maquinas:
-        dias_maquina = MaquinaParada.objects.filter(ordem__maquina=maquina, **filtros) \
-            .annotate(dias=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField())) \
-            .aggregate(total_dias=Sum('dias'))['total_dias']
-        if dias_maquina:
-            tempo_atividade_esperada += (dias_maquina.total_seconds() / 3600) * 9  # 9 horas por dia
+    paradas_queryset = MaquinaParada.objects.filter(**filtros_paradas).select_related('ordem__maquina')
 
-    # Calcular total de tempo de paradas
-    paradas_total = (
-        MaquinaParada.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .aggregate(total_paradas=Sum('duracao'))['total_paradas']
-    ) or timedelta()
+    # Processar paradas individualmente para lidar com data_fim NULL
+    maquinas_paradas = {}
 
-    # Calcular total de tempo de reparos
-    reparos_total = (
-        Execucao.objects.filter(**filtros)
-        .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
-        .aggregate(total_reparos=Sum('duracao'))['total_reparos']
-    ) or timedelta()
+    for parada in paradas_queryset:
+        codigo_maquina = parada.ordem.maquina.codigo
 
-    # Convertendo timedelta para horas
-    paradas_horas = paradas_total.total_seconds() / 3600
-    reparos_horas = reparos_total.total_seconds() / 3600
+        # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
+        data_fim_parada = parada.data_fim if parada.data_fim else data_fim
 
-    # Calcular disponibilidade geral média
-    tempo_disponivel = tempo_atividade_esperada - paradas_horas
+        # Ajusta data_inicio e data_fim ao período consultado
+        data_inicio_parada = max(parada.data_inicio, data_inicio)
+        data_fim_parada = min(data_fim_parada, data_fim)
 
-    disponibilidade_geral_media = (
-        (tempo_disponivel / (tempo_disponivel + reparos_horas)) * 100 if tempo_disponivel + reparos_horas > 0 else 0
-    )
+        if data_fim_parada <= data_inicio_parada:
+            continue  # ignora paradas fora do período
+
+        # Calcula a duração apenas dentro das 9h/dia
+        duracao_total = timedelta()
+
+        dia_atual = data_inicio_parada.date()
+        fim_parada = data_fim_parada
+
+        while dia_atual <= fim_parada.date():
+            # Define janela de trabalho do dia (9h)
+            inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
+            fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
+
+            # Calcula a interseção entre a parada e a jornada
+            inicio_intersecao = max(data_inicio_parada, inicio_jornada)
+            fim_intersecao = min(fim_parada, fim_jornada)
+
+            if fim_intersecao > inicio_intersecao:
+                duracao_total += fim_intersecao - inicio_intersecao
+
+            # Passa para o próximo dia
+            dia_atual += timedelta(days=1)
+
+        # Acumula resultados por máquina
+        if codigo_maquina not in maquinas_paradas:
+            maquinas_paradas[codigo_maquina] = {'total_paradas': timedelta(), 'quantidade_paradas': 0}
+
+        maquinas_paradas[codigo_maquina]['total_paradas'] += duracao_total
+        maquinas_paradas[codigo_maquina]['quantidade_paradas'] += 1
+
+    # Build paradas list outside the loop
+    paradas = []
+    for codigo, dados in maquinas_paradas.items():
+        paradas.append({
+            'ordem__maquina__codigo': codigo,
+            'total_paradas': dados['total_paradas'],
+            'quantidade_paradas': dados['quantidade_paradas']
+        })
+
+    # Remover cálculo de MTTR - não é mais necessário
+
+    # Organizar os dados das paradas
+    mtbf_dict = {}
+
+    # Ensure all machines that match the filter appear (even with zero stops)
+    filtros_maquinas = {
+        'area': area,
+    }
+    if setor:
+        filtros_maquinas['setor_id'] = int(setor)
+    if maquinas_criticas:
+        filtros_maquinas['maquina_critica'] = True
+
+    todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
+    for codigo in todas_maquinas:
+        mtbf_dict[codigo] = (0, 0)
+
+    # Fill with data for machines that had stops
+    for parada in paradas:
+        codigo = parada['ordem__maquina__codigo']
+        total_horas = parada['total_paradas'].total_seconds() / 3600
+        qtd_paradas = parada['quantidade_paradas']
+        mtbf_dict[codigo] = (total_horas, qtd_paradas)
+
+    # Calcular a disponibilidade para cada máquina
+    resultados = []
+    for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
+        # Fórmula simplificada de disponibilidade
+        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+
+        resultados.append({
+            'maquina': maquina,
+            'disponibilidade': disponibilidade * 100,
+            'tempo_perfeito': tempo_atividade_esperada,
+            'tempo_total_paradas_horas': tempo_total_paradas,
+            'qtd_paradas': qtd_paradas
+        })
+
+    resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
+    
+    disponibilidade_geral_media = sum(x['disponibilidade'] for x in resultados) / len(resultados) if resultados else 0
 
     return JsonResponse({'data': round(disponibilidade_geral_media, 2)})
-
 
 #Função à parte de chamadas de requisições
 def tempo_util(data_inicio, data_fim):
