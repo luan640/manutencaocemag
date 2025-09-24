@@ -94,6 +94,11 @@ def mtbf_maquina(request):
     maquinas_paradas = {}
 
     for parada in paradas_queryset:
+        
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         # Se data_fim é NULL, considera a parada até o fim do período consultado
@@ -221,6 +226,11 @@ def exportar_mtbf_maquina(request):
     maquinas_paradas = {}
 
     for parada in paradas_queryset:
+        
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         # Se data_fim é NULL, considera a parada até o fim do período consultado
@@ -526,6 +536,11 @@ def disponibilidade_maquina(request):
     maquinas_paradas = {}
 
     for parada in paradas_queryset:
+        
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
@@ -656,6 +671,11 @@ def exportar_disponibilidade_maquina(request):
     maquinas_paradas = {}
 
     for parada in paradas_queryset:
+
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
@@ -880,6 +900,11 @@ def maquina_parada(request):
 
     totais_por_maquina = {}
     for parada in paradas_queryset:
+
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         fim_real = parada.data_fim if parada.data_fim else data_fim
@@ -947,6 +972,11 @@ def exportar_maquina_parada_excel(request):
 
     totais_por_maquina = {}
     for parada in paradas_queryset:
+        
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+        
         codigo_maquina = parada.ordem.maquina.codigo
 
         fim_real = parada.data_fim if parada.data_fim else data_fim
@@ -1539,6 +1569,11 @@ def disponibilidade_geral(request):
     maquinas_paradas = {}
 
     for parada in paradas_queryset:
+        
+        if not parada.ordem or not parada.ordem.maquina:
+            # Ignora essa parada pois faltam dados obrigatórios
+            continue
+
         codigo_maquina = parada.ordem.maquina.codigo
 
         # Se data_fim é NULL, considera que a máquina está parada até o fim do período consultado
