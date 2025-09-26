@@ -13,9 +13,13 @@ from execucao.models import Execucao, MaquinaParada, InfoSolicitacao
 from cadastro.models import Maquina, Setor
 from preventiva.models import PlanoPreventiva
 
+from collections import defaultdict
 from io import BytesIO
 from datetime import timedelta, datetime, time
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 def dashboard(request):
 
@@ -366,7 +370,6 @@ def mttr_maquina(request):
     setor = request.GET.get('setor')
     area = request.GET.get('area')
     maquinas_criticas = request.GET.get('maquina-critica', "False")
-
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
@@ -377,8 +380,15 @@ def mttr_maquina(request):
     if setor:
         filtros['ordem__setor_id'] = int(setor)
     if maquinas_criticas:
-        filtros['ordem__maquina__maquina_critica'] = maquinas_criticas
+        filtros['ordem__maquina__maquina_critica'] = True
 
+    # --- 1) IDs por máquina (para log e resposta) ---
+    exec_ids_map = defaultdict(list)
+    ids_qs = Execucao.objects.filter(**filtros, n_execucao__gt=0).values('ordem__maquina__codigo', 'id')
+    for row in ids_qs:
+        exec_ids_map[row['ordem__maquina__codigo']].append(row['id'])
+
+    # --- 2) Agregações para horas totais e contagem ---
     execucoes = (
         Execucao.objects.filter(**filtros)
         .annotate(duracao=ExpressionWrapper(F('data_fim') - F('data_inicio'), output_field=DurationField()))
@@ -387,9 +397,10 @@ def mttr_maquina(request):
             total_tempo_reparo=Sum('duracao'),
             quantidade_reparos=Count('id')
         )
+        .filter(n_execucao__gt=0)
     )
 
-    # Dicionário inicial com todas máquinas no filtro para garantir todas no resultado
+    # Garante todas as máquinas no resultado
     filtros_maquinas = {'area': area}
     if setor:
         filtros_maquinas['setor_id'] = int(setor)
@@ -397,30 +408,50 @@ def mttr_maquina(request):
         filtros_maquinas['maquina_critica'] = True
 
     todas_maquinas = Maquina.objects.filter(**filtros_maquinas).values_list('codigo', flat=True)
-    mttr_dict = {codigo: (None, 0) for codigo in todas_maquinas}
 
-    # Preenche com dados de execuções encontradas
+    # mttr_dict: codigo -> (horas_total, execucoes, ids_list)
+    mttr_dict = {codigo: (None, 0, exec_ids_map.get(codigo, [])) for codigo in todas_maquinas}
+
     for execucao in execucoes:
         codigo = execucao['ordem__maquina__codigo']
         total_segundos = execucao['total_tempo_reparo'].total_seconds() if execucao['total_tempo_reparo'] else 0
         qtd_reparos = execucao['quantidade_reparos']
-        mttr_dict[codigo] = (total_segundos / 3600 if qtd_reparos > 0 else None, qtd_reparos)
+        horas_total = (total_segundos / 3600) if qtd_reparos > 0 else None
+        ids_list = exec_ids_map.get(codigo, [])
+
+        mttr_dict[codigo] = (horas_total, qtd_reparos, ids_list)
+
+        # === LOG ===
+        if horas_total is not None and qtd_reparos > 0:
+            logger.info(
+                f"[MTTR] Maquina={codigo} | Horas_total={horas_total:.2f} | "
+                f"Execucoes={qtd_reparos} | Exec_IDs={ids_list}"
+            )
+        else:
+            logger.info(f"[MTTR] Maquina={codigo} | Sem dados no período | Exec_IDs={ids_list}")
 
     resultados = []
-    for maquina, (tempo_horas, qtd) in mttr_dict.items():
-        if tempo_horas is None or qtd == 0:
+    for maquina, (horas_total, qtd, ids_list) in mttr_dict.items():
+        if horas_total is None or qtd == 0:
             mttr_val = 'Sem dados'
+            horas_out = None
         else:
-            mttr_val = round(tempo_horas / qtd, 2)
+            mttr_val = round(horas_total / qtd, 2)
+            horas_out = round(horas_total, 2)
 
-        resultados.append({'maquina': maquina, 'mttr': mttr_val})
+        resultados.append({
+            'maquina': maquina,
+            'mttr': mttr_val,              # horas por reparo
+            'horas_total': horas_out,      # horas somadas no período
+            'execucoes': qtd,              # quantidade de reparos
+            'execucoes_ids': ids_list,     # IDs das execuções
+        })
 
-    # Ordena tratando 'Sem dados' para o fim da lista
+    # Ordena colocando 'Sem dados' no fim
     def chave_ordem(x):
         return x['mttr'] if isinstance(x['mttr'], (int, float)) else -1
 
     resultados = sorted(resultados, key=chave_ordem, reverse=True)
-
     return JsonResponse(resultados, safe=False)
 
 def exportar_mttr_maquina(request):
