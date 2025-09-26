@@ -662,8 +662,6 @@ def disponibilidade_maquina(request):
 
     resultados = sorted(resultados, key=lambda x: x['disponibilidade'], reverse=True)
     
-    print(resultados)
-
     return JsonResponse(resultados, safe=False)
 
 def exportar_disponibilidade_maquina(request):

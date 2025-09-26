@@ -276,7 +276,13 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-sm-6">
-                    <h5>MTBF (Horas)</h5>
+                    <h5>MTBF (Horas)
+                        <span 
+                            data-bs-toggle="tooltip" 
+                            title=" MTBF = (Tempo de atividade esperada - Tempo total de paradas) / Quantidade de paradas">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                    </h5>
                     <div class="scroll-container" style="position: relative;">
                         <canvas id="graficoMtbf"></canvas>
                         <button id="dadosMtbfMaquina" class="btn btn-download" title="Download Excel">
@@ -285,7 +291,13 @@
                     </div>
                 </div>
                 <div class="col-sm-6">
-                    <h5>MTTR (Horas)</h5>
+                    <h5>MTTR (Horas) 
+                        <span 
+                            data-bs-toggle="tooltip" 
+                            title="MTTR = (Tempo total de reparos) / (Quantidade de reparos). Ex.: Maquina=ES-LA-01 | Horas_total=1.75 | Execucoes=4">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                    </h5>
                     <div class="scroll-container" style="position: relative;">
                         <canvas id="graficoMttr"></canvas>
                         <button id="dadosMttrMaquina" class="btn btn-download" title="Download Excel">
@@ -773,6 +785,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         title: {
                             display: true,
                             text: label
+
                         },
                         ticks: {
                             autoSkip: false // Não pula as labels
