@@ -748,7 +748,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         hideLoader('loading-execucao');
                     })
                     .catch(error => handleError(error, 'loading-execucao'))
-                ]);
+                ]),
+
+                
+                document.getElementById('card-disp-media').innerHTML = "Não se aplica";
+                hideLoader('loading-execucao');
+                    
         }
 
     }

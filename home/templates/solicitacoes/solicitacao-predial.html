@@ -1137,7 +1137,11 @@
                     body: JSON.stringify(formData),
                 })
                     .then(response => {
-                        if (!response.ok) throw new Error('Erro ao salvar alterações');
+                        if (!response.ok){
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.error || 'Erro desconhecido.');
+                            });
+                        };
                         return response.json(); // Converte a resposta para JSON
 
                     })
@@ -1151,7 +1155,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: error.responseJSON?.error || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
+                            text: error?.message || 'Ocorreu um erro ao salvar as alterações. Tente novamente mais tarde.',
                             confirmButtonText: 'OK'
                         });
                     });
@@ -1425,6 +1429,15 @@
         }).catch(error => {
             console.error("Erro ao carregar as seções:", error);
         });
+
+
+        //Delegação de evento para inputs dinâmicos
+        document.addEventListener('change', function(event) {
+            if (event.target.matches('#id_data_inicio')) {
+                document.getElementById('id_data_fim').min = event.target.value;
+            }
+        });
+
     });
 
 </script>

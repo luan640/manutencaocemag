@@ -295,6 +295,16 @@ def criar_execucao_predial(request, solicitacao_id):
         tipo_manutencao = request.POST.get('tipo_manutencao')
         area_manutencao = 'predial'
 
+        if ultima_execucao:
+            if data_inicio < ultima_execucao.data_fim:
+                return JsonResponse({
+                    'error': 'A data de início deve ser posterior à data final da última execução.'
+                }, status=400)
+            if data_fim < data_inicio:
+                return JsonResponse({
+                    'error': 'A data de fim deve ser posterior à data de início.'
+                }, status=400)
+
         if n_execucao == 1:
 
             infoSolicitacao = InfoSolicitacao.objects.create(
