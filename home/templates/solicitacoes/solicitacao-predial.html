@@ -58,7 +58,7 @@
                 {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
                 <div class="col-md-3">
                     <label for="ordem" class="form-label">#OS</label>
-                    <input type="text" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
+                    <input type="number" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
                 </div>
                 <div class="col-md-3">
                     <label for="solicitante" class="form-label">Solicitante</label>

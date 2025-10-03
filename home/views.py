@@ -186,7 +186,7 @@ def solicitacoes_producao(request):
         solicitacoes = solicitacoes.filter(maq_parada=(maq_parada == 'sim'))
 
     if data_abertura:
-        solicitacoes = solicitacoes.filter(data_abertura=data_abertura)
+        solicitacoes = solicitacoes.filter(data_abertura__date=data_abertura)
 
     if planejada:
         solicitacoes = solicitacoes.filter(planejada=True)
@@ -280,7 +280,7 @@ def aguardando_primeiro_atendimento_producao(request):
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(maq_parada=(maq_parada == 'sim'))
 
     if data_abertura:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura=data_abertura)
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura__date=data_abertura)
 
     if planejada:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)
@@ -388,7 +388,7 @@ def solicitacoes_predial(request):
     #     solicitacoes = solicitacoes.filter(maq_parada=(maq_parada == 'sim'))
 
     if data_abertura:
-        solicitacoes = solicitacoes.filter(data_abertura=data_abertura)
+        solicitacoes = solicitacoes.filter(data_abertura__date=data_abertura)
 
     if planejada:
         solicitacoes = solicitacoes.filter(planejada=True)
@@ -476,7 +476,7 @@ def aguardando_primeiro_atendimento_predial(request):
     #     aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(maq_parada=(maq_parada == 'sim'))
 
     if data_abertura:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura=data_abertura)
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura__date=data_abertura)
 
     if planejada:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)
