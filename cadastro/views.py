@@ -35,10 +35,15 @@ def criar_maquina(request):
                 'erro': 'Algo deu errado! Tente novamente!'
             },status=500)
 
+    elif request.method == 'GET':
+        setores = Setor.objects.all()
+
+        return JsonResponse({
+            'setores': list(setores.values('id','nome'))
+        })
+    
     else:
-        form = MaquinaForm()
-        form = form.as_p()
-    # return render(request, 'maquina/add.html', {'form': form})
+        return JsonResponse({'erro': 'Método não permitido'}, status=405)
     
 
     return HttpResponse(form)
@@ -77,7 +82,6 @@ def edit_maquina(request, pk):
     return HttpResponse(form)
 
 def list_maquina(request):
-    
     return render(request,'maquina/list.html')
 
 @csrf_exempt

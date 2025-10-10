@@ -1,37 +1,73 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block links %}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/maquina-list.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Lista de Máquinas</h2>
-    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
-    <div class="text-end">
-        <!-- <a href="{% url 'criar_maquina' %}" class="badge btn btn-primary mb-3">+ Adicionar</a> -->
-        <button type="button" onclick="abrirModalAdicionarMaquina(this)" class="badge btn btn-primary mb-3">+ Adicionar</button>
+<div class="container mt-4">
+    <!-- Cabeçalho com ícone -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-gear-fill me-2"></i>Gestão de Máquinas</h2>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table id="maquinasCadastradas" class="table table-bordered table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Descrição</th>
-                    <th>Apelido</th>
-                    <th>Setor</th>
-                    <th>Tipo</th>
-                    <th>Foto</th>
-                    <th>Área</th>
-                    <th>Tombamento</th>
-                    <th>Criticidade</th>
-                    <th>Máquina Crítica</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- DataTables irá preencher este corpo automaticamente -->
-            </tbody>
-        </table>
+
+    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
+
+    <!-- Campo de busca e botão de adicionar -->
+    <div class="d-flex justify-content-between align-items-center search-container my-3">
+        <div class="search-wrapper flex-grow-1 me-3">
+            <i class="bi bi-search"></i>
+            <input 
+                type="text" 
+                id="searchMaquinas" 
+                class="form-control" 
+                placeholder="Buscar por código, descrição, setor..."
+            >
+        </div>
+
+        <button class="btn btn-add-operator" onclick="abrirModalAdicionarMaquina(this)">
+            <i class="bi bi-plus-circle me-2"></i>Adicionar Máquina
+        </button>
+    </div>
+
+    <!-- Tabela estilizada dentro de um card -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table id="maquinasCadastradas" class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descrição</th>
+                        <th>Apelido</th>
+                        <th>Setor</th>
+                        <th>Tipo</th>
+                        <th>Foto</th>
+                        <th>Área</th>
+                        <th>Tombamento</th>
+                        <th>Criticidade</th>
+                        <th>Máquina Crítica</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dados serão preenchidos dinamicamente -->
+                </tbody>
+            </table>
+
+            <!-- Overlay de loading -->
+            <div id="overlayLoading" style="display: none;">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span>Carregando dados...</span>
+            </div>
+        </div>
     </div>
 </div>
+
 
 
 <div class="modal fade" style="min-height: 100vh;" id="adicionarMaquinaModal" tabindex="-1" aria-labelledby="adicionarMaquinaModalLabel" aria-hidden="true">
@@ -42,9 +78,72 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" id ="formAddMaquina" action="{%url 'criar_maquina' %}" enctype="multipart/form-data">
+                <form method="post" id="formAddMaquina" action="{% url 'criar_maquina' %}" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <!--Form será carregado na abertura do modal-->
+
+                    <div class="mb-3">
+                        <label for="id_codigo" class="form-label">Código</label>
+                        <input type="text" id="id_codigo" name="codigo" class="form-control" placeholder="Código da máquina" maxlength="30" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_descricao" class="form-label">Descrição</label>
+                        <input type="text" id="id_descricao" name="descricao" class="form-control" placeholder="Descrição da máquina" maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_apelido" class="form-label">Apelido</label>
+                        <input type="text" id="id_apelido" name="apelido" class="form-control" placeholder="Apelido da máquina" maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_setor" class="form-label">Setor</label>
+                        <select id="id_setor" name="setor" class="form-select" required>
+                            <!-- opções serão carregadas dinamicamente -->
+                        </select>
+                    </div>
+
+                    <div class="mb-3" style="display: none;">
+                        <label for="id_tipo" class="form-label">Tipo</label>
+                        <select id="id_tipo" name="tipo" class="form-select" disabled>
+                            <option value="" selected>---------</option>
+                            <option value="monovia">Monovia</option>
+                            <option value="maquina_de_solda">Máquina de Solda</option>
+                            <option value="robo_kuka">ROBÔ KUKA</option>
+                            <option value="outros">Outros</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_tombamento" class="form-label">Tombamento</label>
+                        <input type="text" id="id_tombamento" name="tombamento" class="form-control" placeholder="Código de tombamento" maxlength="40">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_criticidade" class="form-label">Criticidade</label>
+                        <select id="id_criticidade" name="criticidade" class="form-select" required>
+                            <option value="" selected>---------</option>
+                            <option value="a">A</option>
+                            <option value="b">B</option>
+                            <option value="c">C</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" id="id_maquina_critica" name="maquina_critica" class="form-check-input">
+                        <label for="id_maquina_critica" class="form-check-label">Máquina crítica</label>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_foto" class="form-label">Foto</label>
+                        <input type="file" id="id_foto" name="foto" class="form-control" accept="image/*">
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" id="buttonSubmitAddMaquina" class="btn btn-primary">
+                            Salvar
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -66,6 +165,75 @@
             </div>
         </div>
     </div>
+</div>
+<!-- <a href="/plano-preventiva/criar/${data}/" class="btn btn-sm btn-success">
+                                    <i class="fas fa-plus"></i>
+                                </a> -->
+<!-- Modal -->
+<div class="modal fade" id="planoPreventivaModal" tabindex="-1" aria-labelledby="planoPreventivaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" id="formPlanoPreventiva">
+        <!-- Substitua a action pela URL correta no seu projeto -->
+        <div class="modal-header">
+          <h5 class="modal-title" id="planoPreventivaModalLabel">Novo Plano de Preventiva</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- CSRF token manual se necessário -->
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <input type="hidden" id="maquina_id_preventiva" name="maquina_id_preventiva" value="">
+
+          <div class="mb-3">
+            <label for="nome" class="form-label">Nome do Plano</label>
+            <input type="text" id="nome" name="nome" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea id="descricao" name="descricao" class="form-control" rows="2" required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="periodicidade" class="form-label">Periodicidade (em dias)</label>
+            <input type="number" id="periodicidade" name="periodicidade" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="dias_antecedencia" class="form-label">Abertura com antecedência de:</label>
+            <input type="number" id="dias_antecedencia" name="dias_antecedencia" class="form-control" required>
+            <div class="form-text">Dias para abertura com antecedência</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="data_inicio" class="form-label">Data para início da contagem</label>
+            <input type="date" id="data_inicio" name="data_inicio" class="form-control" required>
+          </div>
+
+          <div class="form-check mb-3">
+            <input type="checkbox" id="abertura_automatica" name="abertura_automatica" class="form-check-input">
+            <label for="abertura_automatica" class="form-check-label">Abertura Automática</label>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Tarefas Preventivas</h4>
+                <button type="button" class="btn btn-sm btn-success" id="add-tarefa">Adicionar Tarefa</button>
+            </div>
+            <div class="card-body" id="tarefas-container">
+                <!-- Tarefas serão adicionadas aqui via JavaScript -->
+            </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" id="btnSalvarPlanejamento" class="btn btn-primary">Salvar Plano</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div id="notificacaoSucesso" class="toast align-items-center text-white bg-success border-0 position-fixed bottom-0 end-0 p-3" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
@@ -91,7 +259,6 @@
 
 <script src="{% static 'js/datatable-list-maquina.js' %}"></script>
 <script>
-    console.log('teste');
     function desabilitarTipo(idTipo){
         $(idTipo.parent()).css('display','none');
         $(idTipo).prop('disabled',true);
@@ -117,12 +284,14 @@
             },
             success: function(response) {
 
-                response = '{% csrf_token %}'+response + `<div class="d-grid" >
-                                        <button type="submit" id="buttonSubmitAddMaquina" class="btn btn-primary py-2" style="font-size: 1rem; font-weight: 500;">Salvar</button>
-                                        </div>`;
-                let form = document.getElementById('formAddMaquina');
-                form.innerHTML = response;
-                
+                let setores = response.setores;
+                let setorSelect = $('#adicionarMaquinaModal #id_setor');
+
+                setorSelect.empty();
+                setorSelect.append('<option value="" selected>---------</option>');
+                setores.forEach(function(setor) {
+                    setorSelect.append('<option value="' + setor.id + '">' + setor.nome + '</option>');
+                });
                 let tipoMaquina = $('#adicionarMaquinaModal #id_tipo');
 
                 desabilitarTipo(tipoMaquina);
@@ -193,6 +362,23 @@
       
     }
 
+    function criarPlanoPreventiva(button){
+        $('#formPlanoPreventiva')[0].reset();
+        
+        const id = button.getAttribute('data-id');
+        const codigo = button.getAttribute('data-codigo');
+        const descricao = button.getAttribute('data-descricao');
+
+        let modal = document.getElementById('planoPreventivaModal');
+        var confirmaModal = new bootstrap.Modal(modal);
+        const maquinaIdInput = modal.querySelector('#maquina_id_preventiva');
+
+        document.getElementById('planoPreventivaModalLabel').textContent = `Criar Plano Preventiva para Máquina: ${codigo} - ${descricao}`;
+        
+        maquinaIdInput.value = id;
+        
+        confirmaModal.show();
+    }
 
     $('#editarMaquinaModal').on('shown.bs.modal', function () {
         var selectElementEdit = $("#editarMaquinaModal #id_setor");
@@ -230,7 +416,6 @@
             selectElementAdd.on('change', function() {
                 var textoSelecionado = $("#adicionarMaquinaModal #id_setor option:selected").text();
                 if (textoSelecionado == "Solda"){
-                    console.log(tipoMaquina);
                     habilitarTipo(tipoMaquina);
                 }else{
                     desabilitarTipo(tipoMaquina);
@@ -329,11 +514,115 @@
                 buttonSubmitEditMaquina.disabled = false;
             }
         
+        });   
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let tarefaIndex = 0;
+
+        // Função para adicionar uma nova tarefa
+        const addTarefaButton = document.getElementById('add-tarefa');
+        const container = document.getElementById('tarefas-container');
+
+        addTarefaButton.addEventListener('click', function() {
+
+            const newForm = `
+                <div class="tarefa-form mb-3">
+                    <div class="form-group">
+                        <label for="tarefa-descricao-${tarefaIndex}">Descrição da Tarefa</label>
+                        <textarea id="tarefa-descricao-${tarefaIndex}" name="tarefas[${tarefaIndex}][descricao]" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="tarefa-responsabilidade-${tarefaIndex}">Responsabilidade</label>
+                        <select id="tarefa-responsabilidade-${tarefaIndex}" name="tarefas[${tarefaIndex}][responsabilidade]" class="form-control">
+                            <option value="eletrica">Elétrica</option>
+                            <option value="mecanica">Mecânica</option>
+                            <option value="predial">Predial</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-tarefa">Remover</button>
+                    <hr>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', newForm);
+            tarefaIndex++;  // Incrementa o índice para a próxima tarefa
+        });
+
+        // Função para remover uma tarefa
+        container.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('remove-tarefa')) {
+                e.target.closest('.tarefa-form').remove();
+            }
+        });
+
+        document.getElementById('formPlanoPreventiva').addEventListener('submit', function(e) {
+            e.preventDefault();  // Impede o envio padrão
+
+            document.getElementById('btnSalvarPlanejamento').innerHTML = 'Carregando...';
+            document.getElementById('btnSalvarPlanejamento').disabled = true;
+
+            const formData = new FormData(this);
+
+            let idMaquina = formData.get('maquina_id_preventiva');
+
+            console.log([...formData]); // Verifique os dados do formulário no console
+
+            // return false;
+            
+            // Exibe o modal de carregamento
+            Swal.fire({
+                title: 'Processando...',
+                text: 'Aguarde enquanto salvamos seu planejamento.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Exibe o spinner de carregamento
+                }
+            });
+
+            // Envie os dados usando fetch ou XMLHttpRequest
+            fetch(`/plano-preventiva/criar/${idMaquina}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Lide com a resposta do servidor aqui
+
+                document.getElementById('btnSalvarPlanejamento').innerHTML = 'Salvar Plano';
+                document.getElementById('btnSalvarPlanejamento').disabled = false;
+
+                if (data.success) {
+                    // Mostrar o popup de sucesso
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Planejamento salvo com sucesso!',
+                        confirmButtonText: 'OK'
+                    });
+
+                    // Fechar o modal de planejamento
+                    var planoModal = bootstrap.Modal.getInstance(document.getElementById('planoPreventivaModal'));
+                    $('#formPlanoPreventiva')[0].reset();
+                    planoModal.hide();
+                } else {
+                    // Lide com erros
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: 'Ocorreu um erro ao salvar o plano. Tente novamente.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+
         });
     });
-
-
-
 </script>
 
 {% endblock %}
