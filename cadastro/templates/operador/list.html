@@ -1,33 +1,64 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block links %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'css/operador-list.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Operadores</h2>
-    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
-    <span class="badge btn btn-primary mb-3" id="addOperador">Adicionar operador</span>
-
-
-    <div class="table-responsive">
-        <table id="tableOperadores" class="table table-bordered table-striped table-sm">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Matrícula</th>
-                    <th>Salário</th>
-                    <th>Status</th>
-                    <th>Área</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Dados serão gerados dinamicamente -->
-            </tbody>
-        </table>
+<div class="container mt-4">
+    <!-- New header with gradient background -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-people-fill me-2"></i>Gestão de Operadores</h2>
+            
+        </div>
     </div>
-    <div id="overlayLoading" style="text-align: center;">
-        <div class="spinner-border text-primary" role="status"></div>
-        <span class="ms-2">Carregando...</span>
+
+    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
+
+    <!-- New search container with custom styling -->
+    <div class="d-flex justify-content-between align-items-center search-container">
+        <div class="search-wrapper flex-grow-1">
+            <i class="bi bi-search"></i>
+            <input 
+                type="text" 
+                id="searchOperadores" 
+                class="form-control" 
+                placeholder="Buscar por nome, matrícula, área..."
+            >
+        </div>
+
+        <button class="btn btn-add-operator" id="addOperador">
+            <i class="bi bi-plus-circle me-2"></i>Adicionar Operador
+        </button>
+    </div>
+
+    <!-- Table wrapped in card for better presentation -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table id="tableOperadores" class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Matrícula</th>
+                        <th>Status</th>
+                        <th>Área</th>
+                        <th style="width: 250px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dados serão gerados dinamicamente -->
+                </tbody>
+            </table>
+            <!-- Improved loading overlay -->
+            <div id="overlayLoading">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span>Carregando dados...</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -35,7 +66,6 @@
 {% endblock %}
 
 {% block scripts %}
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="module" src="{% static 'js/datatable-list-operador.js' %}"></script>
 <script type="module" src="{% static 'js/operador-crud.js' %}"></script>
