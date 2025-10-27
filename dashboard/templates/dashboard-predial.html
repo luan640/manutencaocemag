@@ -2,8 +2,10 @@
 {% load static %}
 
 {% block links %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
 
 <style>
     .chart-container {
@@ -14,6 +16,12 @@
         display: block;
         width: 100%;
         height: 300px;
+    }
+
+    .canvas-small {
+        width: 100%;
+        max-width: 300px; /* largura máxima */
+        height: 200px;    /* altura fixa */
     }
 
     .filter-container {
@@ -49,13 +57,38 @@
     .position-relative {
         position: relative; /* Garante que o overlay se posicione corretamente */
     }
+
+    .scroll-container {
+        width: 100%; /* Largura do contêiner */
+        height: 400px; /* Altura visível do contêiner */
+        overflow-y: auto; /* Scroll vertical para gráficos horizontais */
+        overflow-x: hidden; /* Sem scroll horizontal */
+        padding: 10px;
+    }
+
+    .btn-download {
+        position: absolute;
+        top: 10px; /* Ajuste conforme necessário */
+        right: 10px; /* Ajuste conforme necessário */
+        background-color: transparent;
+        border: none;
+        font-size: 18px; /* Tamanho do ícone */
+        color: #007bff; /* Cor do ícone */
+        cursor: pointer;
+        z-index: 10; /* Garante que o botão fique sobre o gráfico */
+    }
+
+    .btn-download:hover {
+        color: #0056b3; /* Cor ao passar o mouse */
+    }
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-3">
 
-    <input type="hidden" id="area" value="{{request.user.area}}">
+    <input type="hidden" id="area" value="predial">
 
     <!-- Filtros -->
     <div class="filter-container card shadow mb-3 p-3">
@@ -77,6 +110,10 @@
                         <option value="{{setor.pk}}">{{setor.nome}}</option>
                     {% endfor %}
                 </select>
+            </div>
+            <div class="form-check form-switch mb-3" style="display: flex; justify-content: flex-end; align-items: center;">
+                <input class="form-check-input" type="checkbox" name="maquinaCriticaCheck" id="maquinaCriticaCheck" style="margin-right: 5px;">
+                <label class="form-check-label" for="maquinaCriticaCheck">Máquina Crítica</label>
             </div>
             <div class="col-12 d-flex justify-content-end">
                 <button id="btnFilter" type="submit" class="btn btn-primary">Aplicar Filtros</button>
@@ -211,25 +248,23 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- MTBF e MTTR -->
-    <div class="card shadow mb-3">
-        <div class="card-header">
-            MTBF e MTTR por Máquina
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-sm-6">
-                    <h5>MTBF (Horas)</h5>
-                    <canvas id="graficoMtbf"></canvas>
-                </div>
-                <div class="col-sm-6">
-                    <h5>MTTR (Horas)</h5>
-                    <canvas id="graficoMttr"></canvas>
+        <div class="col">
+            <div class="card custom-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <p class="mb-0">Disponibilidade Média</p>
+                            <h4 id="card-disp-media" class="my-1">
+                                <div class="loading-overlay" id="loading-mtbf">
+                                    <div class="spinner"></div>
+                                </div>
+                            </h4>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- Prazo e Tipo de Ordem -->
@@ -238,24 +273,30 @@
             Prazo e Tipo de Ordem
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-sm-6">
-                    <h5>Ordens Finalizadas no Prazo</h5>
-                    <canvas id="graficoOrdensPrazo"></canvas>
+            <div class="row text-center">
+                <div class="col-sm-6 d-flex flex-column align-items-center">
+                    <canvas id="graficoOrdensPrazo" class="canvas-small mx-auto"></canvas>
                 </div>
-                <div class="col-sm-6">
-                    <h5>Relação por Tipo de Ordem</h5>
-                    <canvas id="graficoTipoOrdem"></canvas>
+                <div class="col-sm-6 d-flex flex-column align-items-center">
+                    <canvas id="graficoTipoOrdem" class="canvas-small mx-auto"></canvas>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <h5>Ordens Finalizadas no Prazo</h5>
-                    <canvas id="graficoOrdensPrazo"></canvas>
+            <div class="row text-center">
+                <div class="col-sm-6 d-flex flex-column align-items-center">
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoHorasTrabalhadasSetor"></canvas>
+                        <button id="dadosHorasTrabSetor" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <h5>Relação por Tipo de Ordem</h5>
-                    <canvas id="graficoTipoOrdem"></canvas>
+                <div class="col-sm-6 d-flex flex-column align-items-center">
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoHorasTrabalhadasTipo"></canvas>
+                        <button id="dadosHorasTrabTipo" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -269,22 +310,23 @@
         <div class="card-body" style="height: 450px">
             <div class="row">
                 <div class="col-sm-6">
-                    <canvas id="graficoSolicitacaoSetor" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoSolicitacaoSetor" style="height: 400px; width: 100%;"></canvas>
+                        <button id="dadosSolicitacaoSetor" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+
                 </div>
                 <div class="col-sm-6">
-                    <canvas id="graficoMaquinasParadas" style="height: 400px; width: 100%;"></canvas>
+                    <div class="scroll-container" style="position: relative;">
+                        <canvas id="graficoMaquinasParadas" style="height: 400px; width: 100%;"></canvas>
+                        <button id="dadosMaqParada" class="btn btn-download" title="Download Excel">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Disponibilidade -->
-    <div class="card shadow mb-3">
-        <div class="card-header">
-            Disponibilidade por Máquina
-        </div>
-        <div class="card-body">
-            <canvas id="graficoDisponibilidadeMaquina"></canvas>
         </div>
     </div>
 
@@ -299,7 +341,10 @@ document.addEventListener('DOMContentLoaded', function () {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    let graficoMtbf, graficoMttr, graficoOrdensPrazo, graficoTipoOrdem, graficoMaquinasParadas, graficoSolicitacaoSetor, graficoDisponibilidadeMaquina;
+    let graficoMtbf, graficoMttr, graficoOrdensPrazo,graficoHorasTrabalhadasSetor,graficoHorasTrabalhadasTipo,graficoOrdensPrazo2, graficoTipoOrdem, graficoMaquinasParadas, graficoSolicitacaoSetor, graficoDisponibilidadeMaquina, graficoDisponibilidadeMaquinaCritica;
+
+    const area = document.getElementById('area').value;
+    const maquinaCritica = document.getElementById('maquinaCriticaCheck').checked;
 
     // Calcula as datas de início e fim
     function getDefaultDates() {
@@ -314,158 +359,341 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    async function promiseCharts(dataInicial = '', dataFinal = '', setorSelect = '') {
+    async function promiseCharts(dataInicial = '', dataFinal = '', setorSelect = '', area=area, maquinaCritica = maquinaCritica) {
         // Usa Promise.all para aguardar todas as requisições antes de concluir a execução
-        return Promise.all([
-            fetch(`/mtbf-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    const maquinas = data.map(item => item.maquina);
-                    const mtbfValores = data.map(item => item.mtbf);
+        if (area === 'producao')
+        {
+            return Promise.all([
+                fetch(`/mtbf-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        const maquinas = data.map(item => item.maquina);
+                        const mtbfValores = data.map(item => item.mtbf);
+                        
+                        if (graficoMtbf) {
+                            graficoMtbf.destroy();
+                        }
+
+                        graficoMtbf = criarGraficoBar('graficoMtbf', 'MTBF (Horas)', mtbfValores, maquinas);
+                    })
+                    .catch(error => handleError(error, 'loading-mtbf')),
+
+                fetch(`/mttr-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        const maquinas = data.map(item => item.maquina);
+                        const mttrValores = data.map(item => item.mttr);
+
+                        if (graficoMttr) {
+                            graficoMttr.destroy();
+                        }
+
+                        graficoMttr = criarGraficoBar('graficoMttr', 'MTTR (Horas)', mttrValores, maquinas);
+                    })
+                    .catch(error => handleError(error, 'loading-mttr')),
+
+                fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoOrdensPrazo) {
+                            graficoOrdensPrazo.destroy();
+                        }
+
+                        graficoOrdensPrazo = criarGraficoPie('graficoOrdensPrazo', 'Ordens Finalizadas', ['Dentro do Prazo', 'Fora do Prazo'], [data.dentro_do_prazo, data.fora_do_prazo]);
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+                
+                fetch(`/horas-trabalhadas-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoHorasTrabalhadasSetor) {
+                            graficoHorasTrabalhadasSetor.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.setor);
+                        const valores = data.data.map(item => item.total_horas);
+
+                        graficoHorasTrabalhadasSetor = criarGraficoHorizontal('graficoHorasTrabalhadasSetor', 'Horas trabalhadas por setor', valores, labels);
+
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+                
+                fetch(`/horas-trabalhadas-tipo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoHorasTrabalhadasTipo) {
+                            graficoHorasTrabalhadasTipo.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.tipo_manutencao);
+                        const valores = data.data.map(item => item.total_horas);
+
+                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por tipo', valores, labels);
+
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+                
+                fetch(`/relacao-tipo-ordem?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoTipoOrdem) {
+                            graficoTipoOrdem.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.tipo_manutencao);
+                        const valores = data.data.map(item => item.total);
+                        graficoTipoOrdem = criarGraficoPie('graficoTipoOrdem', 'Distribuição por Tipo de Manutenção', labels, valores);
+                    })
+                    .catch(error => handleError(error, 'loading-tipo-ordem')),
+
+                fetch(`/tempo-maquina-parada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoMaquinasParadas) {
+                            graficoMaquinasParadas.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.maquina);
+                        const valores = data.data.map(item => item.total_horas);
+                        graficoMaquinasParadas = criarGraficoHorizontal('graficoMaquinasParadas', 'Tempo Total de Parada (Horas)', valores, labels);
+                    })
+                    .catch(error => handleError(error, 'loading-maquinas-paradas')),
+
+                fetch(`/solicitacao-por-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+
+                        if (graficoSolicitacaoSetor) {
+                            graficoSolicitacaoSetor.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.setor__nome);
+                        const valores = data.data.map(item => item.total);
+                        graficoSolicitacaoSetor = criarGraficoHorizontal('graficoSolicitacaoSetor', 'Solicitação por setor', valores, labels);
+                    })
+                    .catch(error => handleError(error, 'loading-solicitacao-setor')),
+
+                fetch(`/disponibilidade-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        if (graficoDisponibilidadeMaquina) {
+                            graficoDisponibilidadeMaquina.destroy();
+                        }
+                        
+                        const maquinas = data.map(item => item.maquina);
+                        const disponibilidade = data.map(item => item.disponibilidade);
+                        graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
+                    })
+                    .catch(error => handleError(error, 'loading-disponibilidade')),
+
+                fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-abertas').innerHTML = data.data;
+                        hideLoader('loading-abertas');
+                    })
+                    .catch(error => handleError(error, 'loading-abertas')),
+
+                fetch(`/ordens-finalizada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-finalizadas').innerHTML = data.data;
+                        hideLoader('loading-finalizadas');
+                    })
+                    .catch(error => handleError(error, 'loading-finalizadas')),
+
+                fetch(`/ordens-aguardando-material?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-aguardando-material').innerHTML = data.data;
+                        hideLoader('loading-aguardando-material');
+                    })
+                    .catch(error => handleError(error, 'loading-aguardando-material')),
+
+                fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-atrasada').innerHTML = data.data;
+                        hideLoader('loading-atrasadas');
+                    })
+                    .catch(error => handleError(error, 'loading-atrasadas')),
+
+                fetch(`/ordens-em-execucao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-execucao').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-tmf').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-tma').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/disponibilidade-geral?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}&maquina-critica=${maquinaCritica}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-disp-media').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+
+            ]);
+        } else {
+            return Promise.all([
+                
+                fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoOrdensPrazo) {
+                            graficoOrdensPrazo.destroy();
+                        }
+
+                        graficoOrdensPrazo = criarGraficoPie('graficoOrdensPrazo', 'Ordens Finalizadas', ['Dentro do Prazo', 'Fora do Prazo'], [data.dentro_do_prazo, data.fora_do_prazo]);
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+
+                fetch(`/horas-trabalhadas-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoHorasTrabalhadasSetor) {
+                            graficoHorasTrabalhadasSetor.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.setor);
+                        const valores = data.data.map(item => item.total_horas);
+
+                        graficoHorasTrabalhadasSetor = criarGraficoHorizontal('graficoHorasTrabalhadasSetor', 'Horas trabalhadas por setor', valores, labels);
+
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+
+                fetch(`/horas-trabalhadas-tipo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoHorasTrabalhadasTipo) {
+                            graficoHorasTrabalhadasTipo.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.tipo_manutencao);
+                        const valores = data.data.map(item => item.total_horas);
+
+                        graficoHorasTrabalhadasTipo = criarGraficoHorizontal('graficoHorasTrabalhadasTipo', 'Horas trabalhadas por tipo', valores, labels);
+
+                    })
+                    .catch(error => handleError(error, 'loading-ordens-prazo')),
+
+                fetch(`/relacao-tipo-ordem?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        
+                        if (graficoTipoOrdem) {
+                            graficoTipoOrdem.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.tipo_manutencao);
+                        const valores = data.data.map(item => item.total);
+                        graficoTipoOrdem = criarGraficoPie('graficoTipoOrdem', 'Distribuição por Tipo de Manutenção', labels, valores);
+                    })
+                    .catch(error => handleError(error, 'loading-tipo-ordem')),
+
+                fetch(`/solicitacao-por-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+
+                        if (graficoSolicitacaoSetor) {
+                            graficoSolicitacaoSetor.destroy();
+                        }
+
+                        const labels = data.data.map(item => item.setor__nome);
+                        const valores = data.data.map(item => item.total);
+                        graficoSolicitacaoSetor = criarGraficoHorizontal('graficoSolicitacaoSetor', 'Solicitação por setor', valores, labels);
+                    })
+                    .catch(error => handleError(error, 'loading-solicitacao-setor')),
+
+                fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-abertas').innerHTML = data.data;
+                        hideLoader('loading-abertas');
+                    })
+                    .catch(error => handleError(error, 'loading-abertas')),
+
+                fetch(`/ordens-finalizada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-finalizadas').innerHTML = data.data;
+                        hideLoader('loading-finalizadas');
+                    })
+                    .catch(error => handleError(error, 'loading-finalizadas')),
+
+                fetch(`/ordens-aguardando-material?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-aguardando-material').innerHTML = data.data;
+                        hideLoader('loading-aguardando-material');
+                    })
+                    .catch(error => handleError(error, 'loading-aguardando-material')),
+
+                fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-atrasada').innerHTML = data.data;
+                        hideLoader('loading-atrasadas');
+                    })
+                    .catch(error => handleError(error, 'loading-atrasadas')),
+
+                fetch(`/ordens-em-execucao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-execucao').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-tmf').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao')),
+                
+                fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
+                    .then(handleResponse)
+                    .then(data => {
+                        document.getElementById('card-tma').innerHTML = data.data;
+                        hideLoader('loading-execucao');
+                    })
+                    .catch(error => handleError(error, 'loading-execucao'))
+                ]),
+
+                
+                document.getElementById('card-disp-media').innerHTML = "Não se aplica";
+                hideLoader('loading-execucao');
                     
-                    if (graficoMtbf) {
-                        graficoMtbf.destroy();
-                    }
+        }
 
-                    graficoMtbf = criarGraficoBar('graficoMtbf', 'MTBF (Horas)', mtbfValores, maquinas);
-                })
-                .catch(error => handleError(error, 'loading-mtbf')),
-
-            fetch(`/mttr-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    const maquinas = data.map(item => item.maquina);
-                    const mttrValores = data.map(item => item.mttr);
-
-                    if (graficoMttr) {
-                        graficoMttr.destroy();
-                    }
-
-                    graficoMttr = criarGraficoBar('graficoMttr', 'MTTR (Horas)', mttrValores, maquinas);
-                })
-                .catch(error => handleError(error, 'loading-mttr')),
-
-            fetch(`/ordens-prazo?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
-                .then(handleResponse)
-                .then(data => {
-                    
-                    if (graficoOrdensPrazo) {
-                        graficoOrdensPrazo.destroy();
-                    }
-
-                    graficoOrdensPrazo = criarGraficoPie('graficoOrdensPrazo', 'Ordens Finalizadas', ['Dentro do Prazo', 'Fora do Prazo'], [data.dentro_do_prazo, data.fora_do_prazo]);
-                })
-                .catch(error => handleError(error, 'loading-ordens-prazo')),
-
-            fetch(`/relacao-tipo-ordem?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    
-                    if (graficoTipoOrdem) {
-                        graficoTipoOrdem.destroy();
-                    }
-
-                    const labels = data.data.map(item => item.tipo_manutencao);
-                    const valores = data.data.map(item => item.total);
-                    graficoTipoOrdem = criarGraficoPie('graficoTipoOrdem', 'Distribuição por Tipo de Manutenção', labels, valores);
-                })
-                .catch(error => handleError(error, 'loading-tipo-ordem')),
-
-            fetch(`/tempo-maquina-parada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    
-                    if (graficoMaquinasParadas) {
-                        graficoMaquinasParadas.destroy();
-                    }
-
-                    const labels = data.data.map(item => item.maquina);
-                    const valores = data.data.map(item => item.total_horas);
-                    graficoMaquinasParadas = criarGraficoHorizontal('graficoMaquinasParadas', 'Tempo Total de Parada (Horas)', valores, labels);
-                })
-                .catch(error => handleError(error, 'loading-maquinas-paradas')),
-
-            fetch(`/solicitacao-por-setor?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-
-                    if (graficoSolicitacaoSetor) {
-                        graficoSolicitacaoSetor.destroy();
-                    }
-
-                    const labels = data.data.map(item => item.setor__nome);
-                    const valores = data.data.map(item => item.total);
-                    graficoSolicitacaoSetor = criarGraficoHorizontal('graficoSolicitacaoSetor', 'Solicitação por setor', valores, labels);
-                })
-                .catch(error => handleError(error, 'loading-solicitacao-setor')),
-
-            fetch(`/disponibilidade-maquina?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    if (graficoDisponibilidadeMaquina) {
-                        graficoDisponibilidadeMaquina.destroy();
-                    }
-                    
-                    const maquinas = data.map(item => item.maquina);
-                    const disponibilidade = data.map(item => item.disponibilidade);
-                    graficoDisponibilidadeMaquina = criarGraficoBar('graficoDisponibilidadeMaquina', 'Disponibilidade %', disponibilidade, maquinas);
-                })
-                .catch(error => handleError(error, 'loading-disponibilidade')),
-
-            fetch(`/ordens-abertas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-abertas').innerHTML = data.data;
-                    hideLoader('loading-abertas');
-                })
-                .catch(error => handleError(error, 'loading-abertas')),
-
-            fetch(`/ordens-finalizada?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-finalizadas').innerHTML = data.data;
-                    hideLoader('loading-finalizadas');
-                })
-                .catch(error => handleError(error, 'loading-finalizadas')),
-
-            fetch(`/ordens-aguardando-material?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-aguardando-material').innerHTML = data.data;
-                    hideLoader('loading-aguardando-material');
-                })
-                .catch(error => handleError(error, 'loading-aguardando-material')),
-
-            fetch(`/ordens-em-aberto-atrasadas?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}&area=${area}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-atrasada').innerHTML = data.data;
-                    hideLoader('loading-atrasadas');
-                })
-                .catch(error => handleError(error, 'loading-atrasadas')),
-
-            fetch(`/ordens-em-execucao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-execucao').innerHTML = data.data;
-                    hideLoader('loading-execucao');
-                })
-                .catch(error => handleError(error, 'loading-execucao')),
-            fetch(`/tempo-medio-finalizacao?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-tmf').innerHTML = data.data;
-                    hideLoader('loading-execucao');
-                })
-                .catch(error => handleError(error, 'loading-execucao')),
-            fetch(`/tempo-medio-abertura?data-inicial=${dataInicial}&data-final=${dataFinal}&setor=${setorSelect}`)
-                .then(handleResponse)
-                .then(data => {
-                    document.getElementById('card-tma').innerHTML = data.data;
-                    hideLoader('loading-execucao');
-                })
-                .catch(error => handleError(error, 'loading-execucao'))
-        ]);
     }
 
     function handleResponse(response) {
@@ -493,12 +721,42 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // Permite que o gráfico se ajuste ao contêiner
                 scales: {
                     y: {
                         beginAtZero: true,
                         title: {
                             display: true,
                             text: label
+
+                        },
+                        ticks: {
+                            autoSkip: false // Não pula as labels
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: false // Não pula as labels
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true, // Permite arrastar o gráfico (pan)
+                            mode: 'x' // Apenas no eixo X
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true // Permite zoom com a roda do mouse
+                            },
+                            pinch: {
+                                enabled: true // Permite zoom com gestos de pinça
+                            },
+                            mode: 'x' // Apenas no eixo X
                         }
                     }
                 }
@@ -508,7 +766,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function criarGraficoPie(elementId, titulo, labels, valores) {
         const ctx = document.getElementById(elementId).getContext('2d');
-        const cores = labels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
+        
+        let opcoes = ['#2196F3', '#F44336', '#FFEB3B', '#4CAF50','#9C27B0','#FF5722','#00BCD4','#8BC34A'];
+        let cores = [];
+        for (let i = 0; i < labels.length ; i++){
+            cores[i] = opcoes[i];
+        }
+        
+        // backgroundColor: ['#2196F3', '#F44336', '#FFEB3B', '#4CAF50'], // Azul, Vermelho, Amarelo e Verde
+        // const cores = labels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
 
         return new Chart(ctx, {
             type: 'pie',
@@ -522,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }]
             },
             options: {
-                responsive: true,
+                responsive: false,
                 plugins: {
                     legend: {
                         position: 'top'
@@ -552,7 +818,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Para permitir que o gráfico se ajuste ao tamanho do container
+                maintainAspectRatio: false,
                 indexAxis: 'y',
                 scales: {
                     x: {
@@ -568,9 +834,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             text: 'Máquinas'
                         },
                         ticks: {
-                            autoSkip: false, // Evita que as labels sejam puladas
+                            autoSkip: false,
                             font: {
-                                size: 12 // Ajuste o tamanho da fonte conforme necessário
+                                size: 12
                             }
                         }
                     }
@@ -582,14 +848,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: {
                         display: true,
                         text: titulo
-                    }
-                },
-                layout: {
-                    padding: {
-                        top: 20,
-                        bottom: 20,
-                        left: 20,
-                        right: 20
+                    },
+                    zoom: {
+                        pan: {
+                            enabled: true, // Pan (arrastar para navegar)
+                            mode: 'y' // Somente no eixo Y
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true // Zoom com a roda do mouse
+                            },
+                            pinch: {
+                                enabled: true // Zoom com gesto de pinça (touch)
+                            },
+                            mode: 'y' // Apenas no eixo Y
+                        }
                     }
                 }
             }
@@ -601,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (loader) loader.style.display = 'none';
     }
 
-    // Obtenha as datas padrão
+    // datas padrão
     const { dataInicial, dataFinal } = getDefaultDates();
     const setorSelect = document.getElementById('setorSelect').value;
 
@@ -609,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('endDate').value = dataFinal;
 
     // Inicialize os gráficos com as datas padrão
-    promiseCharts(dataInicial, dataFinal, setorSelect); 
+    promiseCharts(dataInicial, dataFinal, setorSelect, area, maquinaCritica); 
 
     // Evento do formulário para aplicar filtros
     document.getElementById('filterForm').addEventListener('submit', async function (event) {
@@ -622,11 +895,65 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataInicial = document.getElementById('startDate').value;
         const dataFinal = document.getElementById('endDate').value;
         const setorSelect = document.getElementById('setorSelect').value;
+        const area = document.getElementById('area').value;
+        const maquinaCritica = document.getElementById('maquinaCriticaCheck').checked;
 
-        await promiseCharts(dataInicial, dataFinal, setorSelect); // Aguarda as requisições finalizarem
+        await promiseCharts(dataInicial, dataFinal, setorSelect, area, maquinaCritica); // Aguarda as requisições finalizarem
 
         btnFilter.innerHTML = 'Aplicar Filtros';
         btnFilter.disabled = false;
+    });
+
+    function exportar(urlBase) {
+
+        const dataInicial = document.getElementById('startDate').value;
+        const dataFinal = document.getElementById('endDate').value;
+        const setorSelect = document.getElementById('setorSelect').value;
+        const area = document.getElementById('area').value;
+
+        const params = new URLSearchParams({
+            'data-inicial': dataInicial,
+            'data-final': dataFinal,
+            'setor': setorSelect,
+            'area': area,
+        });
+
+        const url = `${urlBase}?${params.toString()}`;
+        window.open(url, '_blank'); // Abre o download em uma nova aba
+
+    }
+
+    document.getElementById('dadosMaqParada').addEventListener('click', () => {
+        exportar('/exportar-maquina-parada/')
+    });
+
+    document.getElementById('dadosSolicitacaoSetor').addEventListener('click', () => {
+        exportar('/exportar-solicitacao-setor/')
+    });
+
+    if (area === 'producao'){
+
+        document.getElementById('dadosMtbfMaquina').addEventListener('click', () => {
+            exportar('/exportar-mtbf-maquina/')
+        });
+
+        document.getElementById('dadosMttrMaquina').addEventListener('click', () => {
+            exportar('/exportar-mttr-maquina/')
+        });
+
+        document.getElementById('dadosDispMaquina').addEventListener('click', () => {
+            exportar('/exportar-disponibilidade-maquina/')
+        });
+
+
+    }
+
+    document.getElementById('dadosHorasTrabSetor').addEventListener('click', () => {
+        exportar('/exportar-horas-trabalhadas-setor/')
+    });
+
+    document.getElementById('dadosHorasTrabTipo').addEventListener('click', () => {
+        exportar('/exportar-horas-trabalhadas-tipo/')
     });
 
 });

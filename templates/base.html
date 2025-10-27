@@ -134,9 +134,16 @@
                             <div class="collapse" id="collpasePreventivas" aria-labelledby="headingOne"
                                 data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard Produção</a>
                                 </nav>
                             </div>
+                            <div class="collapse" id="collpasePreventivas" aria-labelledby="headingOne"
+                                data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{% url 'dashboard-predial' %}">Dashboard Predial</a>
+                                </nav> 
+                            </div>
+
                         {% endif %}
                         
                         {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
