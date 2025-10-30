@@ -114,6 +114,12 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label for="maquina" class="form-label">Máquina</label>
+                    <select class="form-select" id="maquina" name="maquina">
+                        <option value="">Selecione a Máquina</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
                             {% if planejada == '1' %}checked{% endif %}>
@@ -2466,6 +2472,55 @@
             alert('Erro ao atualizar o status da máquina.');
         });
     }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Inicializa Select2 para lookup de máquinas
+        $('#maquina').select2({
+            language: 'pt-BR',
+            placeholder: 'Buscar máquina por código ou descrição...',
+            minimumInputLength: 1,
+            allowClear: true,
+            ajax: {
+                url: '/api/maquinas/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
+                const results = (data.maquinas || []).map(m => ({
+                    id: m.id,
+                    text: `${m.codigo} - ${m.descricao || ''}`
+                }));
+                return {
+                    results: results
+                    // se implementar paginação, retornar também pagination: { more: <boolean> }
+                };
+                },
+                cache: true
+            },
+            templateResult: function (item) {
+                if (!item.id) { return item.text; } // placeholder/loading
+                return $('<span>').text(item.text);
+            },
+            templateSelection: function (item) {
+                return item.text || item.id;
+            },
+            escapeMarkup: function (m) { return m; },
+            width: '100%'
+        });
+
+
+        
+    });
 </script>
 
 {% endblock %}
