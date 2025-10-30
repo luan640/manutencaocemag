@@ -76,7 +76,7 @@
                 {% endif %}
                 <div class="col-md-3">
                     <label for="ultimo_status" class="form-label">Status</label>
-                    <select class="form-select" id="ultimo_status" name="ultimo_status">
+                    <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
                         <option value="">Todos</option>
                         <option value="em_espera">Em espera</option>
                         {% for status in status_choices %}
@@ -1471,6 +1471,17 @@
         });
 
             }
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicando Select2 para multiplo select de status no filtro
+        $('#ultimo_status').select2({
+            placeholder: 'Selecione status',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+    }); 
 </script>
 
 {% endblock %}
