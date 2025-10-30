@@ -4,6 +4,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, Http404
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 
 from .forms import MaquinaForm, AddOperadorForm
@@ -275,3 +276,17 @@ def api_operadores(request):
         operadores = list(Operador.objects.all().values())
 
     return JsonResponse({'operadores': operadores})
+
+def api_maquinas(request):
+    """API para retornar a lista de máquinas em formato JSON."""
+    search = request.GET.get('search', '')
+
+    qs = Maquina.objects.filter(area='producao')
+
+    if search:
+        qs = qs.filter(Q(codigo__icontains=search) | Q(descricao__icontains=search))
+
+    maquinas = list(qs.values('id', 'codigo','descricao')[:25])
+        
+
+    return JsonResponse({'maquinas': maquinas})

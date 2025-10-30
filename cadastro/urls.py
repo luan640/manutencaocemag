@@ -13,4 +13,6 @@ urlpatterns = [
     path('operador/edit/<int:pk>', edit_operador, name='edit_operador'),
     path('api/operadores/', api_operadores, name='api_operadores'),
 
+    # APIS
+    path('api/maquinas/', api_maquinas, name='api_maquinas'),
 ]
