@@ -1382,11 +1382,13 @@ def tempo_medio_abertura(request):
 def horas_trabalhadas_setor(request):
 
     area = request.GET.get('area')
+    data_inicial = request.GET.get('data-inicial')
+    data_final = request.GET.get('data-final')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
+    resultado = Execucao.objects.filter(data_inicio__gte=data_inicial, data_fim__lte=data_final, data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
             output_field=DurationField()
@@ -1421,11 +1423,13 @@ def horas_trabalhadas_setor(request):
 def exportar_horas_trabalhadas_setor(request):
     
     area = request.GET.get('area')
+    data_inicial = request.GET.get('data-inicial')
+    data_final = request.GET.get('data-final')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
-    resultado = Execucao.objects.filter(data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
+    resultado = Execucao.objects.filter(data_inicio__gte=data_inicial, data_fim__lte=data_final, data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
         dif_tempo=ExpressionWrapper(
             F('data_fim') - F('data_inicio'), 
             output_field=DurationField()
@@ -1473,10 +1477,14 @@ def horas_trabalhadas_tipo(request):
 
     area = request.GET.get('area')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
+    data_inicial = request.GET.get('data-inicial')
+    data_final = request.GET.get('data-final')
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     resultado = Execucao.objects.filter(
+        data_inicio__gte=data_inicial,
+        data_fim__lte=data_final,
         data_fim__isnull=False,
         ordem__info_solicitacao__tipo_manutencao__isnull=False,
         ordem__area=area,
@@ -1517,10 +1525,14 @@ def exportar_horas_trabalhadas_tipo(request):
     
     area = request.GET.get('area')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
+    data_inicial = request.GET.get('data-inicial')
+    data_final = request.GET.get('data-final')
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     resultado = Execucao.objects.filter(
+        data_inicio__gte=data_inicial,
+        data_fim__lte=data_final,
         data_fim__isnull=False,
         ordem__info_solicitacao__tipo_manutencao__isnull=False,
         ordem__area=area,
