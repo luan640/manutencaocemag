@@ -1380,82 +1380,111 @@ def tempo_medio_abertura(request):
     return JsonResponse({'data': tempo_medio_formatado})
 
 def horas_trabalhadas_setor(request):
+    data_inicial = datetime.strptime(
+        request.GET.get('data-inicial') + ' 00:00:00',
+        '%Y-%m-%d %H:%M:%S'
+    )
+    data_final = datetime.strptime(
+        request.GET.get('data-final') + ' 23:59:59',
+        '%Y-%m-%d %H:%M:%S'
+    )
 
-    area = request.GET.get('area')
-    data_inicial = request.GET.get('data-inicial')
-    data_final = request.GET.get('data-final')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    nome_setor = request.GET.get('setor')  # ex.: "Corte e estamparia"
 
-    maquinas_criticas = maquinas_criticas.lower() == 'true'
+    maquinas_criticas_param = request.GET.get('maquina-critica', "false")
 
-    resultado = Execucao.objects.filter(data_inicio__gte=data_inicial, data_fim__lte=data_final, data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
-        dif_tempo=ExpressionWrapper(
-            F('data_fim') - F('data_inicio'), 
-            output_field=DurationField()
+    maquinas_criticas = maquinas_criticas_param.lower() == 'true'
+
+    qs = Execucao.objects.filter(
+        data_inicio__gte=data_inicial,
+        data_fim__lte=data_final,
+    )
+
+    # qs = qs.filter(ordem__maquina__maquina_critica=maquinas_criticas)
+
+    if nome_setor:
+        qs = qs.filter(ordem__setor__nome=nome_setor)
+
+    qs = qs.filter(ordem__area='producao')
+
+    if maquinas_criticas == 'true':
+        qs = qs.filter(ordem__maquina__maquina_critica=True)
+
+    qs = (
+        qs.annotate(
+            dif_tempo=ExpressionWrapper(
+                F('data_fim') - F('data_inicio'),
+                output_field=DurationField()
+            )
         )
-    ).values('ordem__setor__nome').annotate(
-        total_horas=Sum('dif_tempo')
-    ).order_by('ordem__setor__nome')
+        .values('ordem__setor__nome')          # GROUP BY setor
+        .annotate(total_horas=Sum('dif_tempo'))  # SUM(intervalo)
+        .order_by('ordem__setor__nome')
+    )
 
-    # Converte `total_horas` para horas decimais
-    resultado_formatado = []
-    for item in resultado:
+    resultado = []
+    for item in qs:
         setor = item['ordem__setor__nome']
-        total_horas = item['total_horas']
-        
-        if total_horas:
-            # Converte para timedelta e depois para horas decimais
-            duracao = timedelta(seconds=total_horas.total_seconds())
-            horas_decimais = duracao.total_seconds() / 3600  # Total de horas em formato decimal
+        total = item['total_horas']  # timedelta
+
+        if total:
+            horas = total.total_seconds() / 3600
         else:
-            horas_decimais = 0
-        
-        resultado_formatado.append({
+            horas = 0
+
+        resultado.append({
             'setor': setor,
-            'total_horas': horas_decimais
+            'total_horas': horas,
         })
+    
+    resultado = sorted(resultado, key=lambda x: x['total_horas'], reverse=True)
 
-    resultado_formatado = sorted(resultado_formatado, key=lambda x: x.get('total_horas', 0), reverse=True)
-
-    # Retorna o resultado em formato JSON para o frontend
-    return JsonResponse({'data': resultado_formatado})
+    return JsonResponse({'data': resultado})
 
 def exportar_horas_trabalhadas_setor(request):
     
-    area = request.GET.get('area')
-    data_inicial = request.GET.get('data-inicial')
-    data_final = request.GET.get('data-final')
-    maquinas_criticas = request.GET.get('maquina-critica',"False")
+    data_inicial = datetime.strptime(
+        request.GET.get('data-inicial') + ' 00:00:00',
+        '%Y-%m-%d %H:%M:%S'
+    )
+    data_final = datetime.strptime(
+        request.GET.get('data-final') + ' 23:59:59',
+        '%Y-%m-%d %H:%M:%S'
+    )
 
-    maquinas_criticas = maquinas_criticas.lower() == 'true'
+    nome_setor = request.GET.get('setor')  # ex.: "Corte e estamparia"
 
-    resultado = Execucao.objects.filter(data_inicio__gte=data_inicial, data_fim__lte=data_final, data_fim__isnull=False, ordem__area=area, ordem__maquina__maquina_critica=maquinas_criticas).annotate(
-        dif_tempo=ExpressionWrapper(
-            F('data_fim') - F('data_inicio'), 
-            output_field=DurationField()
+    maquinas_criticas_param = request.GET.get('maquina-critica', "false")
+
+    maquinas_criticas = maquinas_criticas_param.lower() == 'true'
+
+    qs = Execucao.objects.filter(
+        data_inicio__gte=data_inicial,
+        data_fim__lte=data_final,
+    )
+
+    # qs = qs.filter(ordem__maquina__maquina_critica=maquinas_criticas)
+
+    if nome_setor:
+        qs = qs.filter(ordem__setor__nome=nome_setor)
+
+    qs = qs.filter(ordem__area='producao')
+
+    if maquinas_criticas == 'true':
+        qs = qs.filter(ordem__maquina__maquina_critica=True)
+
+    qs = (
+        qs.annotate(
+            dif_tempo=ExpressionWrapper(
+                F('data_fim') - F('data_inicio'),
+                output_field=DurationField()
+            )
         )
-    ).values('ordem__setor__nome').annotate(
-        total_horas=Sum('dif_tempo')
-    ).order_by('ordem__setor__nome')
-
-    # Converte `total_horas` para horas decimais
-    resultado_formatado = []
-    for item in resultado:
-        setor = item['ordem__setor__nome']
-        total_horas = item['total_horas']
-        
-        if total_horas:
-            # Converte para timedelta e depois para horas decimais
-            duracao = timedelta(seconds=total_horas.total_seconds())
-            horas_decimais = duracao.total_seconds() / 3600  # Total de horas em formato decimal
-        else:
-            horas_decimais = 0
-        
-        resultado_formatado.append({
-            'setor': setor,
-            'total_horas': horas_decimais
-        })
-
+        .values('ordem__setor__nome')          # GROUP BY setor
+        .annotate(total_horas=Sum('dif_tempo'))  # SUM(intervalo)
+        .order_by('ordem__setor__nome')
+    )
+    
     resultado_formatado = sorted(resultado_formatado, key=lambda x: x.get('total_horas', 0), reverse=True)
 
     df = pd.DataFrame(resultado_formatado)
