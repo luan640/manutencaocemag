@@ -404,11 +404,14 @@ def execucao_data(request):
 
     # Filtros personalizados
     status = request.POST.get('status', '')
-    setor = request.POST.get('area', '')
-    print(setor)
+    setor = request.POST.get('setor', '')
+
     solicitante = request.POST.get('solicitante', '')
     data_inicio = request.POST.get('data_inicio', '')
+    ordem = request.POST.get('ordem', '')
 
+    if ordem:
+        execucoes = execucoes.filter(ordem__pk=ordem)
     if status:
         execucoes = execucoes.filter(status=status)
     if setor:
