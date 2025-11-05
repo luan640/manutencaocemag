@@ -1,4 +1,7 @@
 $(document).ready(function () {
+
+    let filtrosEstado = {};
+
     const table = $('#execucaoTable').DataTable({
         responsive: true,
         autoWidth: false,
@@ -55,13 +58,16 @@ $(document).ready(function () {
 
         const checkbox = $(`
             <div class="form-check">
-                <input class="form-check-input toggle-vis" type="checkbox" data-column="${index}" checked>
+                <input class="form-check-input toggle-vis" type="checkbox" data-column="${index}" data-name="${colName}" checked>
                 <label class="form-check-label">${colName}</label>
             </div>
         `);
 
         columnMenu.append(checkbox);
+        filtrosEstado[colName] = true;
+
     });
+
 
     // Após inicializar a tabela
     loadColumnVisibility();
@@ -69,8 +75,21 @@ $(document).ready(function () {
     // Evento de alternar visibilidade
     $('#columnToggleMenu').on('change', '.toggle-vis', function (e) {
         const column = table.column($(this).attr('data-column'));
-        column.visible($(this).is(':checked'));
+        const columnName = $(this).attr('data-name');
+        const status = $(this).is(':checked')
+        column.visible(status);
 
+        // Pegar o nome da coluna
+        // Procurar no menu dropdown de filtros pelo filtro dessa coluna
+        const $filtroItem = $(`#filtrosMenu .filter-item[data-name="${columnName}"]`);
+        const $filtroCampo = $filtroItem.find('input', 'select');
+
+        if ($filtroItem.length) {
+            $filtroItem.css('display', status ? '' : 'none');
+            $filtroCampo.prop('disabled', !status);
+        }
+
+        // Habilitar ou desabilitar filtro de acordo com o valor do checkbox
         // Salva no localStorage
         saveColumnVisibility();
     });
@@ -103,24 +122,9 @@ $(document).ready(function () {
         $(this).text(newState ? 'Desmarcar Todos' : 'Selecionar Todos');
     });
 
-    // Função para salvar no localStorage
-    function saveColumnVisibility() {
-        const visibility = [];
-        $('#columnToggleMenu input[type="checkbox"]').each(function() {
-            visibility.push($(this).is(':checked'));
-        });
-        localStorage.setItem('execucaoTableColumns', JSON.stringify(visibility));
-    }
-
-    function loadColumnVisibility() {
-        const saved = JSON.parse(localStorage.getItem('execucaoTableColumns'));
-        if (saved && saved.length) {
-            $('#columnToggleMenu input[type="checkbox"]').each(function(i) {
-                $(this).prop('checked', saved[i]);
-                table.column($(this).data('column')).visible(saved[i]);
-            });
-        }
-    }
+    $('#filtrosMenu').on('click', function(e) {
+        e.stopPropagation();
+    });
 
     $('#filterMaquina').select2({
             language: 'pt-BR',
@@ -171,4 +175,48 @@ $(document).ready(function () {
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
         });
 
+        $('#filterHorasExecutadasInicial, #filterHorasExecutadasFinal').on('input', function(){
+            formatarInput(this);
+        });
+
+        // Função para salvar no localStorage
+        function saveColumnVisibility() {
+            const visibility = [];
+            $('#columnToggleMenu input[type="checkbox"]').each(function() {
+                visibility.push($(this).is(':checked'));
+            });
+            localStorage.setItem('execucaoTableColumns', JSON.stringify(visibility));
+        }
+
+        function loadColumnVisibility() {
+            const saved = JSON.parse(localStorage.getItem('execucaoTableColumns'));
+            if (saved && saved.length) {
+                $('#columnToggleMenu input[type="checkbox"]').each(function(i) {
+                    $(this).prop('checked', saved[i]);
+                    table.column($(this).data('column')).visible(saved[i]);
+                });
+            }
+        }
+
+        function formatarInput(input) {
+            // Remove tudo que não seja número
+            let valor = input.value.replace(/\D/g, '');
+
+            if (valor.length > 4) {
+                valor = valor.substring(0, 4);
+            }
+
+            // Formata conforme a quantidade de dígitos
+            if (valor.length <= 2) {
+                input.value = valor; // apenas horas digitadas
+            } else {
+                let horas = valor.substring(0, valor.length - 2);
+                let minutos = valor.substring(valor.length - 2);
+
+                // Limita minutos a 59
+                if (parseInt(minutos) > 59) minutos = '59';
+
+                input.value = `${horas}:${minutos}`;
+            }
+        }
   });

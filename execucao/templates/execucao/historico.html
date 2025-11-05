@@ -49,6 +49,36 @@
             margin-top: 0.5rem;
         }
     }
+
+    #filtrosMenu .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 2 colunas */
+        gap: 12px; /* espaço entre filtros */
+    }
+
+    #filtrosMenu .filter-item {
+        width: 100%; /* garante que cada item ocupe a coluna */
+    }
+
+    @media (max-width: 576px) {
+    #filtrosMenu .filters-grid {
+        grid-template-columns: 1fr; /* 1 coluna em mobile */
+        }
+    }
+
+    .filter-group {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+    }
+
+    .group-title {
+        font-size: 0.9rem;
+        color: #333;
+        margin-bottom: 6px;
+    }
+
+
 </style>
 
 {% endblock %}
@@ -85,44 +115,156 @@
 
     <!-- Botão que abre/fecha filtros -->
     <div class="mb-3">
-        <!-- Botão que abre o dropdown de filtros -->
-        <div class="btn-group">
-            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                Filtros
-            </button>
-            <div class="dropdown-menu p-3" style="width: 400px;">
-                <div class="mb-2">
-                    <label for="filterOrdem" class="form-label">#OS</label>
-                    <input type="number" class="form-control" id="filterOrdem" placeholder="Número da ordem">
-                </div>
-                <div class="mb-2">
-                    <label for="filterSolicitante" class="form-label">Solicitante</label>
-                    <input type="text" class="form-control" id="filterSolicitante" placeholder="Nome do solicitante">
-                </div>
-                <div class="mb-2">
-                    <label for="setor" class="form-label">Setor</label>
-                    <select class="form-select" id="setor">
-                        <option value="">Todos</option>
-                        {% for setor in setores %}
-                            <option value="{{ setor.id }}">{{ setor.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-2">
-                    <label for="ultimo_status" class="form-label">Status</label>
-                    <select class="form-select" id="ultimo_status" multiple>
-                        <option value="">Todos</option>
-                        {% for status in status_choices %}
-                            <option value="{{ status.0 }}">{{ status.1 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="text-end mt-2">
-                    <button id="btnLimparFiltro" class="btn btn-secondary btn-sm"><i class="bi bi-eraser"></i> Limpar Filtros</button>
-                </div>
+  <!-- Botão que abre o dropdown de filtros -->
+  <div class="btn-group">
+    <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+      Filtros
+    </button>
+    <div class="dropdown-menu p-3" style="width: 450px; max-height: 500px; overflow-y: auto;" id="filtrosMenu">
+
+      <!-- Grupo 1: Identificação da Ordem -->
+      <div class="filter-group mb-3">
+        <div class="group-title fw-bold mb-2">Identificação da Ordem</div>
+
+        <div class="row g-2">
+          <div class="col-6 filter-item" data-name='OS'>
+            <label for="filterOrdem" class="form-label">#OS</label>
+            <input type="number" class="form-control form-control-sm" id="filterOrdem" placeholder="Número da ordem">
+          </div>
+
+          <div class="col-6 filter-item" data-name='Execução'>
+            <label for="filterExecucao" class="form-label">Execução</label>
+            <input type="text" class="form-control form-control-sm" id="filterExecucao" placeholder="Nº Execução">
+          </div>
+
+          <div class="col-6 filter-item" data-name='Setor'>
+            <label for="filterSetor" class="form-label">Setor</label>
+            <select class="form-select form-select-sm" id="filterSetor">
+              <option value="">Todos</option>
+              <!-- opções de setor -->
+            </select>
+          </div>
+
+         <div class="col-6 filter-item" data-name='Solicitante'>
+            <label for="filterSolicitante" class="form-label">Solicitante</label>
+            <input type="text" class="form-control form-control-sm" id="filterSolicitante" placeholder="Nome do solicitante">
+          </div>
+        </div>
+      </div>
+
+      <!-- Grupo 2: Máquina e Manutenção -->
+      <div class="filter-group mb-3">
+        <div class="group-title fw-bold mb-2">Máquina e Manutenção</div>
+
+        <div class="row g-2">
+          <div class="col-6 filter-item" data-name='Máquina'>
+            <label for="filterMaquina" class="form-label">Máquina</label>
+            <select class="form-select form-select-sm" id="filterMaquina">
+              <option value="">Todos</option>
+              <!-- opções de máquina -->
+            </select>
+          </div>
+
+          <div class="col-6 filter-item" data-name='Tipo da manutenção'>
+            <label for="filterTipoManutencao" class="form-label">Tipo de Manutenção</label>
+            <select class="form-select form-select-sm" id="filterTipoManutencao" multiple size="2">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="col-6 filter-item" data-name='Área da manutenção'>
+            <label for="filterAreaManutencao" class="form-label">Área da Manutenção</label>
+            <select class="form-select form-select-sm" id="filterAreaManutencao" multiple size="2">
+              <option value="">Todos</option>
+            </select>
+          </div>
+
+          <div class="col-6 filter-item" data-name='Horas executadas'>
+            <label class="form-label">Horas Executadas</label>
+            <div class="d-flex gap-2">
+              <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasInicial" placeholder="Inicio">
+              <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasFinal" placeholder="Fim">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Grupo 3: Datas -->
+    <div class="filter-group mb-3">
+        <div class="group-title fw-bold mb-2">Datas</div>
+
+        <!-- Cada filtro de data ocupa 100% da largura -->
+        <div class="mb-3 filter-item" data-name='Data de abertura'>
+            <label class="form-label">Data de Abertura</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="filterDataAberturaInicial" placeholder="Inicial">
+                <input type="date" class="form-control form-control-sm" id="filterDataAberturaFinal" placeholder="Final">
+            </div>
+        </div>
+
+        <div class="mb-3 filter-item" data-name='Data de início'>
+            <label class="form-label">Data de Início</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="filterDataInicioInicial" placeholder="Inicial">
+                <input type="date" class="form-control form-control-sm" id="filterDataInicioFinal" placeholder="Final">
+            </div>
+        </div>
+
+        <div class="mb-3 filter-item" data-name='Data de fim'>
+            <label class="form-label">Data de Fim</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="filterDataFinalInicial" placeholder="Inicial">
+                <input type="date" class="form-control form-control-sm" id="filterDataFinalFinal" placeholder="Final">
+            </div>
+        </div>
+
+        <div class="mb-3 filter-item" data-name='Última atualização'>
+            <label class="form-label">Última Atualização</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoInicial" placeholder="Inicial">
+                <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoFinal" placeholder="Final">
             </div>
         </div>
     </div>
+
+      <!-- Grupo 4: Comentários e Status -->
+      <div class="filter-group mb-3">
+        <div class="group-title fw-bold mb-2">Comentários e Status</div>
+
+        <div class="row g-2">
+          <div class="col-12 filter-item" data-name='Comentário da manutenção'>
+            <label for="filterComentarioManutencao" class="form-label">Comentário da Manutenção</label>
+            <input type="text" class="form-control form-control-sm" id="filterComentarioManutencao" placeholder="Comentário">
+          </div>
+
+          <div class="col-6 filter-item" data-name='Motivo'>
+            <label for="filterMotivo" class="form-label">Motivo</label>
+            <input type="text" class="form-control form-control-sm" id="filterMotivo" placeholder="Motivo">
+          </div>
+
+          <div class="col-6 filter-item" data-name='Obs do executante'>
+            <label for="filterObsExecutante" class="form-label">Obs do Executante</label>
+            <input type="text" class="form-control form-control-sm" id="filterObsExecutante" placeholder="Observação">
+          </div>
+
+          <div class="col-12 filter-item" data-name='Status'>
+            <label for="filterStatus" class="form-label">Status</label>
+            <select class="form-select form-select-sm" id="filterStatus" multiple size="3">
+              <option value="">Todos</option>
+              <!-- opções de status -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-end mt-2">
+        <button id="btnLimparFiltro" class="btn btn-secondary btn-sm"><i class="bi bi-eraser"></i> Limpar Filtros</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
     <!-- Tabela -->
