@@ -3,4 +3,3 @@ antigo
 env_manut
 venv
 *.pyc
-__pycache__/
