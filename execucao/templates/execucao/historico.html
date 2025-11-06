@@ -56,10 +56,6 @@
         gap: 12px; /* espaço entre filtros */
     }
 
-    #filtrosMenu .filter-item {
-        width: 100%; /* garante que cada item ocupe a coluna */
-    }
-
     @media (max-width: 576px) {
     #filtrosMenu .filters-grid {
         grid-template-columns: 1fr; /* 1 coluna em mobile */
@@ -117,11 +113,11 @@
     <div class="mb-3">
   <!-- Botão que abre o dropdown de filtros -->
   <div class="btn-group">
-    <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <button type="button" id="btnFiltros" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="false">
       Filtros
     </button>
-    <div class="dropdown-menu p-3" style="width: 450px; max-height: 500px; overflow-y: auto;" id="filtrosMenu">
-
+    <div class="dropdown-menu p-3" style="width: 450px; max-height: 500px; position: relative;" id="filtrosMenu">
+      <div class="filters-content" style="max-height: 500px; overflow-y: auto; padding-bottom: 70px;">
       <!-- Grupo 1: Identificação da Ordem -->
       <div class="filter-group mb-3">
         <div class="group-title fw-bold mb-2">Identificação da Ordem</div>
@@ -157,7 +153,7 @@
         <div class="group-title fw-bold mb-2">Máquina e Manutenção</div>
 
         <div class="row g-2">
-          <div class="col-6 filter-item" data-name='Máquina'>
+          <div class="col-12 filter-item" data-name='Máquina'>
             <label for="filterMaquina" class="form-label">Máquina</label>
             <select class="form-select form-select-sm" id="filterMaquina">
               <option value="">Todos</option>
@@ -256,12 +252,23 @@
           </div>
         </div>
       </div>
+      
+      <!-- Botões fixos no fundo -->
+      <div class="d-flex justify-content-between position-absolute bottom-0 start-0 end-0 p-3 bg-white border-top">
+          <button type="button" id="btnFecharFiltros" class="btn btn-sm btn-outline-danger">
+            Fechar
+          </button>
 
-      <div class="text-end mt-2">
-        <button id="btnLimparFiltro" class="btn btn-secondary btn-sm"><i class="bi bi-eraser"></i> Limpar Filtros</button>
+          <div>
+              <button id="btnLimparFiltro" class="btn btn-secondary btn-sm"><i class="bi bi-eraser"></i> Limpar Filtros</button>
+              <button id="btnFiltrarEnvio" class="btn btn-primary btn-sm">Filtrar</button>
+          </div>
       </div>
     </div>
   </div>
+  </div>
+  <div class="mt-2 text-secondary text-end"> Filtros Ativos: </div>
+  <div id="filtrosAtivos" class="mt-2 small text-secondary text-end">Nenhum filtro aplicado</div>
 </div>
 
 

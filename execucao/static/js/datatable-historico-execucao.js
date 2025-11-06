@@ -3,6 +3,7 @@ $(document).ready(function () {
     let filtrosEstado = {};
 
     const table = $('#execucaoTable').DataTable({
+        searching: false,
         responsive: true,
         autoWidth: false,
         lengthMenu: [10, 25, 50, 100],
@@ -14,12 +15,36 @@ $(document).ready(function () {
             type: 'POST',
             data: function (d) {
                 // Adiciona os filtros personalizados aos dados enviados ao backend
-                d.status = $('#filterStatus').val();
-                // d.area = $('#filterArea').val();
-                d.solicitante = $('#filterSolicitante').val();
-                d.data_inicio = $('#filterDataInicio').val();
+
+                // Grupo 1: Identificação da Ordem 
                 d.ordem = $('#filterOrdem').val();
+                d.execucao = $('#filterExecucao').val();
                 d.setor = $('#filterSetor').val();
+                d.status = $('#filterStatus').val();
+                d.solicitante = $('#filterSolicitante').val();
+
+                // Grupo 2: Máquina e Manutenção
+                d.maquina = $('#filterMaquina').val();
+                d.tipoManutencao = $('#filterTipoManutencao').val();
+                d.areaManutencao = $('#filterAreaManutencao').val();
+                d.horasExecutadasInicial = $('#filterHorasExecutadasInicial').val();
+                d.horasExecutadasFinal = $('#filterHorasExecutadasFinal').val();
+
+                // Grupo 3: Datas
+                d.dataAberturaInicial = $('#filterDataAberturaInicial').val();
+                d.dataAberturaFinal = $('#filterDataAberturaFinal').val();
+                d.dataInicioInicial = $('#filterDataInicioInicial').val();
+                d.dataInicioFinal = $('#filterDataInicioFinal').val();
+                d.dataFinalInicial = $('#filterDataFinalInicial').val();
+                d.dataFinalFinal = $('#filterDataFinalFinal').val();
+                d.ultimaAtualizacaoInicial = $('#filterUltimaAtualizacaoInicial').val();
+                d.ultimaAtualizacaoFinal = $('#filterUltimaAtualizacaoFinal').val();
+                
+                // Grupo 4: Comentários e Status
+                d.comentarioManutencao = $('#filterComentarioManutencao').val();
+                d.motivo = $('#filterMotivo').val();
+                d.obsExecutante = $('#filterObsExecutante').val();
+                d.status = $('#filterStatus').val();
             }
         },
         columns: [
@@ -97,12 +122,36 @@ $(document).ready(function () {
     $('#columnToggleMenu').on('click', function (e) {
         e.stopPropagation(); // evita fechar o menu
     });
-  
-    // Eventos para aplicar filtros
-    // filtros(OS, Setor, Solicitante, Máquina, Data Abertura, Data Inicio, Data Fim, Status)
-    $('#filterStatus, #filterSolicitante, #filterDataInicio, #filterOrdem, #filterSetor').on('change keyup', function () {
+
+    $('#btnLimparFiltro').on('click', function(){
+        $(`#filtrosMenu .filter-item`).each(function(){
+            const campo = $(this).find('input, select');
+
+            campo.each(function(){
+                if (this.tagName === 'SELECT') {
+                    // limpa selects (inclusive múltiplos)
+                    this.selectedIndex = -1;
+                if (this.multiple) {
+                    $(this).find('option').prop('selected', false);
+                }
+                // seta "Todos" se existir
+                if ($(this).find('option[value=""]').length) {
+                    $(this).val('');
+                }
+                } else {
+                    // limpa inputs (text, number, date etc.)
+                    $(this).val('');
+                }
+            })
+        });
         table.ajax.reload(); // Recarrega os dados da tabela
-    });
+        atualizarFiltrosAtivos();
+    })
+
+    $('#btnFiltrarEnvio').on('click', function(){
+        table.ajax.reload(); // Recarrega os dados da tabela
+        atualizarFiltrosAtivos();
+    })
 
     $('#btnSelectAllColumns').click(function() {
         const $checkboxes = $('#columnToggleMenu input[type="checkbox"]');
@@ -166,10 +215,30 @@ $(document).ready(function () {
             escapeMarkup: function (m) { return m; },
             width: '100%'
         });
-
         // Aplicando Select2 para multiplo select de status no filtro
         $('#filterStatus').select2({
             placeholder: 'Selecione status',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+        
+        $('#filterSetor').select2({
+            placeholder: 'Selecione o Setor',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+
+        $('#filterTipoManutencao').select2({
+            placeholder: 'Selecione o Tipo',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+
+        $('#filterAreaManutencao').select2({
+            placeholder: 'Selecione a Área',
             allowClear: true,
             width: '100%',
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
@@ -178,6 +247,17 @@ $(document).ready(function () {
         $('#filterHorasExecutadasInicial, #filterHorasExecutadasFinal').on('input', function(){
             formatarInput(this);
         });
+
+        $('#btnFecharFiltros').on('click', function() {
+            // pega a instância do dropdown
+            const $dropdownBtn = $('#btnFiltros');
+            if ($dropdownBtn){
+                const dropdownInstance = bootstrap.Dropdown.getOrCreateInstance($dropdownBtn);
+                dropdownInstance.hide(); // fecha o dropdown
+            }
+            
+        });
+
 
         // Função para salvar no localStorage
         function saveColumnVisibility() {
@@ -194,6 +274,18 @@ $(document).ready(function () {
                 $('#columnToggleMenu input[type="checkbox"]').each(function(i) {
                     $(this).prop('checked', saved[i]);
                     table.column($(this).data('column')).visible(saved[i]);
+
+                    const columnName = $(this).attr('data-name');
+                    const status = $(this).is(':checked')
+
+                    // Carregar os filtros de acordo com os checkboxes das colunas
+                    const $filtroItem = $(`#filtrosMenu .filter-item[data-name="${columnName}"]`);
+                    const $filtroCampo = $filtroItem.find('input', 'select');
+
+                    if ($filtroItem.length) {
+                        $filtroItem.css('display', status ? '' : 'none');
+                        $filtroCampo.prop('disabled', !status);
+                    }
                 });
             }
         }
@@ -219,4 +311,57 @@ $(document).ready(function () {
                 input.value = `${horas}:${minutos}`;
             }
         }
+
+        function atualizarFiltrosAtivos() {
+            const filtrosAtivos = [];
+
+            $('#filtrosMenu .filter-item').each(function () {
+                const label = $(this).find('label').first().text().trim();
+                const inputs = $(this).find('input, select');
+                let valor = '';
+
+                // --- Campo único ---
+                if (inputs.length === 1) {
+                const input = inputs.first();
+
+                if (input.is('select')) {
+                    // Se for select simples ou múltiplo, pegar o texto da opção
+                    const selecionadas = input.find('option:selected').map(function () {
+                    return $(this).text().trim();
+                    }).get();
+
+                    valor = selecionadas.filter(v => v !== '' && v.toLowerCase() !== 'todos').join(', ');
+                } else {
+                    valor = input.val();
+                }
+                }
+
+                // --- Intervalo (ex: Início / Fim) ---
+                else if (inputs.length === 2) {
+                const v1 = $(inputs[0]).val();
+                const v2 = $(inputs[1]).val();
+
+                if (v1 || v2) {
+                    if (v1 && v2) valor = `${v1} até ${v2}`;
+                    else if (v1) valor = `a partir de ${v1}`;
+                    else valor = `até ${v2}`;
+                }
+                }
+
+                // --- Adicionar se tiver algo preenchido ---
+                if (valor && valor !== '') {
+                filtrosAtivos.push(`<span class="badge bg-primary text-white">${label}: ${valor}</span>`);
+                }
+            });
+
+            // --- Atualizar o HTML ---
+            if (filtrosAtivos.length > 0) {
+                $('#filtrosAtivos').html(filtrosAtivos.join(' '));
+            } else {
+                $('#filtrosAtivos').html('<span class="text-muted">Nenhum filtro aplicado</span>');
+            }
+            }
+
+
+
   });
