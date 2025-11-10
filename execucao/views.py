@@ -19,7 +19,7 @@ from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
 
-import datetime
+from datetime import datetime
 
 ordem_service = OrdemServiceWpp()
 User = get_user_model()
@@ -334,9 +334,7 @@ def criar_execucao_predial(request, solicitacao_id):
 @login_required
 def historico_execucao(request):
 
-    setores = Setor.objects.all()
-
-    return render(request, 'execucao/historico.html', {'setores':setores})
+    return render(request, 'execucao/historico.html')
 
 @csrf_exempt
 def execucao_data(request):
@@ -364,7 +362,8 @@ def execucao_data(request):
         'ordem__info_solicitacao__tipo_manutencao',
         'ordem__info_solicitacao__area_manutencao',
         'ultima_atualizacao',
-        'horas_executada'      
+        'horas_executada',
+        'operadores'
     ] 
 
     order_column = columns[order_column_index]
@@ -396,33 +395,148 @@ def execucao_data(request):
         area_manutencao=F('ordem__info_solicitacao__area_manutencao')  # Atualize o nome aqui
     ).filter(
         ordem__status="aprovar",
-        ordem__area="producao"
     )
 
     # if search_value:
     #     execucoes = execucoes.filter(ordem__pk__icontains=search_value)
 
     # Filtros personalizados
-    status = request.POST.get('status', '')
-    setor = request.POST.get('setor', '')
-
-    solicitante = request.POST.get('solicitante', '')
-    data_inicio = request.POST.get('data_inicio', '')
+    # Grupo 1: Identificação da Ordem 
     ordem = request.POST.get('ordem', '')
+    execucao = request.POST.get('execucao', '')
+    setor = request.POST.get('setor', '')
+    solicitante = request.POST.get('solicitante', '')
+    operador = request.POST.getlist('operador[]', '')
+
+    # // Grupo 2: Máquina e Manutenção
+    maquina = request.POST.get('maquina', '')
+    tipo_manutencao = request.POST.get('tipoManutencao', '')
+    area_manutencao = request.POST.get('areaManutencao', '')
+    horas_executadas_inicial = request.POST.get('horasExecutadasInicial', '')
+    horas_executadas_final = request.POST.get('horasExecutadasFinal', '')
+
+    # Grupo 3: Datas
+    data_abertura_inicial = request.POST.get('dataAberturaInicial', '')
+    data_abertura_final = request.POST.get('dataAberturaFinal', '')
+    data_inicio_inicial = request.POST.get('dataInicioInicial', '')
+    data_inicio_final = request.POST.get('dataInicioFinal', '')
+    data_final_inicial = request.POST.get('dataFinalInicial', '')
+    data_final_final = request.POST.get('dataFinalFinal', '')
+    ultima_atualizacao_inicial = request.POST.get('ultimaAtualizacaoInicial', '')
+    ultima_atualizacao_final = request.POST.get('ultimaAtualizacaoFinal', '')
+    
+    # Grupo 4: Comentários e Status
+    comentario_manutencao = request.POST.get('comentarioManutencao', '')
+    motivo = request.POST.get('motivo', '')
+    obs_executante = request.POST.get('obsExecutante', '')
+    status = request.POST.getlist('status[]', '')
+
+     # Verificação de intervalo de horas correto
+    horas_executadas_corretas = True
+    if len(horas_executadas_inicial) > 0 and len(horas_executadas_final) > 0:
+        formato = "%H:%M"
+        try:
+            hora_ini = datetime.strptime(horas_executadas_inicial, formato).time()
+            hora_fim = datetime.strptime(horas_executadas_final, formato).time()
+            
+            if hora_ini > hora_fim:
+                horas_executadas_corretas = False
+        except ValueError:
+            horas_executadas_corretas = False  # formato inválido
+    
+
+    # Validação intervalo data abertura
+    data_abertura_intervalo_correto = True
+    if len(data_abertura_inicial) > 0 and len(data_abertura_final) > 0:
+        data_abertura_inicial_datetime = datetime.strptime(data_abertura_inicial, "%Y-%m-%d")
+        data_abertura_final_datetime = datetime.strptime(data_abertura_final, "%Y-%m-%d")
+        if data_abertura_inicial_datetime > data_abertura_final_datetime:
+            data_abertura_intervalo_correto = False
+    
+    # Validação intervalo data inicio
+    data_inicio_intervalo_correto = True
+    if len(data_inicio_inicial) > 0 and len(data_inicio_final) > 0:
+        data_inicio_inicial_datetime = datetime.strptime(data_inicio_inicial, "%Y-%m-%d")
+        data_inicio_final_datetime = datetime.strptime(data_inicio_final, "%Y-%m-%d")
+        if data_inicio_inicial_datetime > data_inicio_final_datetime:
+            data_inicio_intervalo_correto = False
+
+    # Validação intervalo data final
+    data_final_intervalo_correto = True
+    if len(data_final_inicial) > 0 and len(data_final_final) > 0:
+        data_final_inicial_datetime = datetime.strptime(data_final_inicial, "%Y-%m-%d")
+        data_final_final_datetime = datetime.strptime(data_final_final, "%Y-%m-%d")
+        if data_final_inicial_datetime > data_final_final_datetime:
+            data_final_intervalo_correto = False
+
+    # Validação intervalo data final
+    ultima_atualizacao_intervalo_correto = True
+    if len(ultima_atualizacao_inicial) > 0 and len(ultima_atualizacao_final) > 0:
+        ultima_atualizacao_inicial_datetime = datetime.strptime(ultima_atualizacao_inicial, "%Y-%m-%d")
+        ultima_atualizacao_final_datetime = datetime.strptime(ultima_atualizacao_final, "%Y-%m-%d")
+        if ultima_atualizacao_inicial_datetime > ultima_atualizacao_final_datetime:
+            ultima_atualizacao_intervalo_correto = False
 
     if ordem:
         execucoes = execucoes.filter(ordem__pk=ordem)
-    if status:
-        execucoes = execucoes.filter(status=status)
+    if execucao:
+        execucoes = execucoes.filter(n_execucao=execucao)
     if setor:
-        execucoes = execucoes.filter(ordem__setor__nome=setor)
+        execucoes = execucoes.filter(ordem__setor=setor)
     if solicitante:
         execucoes = execucoes.filter(solicitante__icontains=solicitante)
-    if data_inicio:
-        execucoes = execucoes.filter(data_inicio__date=data_inicio)
+    if operador:
+        execucoes = execucoes.filter(operador__id__in=operador)
+    if status:
+        execucoes = execucoes.filter(status__in=status)
+    if maquina:
+        execucoes = execucoes.filter(ordem__maquina=maquina)
+    if tipo_manutencao:
+        execucoes = execucoes.filter(tipo_manutencao=tipo_manutencao)
+    if area_manutencao:
+        execucoes = execucoes.filter(area_manutencao=area_manutencao)
+    if horas_executadas_inicial:
+        if horas_executadas_corretas:
+            execucoes = execucoes.filter(horas_executada__gte=datetime.strptime(horas_executadas_inicial, "%H:%M").time())
+    if horas_executadas_final:
+        if horas_executadas_corretas:
+            execucoes = execucoes.filter(horas_executada__lte=datetime.strptime(horas_executadas_final, "%H:%M").time())
+
+    if data_abertura_inicial:
+        if data_abertura_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_abertura__date__gte=datetime.strptime(data_abertura_inicial, "%Y-%m-%d").date())
+    if data_abertura_final:
+        if data_abertura_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_abertura__date__lte=datetime.strptime(data_abertura_final, "%Y-%m-%d").date())
+    if data_inicio_inicial:
+        if data_inicio_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_inicio__date__gte=datetime.strptime(data_inicio_inicial, "%Y-%m-%d").date())
+    if data_inicio_final:
+        if data_inicio_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_inicio__date__lte=datetime.strptime(data_inicio_final, "%Y-%m-%d").date())
+    if data_final_inicial:
+        if data_final_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_fim__date__gte=datetime.strptime(data_final_inicial, "%Y-%m-%d").date())
+    if data_final_final:
+        if data_final_intervalo_correto:
+            execucoes = execucoes.filter(ordem__data_fim__date__lte=datetime.strptime(data_final_final, "%Y-%m-%d").date())
+    if ultima_atualizacao_inicial:
+        if ultima_atualizacao_intervalo_correto:
+            execucoes = execucoes.filter(ultima_atualizacao__date__gte=datetime.strptime(ultima_atualizacao_inicial, "%Y-%m-%d").date())
+    if ultima_atualizacao_final:
+        if ultima_atualizacao_intervalo_correto:
+            execucoes = execucoes.filter(ultima_atualizacao__date__lte=datetime.strptime(ultima_atualizacao_final, "%Y-%m-%d").date())
+
+    if comentario_manutencao:
+        execucoes = execucoes.filter(ordem__comentario_manutencao__icontains=comentario_manutencao)
+    if motivo:
+        execucoes = execucoes.filter(ordem__descricao__icontains=motivo)
+    if obs_executante:
+        execucoes = execucoes.filter(ordem__observacao__icontains=obs_executante)
 
     # Aplicando ordenação
-    execucoes = execucoes.order_by(order_column)
+    if order_column != 'operadores':
+        execucoes = execucoes.order_by(order_column)
 
     # Paginação
     paginator = Paginator(execucoes, length)
@@ -432,12 +546,13 @@ def execucao_data(request):
     for execucao in execucoes_page:
         data.append({
             'ordem': f"#{execucao.ordem.pk}",
-            'execucao': execucao.id,
+            'execucao': execucao.n_execucao,
             'setor': str(execucao.ordem.setor.nome),
             'solicitante': execucao.solicitante,
             'maquina': execucao.maquina,
             'comentario_manutencao': execucao.ordem.comentario_manutencao,
             'motivo': execucao.ordem.descricao,
+            'operadores': ', '.join(execucao.operador.values_list('nome', flat=True)),
             'data_abertura': execucao.ordem.data_abertura.strftime("%d/%m/%Y %H:%M"),
             'data_inicio': execucao.data_inicio.strftime("%d/%m/%Y %H:%M"),
             'data_fim': execucao.data_fim.strftime("%d/%m/%Y %H:%M") if execucao.data_fim else '',

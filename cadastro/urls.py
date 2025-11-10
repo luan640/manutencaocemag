@@ -15,4 +15,8 @@ urlpatterns = [
 
     # APIS
     path('api/maquinas/', api_maquinas, name='api_maquinas'),
+    path('api/setores/', api_setores, name='api_maquinas'),
+    path('api/tipo-manutencao/', api_tipo_manutencao, name='api_tipo_manutencao'),
+    path('api/status-execucao/', api_status_execucao, name='api_status_execucao')
+
 ]

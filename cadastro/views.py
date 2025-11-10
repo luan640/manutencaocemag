@@ -9,6 +9,7 @@ from django.db.models import Q
 
 from .forms import MaquinaForm, AddOperadorForm
 from .models import Maquina, Operador, Setor
+from execucao.models import InfoSolicitacao, Execucao
 import psycopg2
 from psycopg2 import errors
 
@@ -270,11 +271,17 @@ def importar_csv_maquina(request):
     return render(request, 'maquina/add_emcarga.html')
 
 def api_operadores(request):
-    if request.user.tipo_acesso == 'administrador' and not request.user.is_staff:
-        operadores = list(Operador.objects.filter(area=request.user.area).values())
-    else:
-        operadores = list(Operador.objects.all().values())
+    search = request.GET.get('search', '')
 
+    if request.user.tipo_acesso == 'administrador' and not request.user.is_staff:
+        operadores = Operador.objects.filter(area=request.user.area)
+    else:
+        operadores = Operador.objects.all()
+
+    if search:
+        operadores = operadores.filter(nome__icontains=search)
+    
+    operadores = list(operadores.values())
     return JsonResponse({'operadores': operadores})
 
 def api_maquinas(request):
@@ -290,3 +297,47 @@ def api_maquinas(request):
         
 
     return JsonResponse({'maquinas': maquinas})
+
+
+def api_setores(request):
+    """Endpoint para retornar a lista de setores em formato JSON."""
+    search = request.GET.get('search', '')
+
+    qs = Setor.objects.all()
+
+    if search:
+        qs = qs.filter(nome__icontains=search)
+
+    setores = list(qs.values('id', 'nome')[:25])
+        
+
+    return JsonResponse({
+                'message': 'success',
+                'setores': setores
+            })
+
+def api_tipo_manutencao(request):
+    """Endpoint para retornar a lista de tipo de manutenção em formato JSON."""
+    search = request.GET.get('search', '')
+
+    qs = InfoSolicitacao.objects.all().values('tipo_manutencao').distinct()
+
+    if search:
+        qs = qs.filter(tipo_manutencao__icontains=search)
+
+    tipos = list(qs)   
+
+    return JsonResponse({'message': 'success','tiposManutencao': tipos})
+
+def api_status_execucao(request):
+    """Endpoint para retornar a lista de status em formato JSON."""
+    search = request.GET.get('search', '')
+
+    qs = Execucao.objects.all().values('status').distinct()
+
+    if search:
+        qs = qs.filter(status__icontains=search)
+
+    status = list(qs)   
+
+    return JsonResponse({'message':'success','status': status})

@@ -20,8 +20,8 @@ $(document).ready(function () {
                 d.ordem = $('#filterOrdem').val();
                 d.execucao = $('#filterExecucao').val();
                 d.setor = $('#filterSetor').val();
-                d.status = $('#filterStatus').val();
                 d.solicitante = $('#filterSolicitante').val();
+                d.operador = $('#filterOperadores').val();
 
                 // Grupo 2: Máquina e Manutenção
                 d.maquina = $('#filterMaquina').val();
@@ -45,6 +45,7 @@ $(document).ready(function () {
                 d.motivo = $('#filterMotivo').val();
                 d.obsExecutante = $('#filterObsExecutante').val();
                 d.status = $('#filterStatus').val();
+                console.log(d.status);
             }
         },
         columns: [
@@ -55,6 +56,7 @@ $(document).ready(function () {
             { data: 'maquina' },
             { data: 'comentario_manutencao' },
             { data: 'motivo' },
+            { data: 'operadores'},
             { data: 'data_abertura' },
             { data: 'data_inicio' },
             { data: 'data_fim' },
@@ -63,7 +65,7 @@ $(document).ready(function () {
             { data: 'tipo_manutencao' },
             { data: 'area_manutencao' },
             { data: 'ultima_atualizacao' },
-            { data: 'horas_executada' }
+            { data: 'horas_executada' },
         ],
         language: {
             lengthMenu: "Exibir _MENU_ registros por página",
@@ -130,6 +132,7 @@ $(document).ready(function () {
             campo.each(function(){
                 if (this.tagName === 'SELECT') {
                     // limpa selects (inclusive múltiplos)
+                    $(this).val(null).trigger('change'); // <-- ESSENCIAL para Select2
                     this.selectedIndex = -1;
                 if (this.multiple) {
                     $(this).find('option').prop('selected', false);
@@ -141,6 +144,12 @@ $(document).ready(function () {
                 } else {
                     // limpa inputs (text, number, date etc.)
                     $(this).val('');
+
+                    // remove restrições se for um campo de data
+                    if (this.type === 'date') {
+                        this.removeAttribute('min');
+                        this.removeAttribute('max');
+                    }
                 }
             })
         });
@@ -217,10 +226,33 @@ $(document).ready(function () {
         });
         // Aplicando Select2 para multiplo select de status no filtro
         $('#filterStatus').select2({
-            placeholder: 'Selecione status',
+            placeholder: 'Selecione o Status',
             allowClear: true,
             width: '100%',
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+            ajax: {
+                url: '/api/status-execucao/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                const results = (data.status || []).map(s => ({
+                    id: s.status,
+                    text: `${s.status || ''}`
+                }));
+                return {
+                    results: results
+                };
+                },
+                cache: true
+            },
         });
         
         $('#filterSetor').select2({
@@ -228,6 +260,29 @@ $(document).ready(function () {
             allowClear: true,
             width: '100%',
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+            ajax: {
+                url: '/api/setores/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                const results = (data.setores || []).map(s => ({
+                    id: s.id,
+                    text: `${s.nome || ''}`
+                }));
+                return {
+                    results: results
+                };
+                },
+                cache: true
+            },
         });
 
         $('#filterTipoManutencao').select2({
@@ -235,6 +290,70 @@ $(document).ready(function () {
             allowClear: true,
             width: '100%',
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+            ajax: {
+                url: '/api/tipo-manutencao/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                const results = (data.tiposManutencao || []).map(s => ({
+                    id: s.tipo_manutencao,
+                    text: `${s.tipo_manutencao || ''}`
+                }));
+                return {
+                    results: results
+                };
+                },
+                cache: true
+            },
+        });
+
+        $('#filterOperadores').select2({
+            language: 'pt-BR',
+            placeholder: 'Buscar operadores...',
+            minimumInputLength: 1,
+            allowClear: true,
+            ajax: {
+                url: '/api/operadores/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
+                const results = (data.operadores || []).map(op => ({
+                    id: op.id,
+                    text: `${op.matricula} - ${op.nome || ''}`
+                }));
+                return {
+                    results: results
+                    // se implementar paginação, retornar também pagination: { more: <boolean> }
+                };
+                },
+                cache: true
+            },
+            templateResult: function (item) {
+                if (!item.id) { return item.text; } // placeholder/loading
+                return $('<span>').text(item.text);
+            },
+            templateSelection: function (item) {
+                return item.text || item.id;
+            },
+            escapeMarkup: function (m) { return m; },
+            width: '100%'
         });
 
         $('#filterAreaManutencao').select2({
@@ -257,6 +376,12 @@ $(document).ready(function () {
             }
             
         });
+        // Impede datas inválidas
+        bindDateRange('filterHorasExecutadasInicial', 'filterHorasExecutadasFinal')
+        bindDateRange('filterDataAberturaInicial', 'filterDataAberturaFinal');
+        bindDateRange('filterDataInicioInicial', 'filterDataInicioFinal');
+        bindDateRange('filterDataFinalInicial', 'filterDataFinalFinal');
+        bindDateRange('filterUltimaAtualizacaoInicial', 'filterUltimaAtualizacaoFinal');
 
 
         // Função para salvar no localStorage
@@ -338,14 +463,14 @@ $(document).ready(function () {
 
                 // --- Intervalo (ex: Início / Fim) ---
                 else if (inputs.length === 2) {
-                const v1 = $(inputs[0]).val();
-                const v2 = $(inputs[1]).val();
+                    const v1 = $(inputs[0]).val();
+                    const v2 = $(inputs[1]).val();
 
-                if (v1 || v2) {
-                    if (v1 && v2) valor = `${v1} até ${v2}`;
-                    else if (v1) valor = `a partir de ${v1}`;
-                    else valor = `até ${v2}`;
-                }
+                    if (v1 || v2) {
+                        if (v1 && v2) valor = `${v1} até ${v2}`;
+                        else if (v1) valor = `a partir de ${v1}`;
+                        else valor = `até ${v2}`;
+                    }
                 }
 
                 // --- Adicionar se tiver algo preenchido ---
@@ -361,6 +486,39 @@ $(document).ready(function () {
                 $('#filtrosAtivos').html('<span class="text-muted">Nenhum filtro aplicado</span>');
             }
             }
+
+        // Vínculo entre datas inicial e final: define `min` no campo final quando a inicial muda
+        function bindDateRange(initialId, finalId) {
+            const init = document.getElementById(initialId);
+            const fin = document.getElementById(finalId);
+            if (!init || !fin) return;
+
+            const applyMinFromInit = () => {
+                // define o menor valor permitido no final
+                fin.min = init.value || '';
+                // se o valor atual do final for anterior ao mínimo, ajusta para o mínimo
+                if (init.value && fin.value && fin.value < init.value) {
+                    fin.value = init.value;
+                }
+            };
+
+            const applyMaxFromFin = () => {
+                init.max = fin.value || '';
+                if (fin.value && init.value && init.value > fin.value) {
+                    init.value = fin.value;
+                }
+            };
+
+            // Eventos
+            init.addEventListener('change', applyMinFromInit);
+            fin.addEventListener('change', applyMaxFromFin);
+
+            // sincroniza no carregamento (caso haja valores preenchidos pelo servidor)
+            applyMinFromInit();
+            applyMaxFromFin();
+
+        }
+
 
 
 
