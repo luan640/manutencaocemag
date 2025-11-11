@@ -110,7 +110,7 @@
     </div>
 
     <!-- Botão que abre/fecha filtros -->
-    <div class="mb-3">
+  <div class="mb-3">
   <!-- Botão que abre o dropdown de filtros -->
   <div class="btn-group">
     <button type="button" id="btnFiltros" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="false">
@@ -150,6 +150,14 @@
               <!-- opções de setor -->
             </select>
           </div>
+          <div class="col-6 filter-item" data-name='Área'>
+            <label for="filterArea" class="form-label">Área</label>
+            <select class="form-select form-select-sm" id="filterArea" placeholder="Selecione uma Área">
+                <option value=""></option>
+                <option value="producao">Produção</option>
+                <option value="predial">Predial</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -181,7 +189,7 @@
           </div>
 
           <div class="col-6 filter-item" data-name='Horas executadas'>
-            <label class="form-label">Horas Executadas</label>
+            <label class="form-label">Qtd. Horas Executadas</label> (Formato -  HH:MM) 
             <div class="d-flex gap-2">
               <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasInicial" placeholder="Inicio">
               <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasFinal" placeholder="Fim">
@@ -271,8 +279,17 @@
     </div>
   </div>
   </div>
-  <div class="mt-2 text-secondary text-end"> Filtros Ativos: </div>
-  <div id="filtrosAtivos" class="mt-2 text-secondary text-end">Nenhum filtro aplicado</div>
+
+  <div class="d-flex justify-content-end">
+      <button id="btnExportarExcel" class="btn btn-success text-end"> Exportar Excel</button>
+  </div>
+  
+  <div class="mt-2">
+    <div class="mt-2 text-secondary text-end"> Filtros Ativos: </div>
+    <div id="filtrosAtivos" class="mt-2 text-secondary text-end">Nenhum filtro aplicado</div>
+  </div>
+  
+  
 </div>
 
 
@@ -291,6 +308,7 @@
                     <th>Comentário da manutenção</th>
                     <th>Motivo</th>
                     <th>Operadores</th>
+                    <th>Área</th>
                     <th>Data de abertura</th>
                     <th>Data de início</th>
                     <th>Data de fim</th>

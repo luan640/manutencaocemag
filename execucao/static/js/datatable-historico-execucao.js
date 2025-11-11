@@ -22,6 +22,7 @@ $(document).ready(function () {
                 d.setor = $('#filterSetor').val();
                 d.solicitante = $('#filterSolicitante').val();
                 d.operador = $('#filterOperadores').val();
+                d.area = $('#filterArea').val();
 
                 // Grupo 2: Máquina e Manutenção
                 d.maquina = $('#filterMaquina').val();
@@ -45,8 +46,7 @@ $(document).ready(function () {
                 d.motivo = $('#filterMotivo').val();
                 d.obsExecutante = $('#filterObsExecutante').val();
                 d.status = $('#filterStatus').val();
-                console.log(d.status);
-            }
+            },
         },
         columns: [
             { data: 'ordem' },
@@ -57,6 +57,7 @@ $(document).ready(function () {
             { data: 'comentario_manutencao' },
             { data: 'motivo' },
             { data: 'operadores'},
+            { data: 'area'},
             { data: 'data_abertura' },
             { data: 'data_inicio' },
             { data: 'data_fim' },
@@ -105,6 +106,7 @@ $(document).ready(function () {
         const columnName = $(this).attr('data-name');
         const status = $(this).is(':checked')
         column.visible(status);
+        filtrosEstado[columnName] = status;
 
         // Pegar o nome da coluna
         // Procurar no menu dropdown de filtros pelo filtro dessa coluna
@@ -126,6 +128,12 @@ $(document).ready(function () {
     });
 
     $('#btnLimparFiltro').on('click', function(){
+        var btn = $(this);
+        var btnFiltrar = $('#btnFiltrarEnvio');
+
+        btn.prop('disabled', true).text('Limpando...');
+        btnFiltrar.prop('disabled', true)
+
         $(`#filtrosMenu .filter-item`).each(function(){
             const campo = $(this).find('input, select');
 
@@ -153,12 +161,23 @@ $(document).ready(function () {
                 }
             })
         });
-        table.ajax.reload(); // Recarrega os dados da tabela
+        table.ajax.reload(function(){
+            btn.prop('disabled', false).text('Limpar Filtros');
+            btnFiltrar.prop('disabled', false);
+        }, false); // Recarrega os dados da tabela
         atualizarFiltrosAtivos();
     })
 
     $('#btnFiltrarEnvio').on('click', function(){
-        table.ajax.reload(); // Recarrega os dados da tabela
+        var btn = $(this);
+        var btnLimparFiltro = $('#btnLimparFiltro');
+        btn.prop('disabled', true).text('Filtrando...');
+        btnLimparFiltro.prop('disabled', true);
+
+        table.ajax.reload(function(){
+            btn.prop('disabled', false).text('Filtrar');
+            btnLimparFiltro.prop('disabled', false);
+        }, false); // Recarrega os dados da tabela
         atualizarFiltrosAtivos();
     })
 
@@ -363,7 +382,7 @@ $(document).ready(function () {
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
         });
 
-        $('#filterHorasExecutadasInicial, #filterHorasExecutadasFinal').on('input', function(){
+        $('#filterHorasExecutadasInicial, #filterHorasExecutadasFinal').on('blur', function(){
             formatarInput(this);
         });
 
@@ -406,6 +425,7 @@ $(document).ready(function () {
                     // Carregar os filtros de acordo com os checkboxes das colunas
                     const $filtroItem = $(`#filtrosMenu .filter-item[data-name="${columnName}"]`);
                     const $filtroCampo = $filtroItem.find('input', 'select');
+                    filtrosEstado[columnName] = status;
 
                     if ($filtroItem.length) {
                         $filtroItem.css('display', status ? '' : 'none');
@@ -418,23 +438,20 @@ $(document).ready(function () {
         function formatarInput(input) {
             // Remove tudo que não seja número
             let valor = input.value.replace(/\D/g, '');
+    
+            if (valor.length === 0){
+                return;
+            } else if (valor.length <= 2){
+                input.value = `${valor}:00`
+            } else{
+                let horas = valor.length > 2 ? valor.slice(0, valor.length - 2) : '0';
+                let minutos = valor.slice(-2);
 
-            if (valor.length > 4) {
-                valor = valor.substring(0, 4);
-            }
-
-            // Formata conforme a quantidade de dígitos
-            if (valor.length <= 2) {
-                input.value = valor; // apenas horas digitadas
-            } else {
-                let horas = valor.substring(0, valor.length - 2);
-                let minutos = valor.substring(valor.length - 2);
-
-                // Limita minutos a 59
+                // Ajusta minutos se passar de 59
                 if (parseInt(minutos) > 59) minutos = '59';
 
-                input.value = `${horas}:${minutos}`;
-            }
+                input.value = `${parseInt(horas)}:${minutos.padStart(2, '0')}`; 
+            }          
         }
 
         function atualizarFiltrosAtivos() {
@@ -510,8 +527,8 @@ $(document).ready(function () {
             };
 
             // Eventos
-            init.addEventListener('change', applyMinFromInit);
-            fin.addEventListener('change', applyMaxFromFin);
+            init.addEventListener('blur', applyMinFromInit);
+            fin.addEventListener('blur', applyMaxFromFin);
 
             // sincroniza no carregamento (caso haja valores preenchidos pelo servidor)
             applyMinFromInit();
@@ -519,7 +536,46 @@ $(document).ready(function () {
 
         }
 
+        // 🔽 Botão para exportar Excel
+        $('#btnExportarExcel').click(function() {
+            var btn = $(this);
+            var btnFiltrarEnvio = $('#btnFiltrarEnvio');
+            var btnLimparFiltros = $('#btnLimparFiltro');
 
+            btnFiltrarEnvio.prop('disabled', true);
+            btnLimparFiltros.prop('disabled', true);
 
+            btn.prop('disabled', true).text('Exportando...');
+
+            // Reaproveita os mesmos filtros do DataTables
+            let filtros = table.ajax.params(); // pega os filtros atuais
+            filtros.exportar_xlsx = 1;         // flag para o backend gerar o Excel
+            // filtros.csrfmiddlewaretoken = '{{ csrf_token }}';
+            filtros.filtrosEstado = filtrosEstado;
+
+            $.ajax({
+                url: 'processa-historico/',
+                type: 'POST',
+                data: filtros,
+                xhrFields: { responseType: 'blob' },
+                success: function(blob) {
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    a.download = "execucoes.xlsx";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                },
+                complete: function() {
+                    btn.prop('disabled', false).text('Exportar Excel');
+                    btnFiltrarEnvio.prop('disabled', false);
+                    btnLimparFiltros.prop('disabled', false);
+                },
+                error: function() {
+                    alert('Erro ao exportar o arquivo Excel');
+                }
+            });
+        });
 
   });

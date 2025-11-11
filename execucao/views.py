@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -19,7 +19,9 @@ from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
 
-from datetime import datetime
+from datetime import datetime, timedelta
+import pandas as pd
+from io import BytesIO
 
 ordem_service = OrdemServiceWpp()
 User = get_user_model()
@@ -354,6 +356,8 @@ def execucao_data(request):
         'ordem__maquina__codigo',
         'ordem__comentario_manutencao',
         'ordem__descricao',
+        'operadores',
+        'ordem__area',
         'ordem__data_abertura',
         'data_inicio',
         'data_fim',
@@ -363,7 +367,6 @@ def execucao_data(request):
         'ordem__info_solicitacao__area_manutencao',
         'ultima_atualizacao',
         'horas_executada',
-        'operadores'
     ] 
 
     order_column = columns[order_column_index]
@@ -397,8 +400,10 @@ def execucao_data(request):
         ordem__status="aprovar",
     )
 
-    # if search_value:
-    #     execucoes = execucoes.filter(ordem__pk__icontains=search_value)
+    # Verifica se é exportação ou não
+    filtros_estado = {}
+    # print(request.POST)
+    exportar_plan = request.POST.get('exportar_xlsx', '')
 
     # Filtros personalizados
     # Grupo 1: Identificação da Ordem 
@@ -407,6 +412,7 @@ def execucao_data(request):
     setor = request.POST.get('setor', '')
     solicitante = request.POST.get('solicitante', '')
     operador = request.POST.getlist('operador[]', '')
+    area = request.POST.get('area', '')
 
     # // Grupo 2: Máquina e Manutenção
     maquina = request.POST.get('maquina', '')
@@ -434,10 +440,9 @@ def execucao_data(request):
      # Verificação de intervalo de horas correto
     horas_executadas_corretas = True
     if len(horas_executadas_inicial) > 0 and len(horas_executadas_final) > 0:
-        formato = "%H:%M"
         try:
-            hora_ini = datetime.strptime(horas_executadas_inicial, formato).time()
-            hora_fim = datetime.strptime(horas_executadas_final, formato).time()
+            hora_ini = str_para_timedelta(horas_executadas_inicial)
+            hora_fim = str_para_timedelta(horas_executadas_final)
             
             if hora_ini > hora_fim:
                 horas_executadas_corretas = False
@@ -487,6 +492,8 @@ def execucao_data(request):
         execucoes = execucoes.filter(solicitante__icontains=solicitante)
     if operador:
         execucoes = execucoes.filter(operador__id__in=operador)
+    if area:
+        execucoes = execucoes.filter(ordem__area__icontains=area)
     if status:
         execucoes = execucoes.filter(status__in=status)
     if maquina:
@@ -497,10 +504,13 @@ def execucao_data(request):
         execucoes = execucoes.filter(area_manutencao=area_manutencao)
     if horas_executadas_inicial:
         if horas_executadas_corretas:
-            execucoes = execucoes.filter(horas_executada__gte=datetime.strptime(horas_executadas_inicial, "%H:%M").time())
+            delta_hora_inicial = str_para_timedelta(horas_executadas_inicial)
+            execucoes = execucoes.filter(horas_executada__gte=delta_hora_inicial)
     if horas_executadas_final:
         if horas_executadas_corretas:
-            execucoes = execucoes.filter(horas_executada__lte=datetime.strptime(horas_executadas_final, "%H:%M").time())
+            delta_hora_final = str_para_timedelta(horas_executadas_final)
+            print('testes ',delta_hora_final)
+            execucoes = execucoes.filter(horas_executada__lte=delta_hora_final)
 
     if data_abertura_inicial:
         if data_abertura_intervalo_correto:
@@ -510,16 +520,16 @@ def execucao_data(request):
             execucoes = execucoes.filter(ordem__data_abertura__date__lte=datetime.strptime(data_abertura_final, "%Y-%m-%d").date())
     if data_inicio_inicial:
         if data_inicio_intervalo_correto:
-            execucoes = execucoes.filter(ordem__data_inicio__date__gte=datetime.strptime(data_inicio_inicial, "%Y-%m-%d").date())
+            execucoes = execucoes.filter(data_inicio__date__gte=datetime.strptime(data_inicio_inicial, "%Y-%m-%d").date())
     if data_inicio_final:
         if data_inicio_intervalo_correto:
-            execucoes = execucoes.filter(ordem__data_inicio__date__lte=datetime.strptime(data_inicio_final, "%Y-%m-%d").date())
+            execucoes = execucoes.filter(data_inicio__date__lte=datetime.strptime(data_inicio_final, "%Y-%m-%d").date())
     if data_final_inicial:
         if data_final_intervalo_correto:
-            execucoes = execucoes.filter(ordem__data_fim__date__gte=datetime.strptime(data_final_inicial, "%Y-%m-%d").date())
+            execucoes = execucoes.filter(data_fim__date__gte=datetime.strptime(data_final_inicial, "%Y-%m-%d").date())
     if data_final_final:
         if data_final_intervalo_correto:
-            execucoes = execucoes.filter(ordem__data_fim__date__lte=datetime.strptime(data_final_final, "%Y-%m-%d").date())
+            execucoes = execucoes.filter(data_fim__date__lte=datetime.strptime(data_final_final, "%Y-%m-%d").date())
     if ultima_atualizacao_inicial:
         if ultima_atualizacao_intervalo_correto:
             execucoes = execucoes.filter(ultima_atualizacao__date__gte=datetime.strptime(ultima_atualizacao_inicial, "%Y-%m-%d").date())
@@ -538,6 +548,20 @@ def execucao_data(request):
     if order_column != 'operadores':
         execucoes = execucoes.order_by(order_column)
 
+    if exportar_plan:
+        for key, value in request.POST.items():
+            # Pega apenas as chaves que começam com 'filtrosEstado['
+            if key.startswith('filtrosEstado[') and key.endswith(']'):
+                # Extrai o nome dentro dos colchetes
+                nome_campo = key[len('filtrosEstado['):-1]
+                filtros_estado[nome_campo] = value
+
+        # Agora filtros_estado é um dict com todos os parâmetros
+        # Ex: {'OS': 'true', 'Execução': 'true', ...}
+        print(filtros_estado)
+
+        return exportar_excel(execucoes, filtros_estado)
+
     # Paginação
     paginator = Paginator(execucoes, length)
     execucoes_page = paginator.get_page(start // length + 1)
@@ -553,6 +577,7 @@ def execucao_data(request):
             'comentario_manutencao': execucao.ordem.comentario_manutencao,
             'motivo': execucao.ordem.descricao,
             'operadores': ', '.join(execucao.operador.values_list('nome', flat=True)),
+            'area': execucao.ordem.area,
             'data_abertura': execucao.ordem.data_abertura.strftime("%d/%m/%Y %H:%M"),
             'data_inicio': execucao.data_inicio.strftime("%d/%m/%Y %H:%M"),
             'data_fim': execucao.data_fim.strftime("%d/%m/%Y %H:%M") if execucao.data_fim else '',
@@ -570,3 +595,75 @@ def execucao_data(request):
         'recordsFiltered': paginator.count,
         'data': data,
     })
+
+def exportar_excel(queryset, filtros_estado):
+    """
+    Gera e retorna um arquivo Excel a partir de um queryset ou lista de dicionários.
+    """
+    CAMPO_MAP = {
+        'OS': lambda e: f"#{e.ordem.pk}",
+        'Execução': lambda e: e.n_execucao,
+        'Setor': lambda e: e.ordem.setor.nome,
+        'Solicitante': lambda e: e.solicitante,
+        'Máquina': lambda e: e.maquina,
+        'Comentário da manutenção': lambda e: e.ordem.comentario_manutencao,
+        'Motivo': lambda e: e.ordem.descricao,
+        'Operadores': lambda e: ', '.join(e.operador.values_list('nome', flat=True)),
+        'Área': lambda e: e.ordem.area,
+        'Data de abertura': lambda e: e.ordem.data_abertura.strftime("%d/%m/%Y %H:%M"),
+        'Data de início': lambda e: e.data_inicio.strftime("%d/%m/%Y %H:%M"),
+        'Data de fim': lambda e: e.data_fim.strftime("%d/%m/%Y %H:%M") if e.data_fim else '',
+        'Obs do executante': lambda e: e.observacao,
+        'Status': lambda e: e.status,
+        'Tipo da manutenção': lambda e: e.tipo_manutencao,
+        'Área da manutenção': lambda e: e.area_manutencao,
+        'Última atualização': lambda e: e.ultima_atualizacao.strftime("%d/%m/%Y %H:%M"),
+        'Horas executadas': lambda e: str(e.horas_executada),
+    }
+
+    campos_ativos = [campo for campo, ativo in filtros_estado.items() if ativo == 'true' and campo in CAMPO_MAP]
+    # Otimiza para carregar relações em uma só consulta
+    queryset = queryset.select_related(
+        'ordem__setor', 'ordem__solicitante', 'ordem__maquina'
+    ).prefetch_related('operador')
+
+    # Monta lista de dicionários rapidamente
+    # data = []
+    # for execucao in queryset:
+    #     registro = {}
+    #     for campo, ativo in filtros_estado.items():
+    #         if ativo == 'true' and campo in CAMPO_MAP:
+    #             registro[campo] = CAMPO_MAP[campo](execucao)
+    #     data.append(registro)
+    # Cria lista de dicionários sem loop interno
+    data = [
+        {campo: CAMPO_MAP[campo](execucao) for campo in campos_ativos}
+        for execucao in queryset
+    ]
+        
+    # Cria DataFrame com pandas
+    df = pd.DataFrame(data)
+
+    # Salva em memória (sem gravar arquivo)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Histórico Execuções')
+
+    # Move o ponteiro para o início
+    output.seek(0)
+
+    # Cria a resposta HTTP com o conteúdo do arquivo
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    # Define o nome do arquivo que será baixado
+    response['Content-Disposition'] = 'attachment; filename="execucoes.xlsx"'
+
+    return response
+
+def str_para_timedelta(horas_str):
+    h, m = map(int, horas_str.split(":"))
+    print(h, m)
+    return timedelta(hours=h, minutes=m)
