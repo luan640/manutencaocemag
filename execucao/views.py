@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import F, Value, CharField, ExpressionWrapper, fields
 from django.db.models.functions import Concat
+from django.contrib.postgres.aggregates import StringAgg
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao, MaquinaParada
@@ -600,49 +601,53 @@ def exportar_excel(queryset, filtros_estado):
     """
     Gera e retorna um arquivo Excel a partir de um queryset ou lista de dicionários.
     """
-    CAMPO_MAP = {
-        'OS': lambda e: f"#{e.ordem.pk}",
-        'Execução': lambda e: e.n_execucao,
-        'Setor': lambda e: e.ordem.setor.nome,
-        'Solicitante': lambda e: e.solicitante,
-        'Máquina': lambda e: e.maquina,
-        'Comentário da manutenção': lambda e: e.ordem.comentario_manutencao,
-        'Motivo': lambda e: e.ordem.descricao,
-        'Operadores': lambda e: ', '.join(e.operador.values_list('nome', flat=True)),
-        'Área': lambda e: e.ordem.area,
-        'Data de abertura': lambda e: e.ordem.data_abertura.strftime("%d/%m/%Y %H:%M"),
-        'Data de início': lambda e: e.data_inicio.strftime("%d/%m/%Y %H:%M"),
-        'Data de fim': lambda e: e.data_fim.strftime("%d/%m/%Y %H:%M") if e.data_fim else '',
-        'Obs do executante': lambda e: e.observacao,
-        'Status': lambda e: e.status,
-        'Tipo da manutenção': lambda e: e.tipo_manutencao,
-        'Área da manutenção': lambda e: e.area_manutencao,
-        'Última atualização': lambda e: e.ultima_atualizacao.strftime("%d/%m/%Y %H:%M"),
-        'Horas executadas': lambda e: str(e.horas_executada),
+    # Mapeia cada campo visível para o nome de coluna no banco
+    FIELD_MAP = {
+        'OS': 'ordem__pk',
+        'Execução': 'n_execucao',
+        'Setor': 'ordem__setor__nome',
+        'Solicitante': 'solicitante',
+        'Máquina': 'maquina',
+        'Comentário da manutenção': 'ordem__comentario_manutencao',
+        'Motivo': 'ordem__descricao',
+        'Operadores': 'operadores',  # virá via annotate
+        'Área': 'ordem__area',
+        'Data de abertura': 'ordem__data_abertura',
+        'Data de início': 'data_inicio',
+        'Data de fim': 'data_fim',
+        'Obs do executante': 'observacao',
+        'Status': 'status',
+        'Tipo da manutenção': 'tipo_manutencao',
+        'Área da manutenção': 'area_manutencao',
+        'Última atualização': 'ultima_atualizacao',
+        'Horas executadas': 'horas_executada',
     }
 
-    campos_ativos = [campo for campo, ativo in filtros_estado.items() if ativo == 'true' and campo in CAMPO_MAP]
-    # Otimiza para carregar relações em uma só consulta
-    queryset = queryset.select_related(
-        'ordem__setor', 'ordem__solicitante', 'ordem__maquina'
-    ).prefetch_related('operador')
-
-    # Monta lista de dicionários rapidamente
-    # data = []
-    # for execucao in queryset:
-    #     registro = {}
-    #     for campo, ativo in filtros_estado.items():
-    #         if ativo == 'true' and campo in CAMPO_MAP:
-    #             registro[campo] = CAMPO_MAP[campo](execucao)
-    #     data.append(registro)
-    # Cria lista de dicionários sem loop interno
-    data = [
-        {campo: CAMPO_MAP[campo](execucao) for campo in campos_ativos}
-        for execucao in queryset
+    # Campos ativos
+    campos_ativos = [
+        campo for campo, ativo in filtros_estado.items()
+        if ativo == 'true' and campo in FIELD_MAP
     ]
+
+    if not campos_ativos:
+        return HttpResponse("Nenhum campo selecionado.", status=400)
+    
+    queryset = (
+        queryset
+        .select_related('ordem__setor', 'ordem__maquina')
+        .annotate(operadores=StringAgg('operador__nome', delimiter=', '))
+        .values(*[FIELD_MAP[c] for c in campos_ativos])
+    )
         
     # Cria DataFrame com pandas
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(list(queryset))
+
+    df.rename(columns={FIELD_MAP[c]: c for c in campos_ativos}, inplace=True)
+
+    # Formata datas (apenas se estiverem presentes)
+    for col in ['Data de abertura', 'Data de início', 'Data de fim', 'Última atualização']:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce').dt.strftime("%d/%m/%Y %H:%M")
 
     # Salva em memória (sem gravar arquivo)
     output = BytesIO()

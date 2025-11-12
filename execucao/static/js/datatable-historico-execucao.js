@@ -3,6 +3,7 @@ $(document).ready(function () {
     let filtrosEstado = {};
 
     const table = $('#execucaoTable').DataTable({
+        lengthChange: false,
         searching: false,
         responsive: true,
         autoWidth: false,
@@ -69,7 +70,6 @@ $(document).ready(function () {
             { data: 'horas_executada' },
         ],
         language: {
-            lengthMenu: "Exibir _MENU_ registros por página",
             zeroRecords: "Nenhuma execução encontrada",
             info: "Exibindo _START_ a _END_ de _TOTAL_ registros",
             infoEmpty: "Nenhum registro disponível",
