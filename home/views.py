@@ -143,10 +143,11 @@ def solicitacoes_producao(request):
     setor_id = request.GET.get('setor')
     maq_parada = request.GET.get('maq_parada')
     data_abertura = request.GET.get('data_abertura')
-    status = request.GET.get('ultimo_status')
+    status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
     responsavel = request.GET.get('responsavel')
+    maquina = request.GET.get('maquina')
 
     base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='producao')
 
@@ -192,7 +193,7 @@ def solicitacoes_producao(request):
         solicitacoes = solicitacoes.filter(planejada=True)
 
     if status:
-        solicitacoes = solicitacoes.filter(status_andamento=status)
+        solicitacoes = solicitacoes.filter(status_andamento__in=status)
 
     if atrasada:
         solicitacoes = solicitacoes.filter(
@@ -201,6 +202,9 @@ def solicitacoes_producao(request):
 
     if responsavel:
         solicitacoes = solicitacoes.filter(atribuido_id=responsavel)
+    
+    if maquina:
+        solicitacoes = solicitacoes.filter(maquina_id=maquina)
 
     # Paginação
     paginator = Paginator(solicitacoes, 10)
@@ -254,8 +258,11 @@ def aguardando_primeiro_atendimento_producao(request):
     setor_id = request.GET.get('setor')
     maq_parada = request.GET.get('maq_parada')
     data_abertura = request.GET.get('data_abertura')
-    status = request.GET.get('ultimo_status')
+    status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
+    maquina = request.GET.get('maquina')
+
+    print(status)
 
     # Inicia o queryset base
     aguardando_primeiro_atendimento = Solicitacao.objects.filter(
@@ -286,7 +293,10 @@ def aguardando_primeiro_atendimento_producao(request):
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)
 
     if status:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento=status)
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento__in=status)
+
+    if maquina:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(maquina_id=maquina)
 
     # Paginação
     paginator = Paginator(aguardando_primeiro_atendimento, 10)
@@ -345,7 +355,7 @@ def solicitacoes_predial(request):
     setor_id = request.GET.get('setor')
     # maq_parada = request.GET.get('maq_parada')
     data_abertura = request.GET.get('data_abertura')
-    status = request.GET.get('ultimo_status')
+    status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
 
@@ -394,7 +404,7 @@ def solicitacoes_predial(request):
         solicitacoes = solicitacoes.filter(planejada=True)
 
     if status:
-        solicitacoes = solicitacoes.filter(status_andamento=status)
+        solicitacoes = solicitacoes.filter(status_andamento__in=status)
 
     if atrasada:
         solicitacoes = solicitacoes.filter(
@@ -453,7 +463,7 @@ def aguardando_primeiro_atendimento_predial(request):
     setor_id = request.GET.get('setor')
     # maq_parada = request.GET.get('maq_parada')
     data_abertura = request.GET.get('data_abertura')
-    status = request.GET.get('ultimo_status')
+    status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
 
     # Inicia o queryset base
@@ -482,7 +492,7 @@ def aguardando_primeiro_atendimento_predial(request):
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)
 
     if status:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento=status)
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento__in=status)
 
     # Paginação
     paginator = Paginator(aguardando_primeiro_atendimento, 10)

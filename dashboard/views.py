@@ -27,6 +27,12 @@ def dashboard(request):
 
     return render(request, 'dashboard.html', {'setores':setores})
 
+def dashboard_predial(request):
+
+    setores = Setor.objects.all()
+
+    return render(request, 'dashboard-predial.html', {'setores':setores})
+
 # Gráficos
 
 def mtbf_maquina(request):

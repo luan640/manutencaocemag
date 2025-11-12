@@ -83,7 +83,7 @@
                 {% endif %}
                 <div class="col-md-3">
                     <label for="ultimo_status" class="form-label">Status</label>
-                    <select class="form-select" id="ultimo_status" name="ultimo_status">
+                    <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
                         <option value="">Todos</option>
                         <option value="em_espera">Em espera</option>
                         {% for status in status_choices %}
@@ -111,6 +111,12 @@
                         {% for operador in operadores %}
                             <option value="{{operador.pk}}">{{operador.nome}}</option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="maquina" class="form-label">Máquina</label>
+                    <select class="form-select" id="maquina" name="maquina">
+                        <option value="">Selecione a Máquina</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -2466,6 +2472,63 @@
             alert('Erro ao atualizar o status da máquina.');
         });
     }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Inicializa Select2 para lookup de máquinas
+        $('#maquina').select2({
+            language: 'pt-BR',
+            placeholder: 'Buscar máquina por código ou descrição...',
+            minimumInputLength: 1,
+            allowClear: true,
+            ajax: {
+                url: '/api/maquinas/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
+                const results = (data.maquinas || []).map(m => ({
+                    id: m.id,
+                    text: `${m.codigo} - ${m.descricao || ''}`
+                }));
+                return {
+                    results: results
+                    // se implementar paginação, retornar também pagination: { more: <boolean> }
+                };
+                },
+                cache: true
+            },
+            templateResult: function (item) {
+                if (!item.id) { return item.text; } // placeholder/loading
+                return $('<span>').text(item.text);
+            },
+            templateSelection: function (item) {
+                return item.text || item.id;
+            },
+            escapeMarkup: function (m) { return m; },
+            width: '100%'
+        });
+
+        // Aplicando Select2 para multiplo select de status no filtro
+        $('#ultimo_status').select2({
+            placeholder: 'Selecione status',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+
+
+        
+    });
 </script>
 
 {% endblock %}

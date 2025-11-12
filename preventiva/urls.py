@@ -29,5 +29,8 @@ urlpatterns = [
     # modificar a coluna maquina_critica da tabela maquina para as maquinas que possuem plano de preventiva ativo
     path('maquina-critica/',views.maquina_critica, name='maquina_critica'),
 
+    # APIS
+    path('api/buscar-planos-preventiva/', views.api_buscar_planos, name='api_buscar_planos'),
+
 
 ]

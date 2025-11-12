@@ -1,3 +1,5 @@
 .env
 antigo
 env_manut
+venv
+*.pyc

@@ -105,6 +105,38 @@ $(document).ready(function () {
     },
     minimumInputLength: 0,
   });
+
+  $('#filtroPlano').select2({
+    placeholder: 'Selecione o Plano',
+    allowClear: true,
+    ajax: {
+        url: '/api/buscar-planos-preventiva/',
+        dataType: 'json',
+        delay: 250,
+        language: 'pt-BR',
+        data: function (params) {
+            return {
+                search: params.term || '',
+                page: params.page || 1,
+                per_page: 10
+            };
+        },
+        processResults: function (data, params) {
+            params.page = params.page || 1;
+            return {
+                results: data.results.map(item => ({
+                    id: item.id,
+                    text: item.text
+                })),
+                pagination: {
+                    more: data.pagination.more
+                }
+            };
+        },
+        cache: true
+    },
+    minimumInputLength: 0,
+  });
   
 });
 

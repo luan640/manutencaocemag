@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard-predial/', views.dashboard_predial, name='dashboard-predial'),
 
     path('mtbf-maquina/', views.mtbf_maquina, name='mtbf_maquina'),
     path('mttr-maquina/', views.mttr_maquina, name='mttr_maquina'),
