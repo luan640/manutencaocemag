@@ -304,15 +304,27 @@
                                 <p style="font-weight: bold;" id="quantidade_ordens_dia{{solicitacao.pk}}"></p>
                             </div>
                         </div>
-                        <div id="rowPrioridade_{{solicitacao.pk}}" class="row" style="display: none;">
-                            <div class="col-sm-6">
-                                <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade</label>
-                                <select class="form-control" name="prioridade" id="prioridade_{{solicitacao.pk}}">
-                                    <option value="">----------</option>
-                                    <option value="alto">Alto</option>
-                                    <option value="medio">Médio</option>
-                                    <option value="baixo">Baixo</option>
-                                </select>
+                        <div id="rowAtribuirOperador_{{solicitacao.pk}}" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <label for="operador_{{solicitacao.pk}}" class="form-label">Responsável <span class="required">*</span></label>
+                                    <select class="form-control" name="operador" id="operador_{{solicitacao.pk}}">
+                                        <option value="">----------</option>
+                                        {% for operador in operadores %}
+                                            <option value="{{operador.pk}}">{{operador}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            
+                                <div class="col-sm-6">
+                                    <label for="prioridade_{{solicitacao.pk}}" class="form-label">Nível de prioridade <span class="required">*</span></label>
+                                    <select class="form-control" name="prioridade" id="prioridade_{{solicitacao.pk}}">
+                                        <option value="">----------</option>
+                                        <option value="alto">Alto</option>
+                                        <option value="medio">Médio</option>
+                                        <option value="baixo">Baixo</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

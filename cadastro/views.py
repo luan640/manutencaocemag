@@ -10,6 +10,7 @@ from django.db.models import Q
 from .forms import MaquinaForm, AddOperadorForm
 from .models import Maquina, Operador, Setor
 from execucao.models import InfoSolicitacao, Execucao
+from cadastro.models import TipoTarefas
 import psycopg2
 from psycopg2 import errors
 
@@ -341,3 +342,16 @@ def api_status_execucao(request):
     status = list(qs)   
 
     return JsonResponse({'message':'success','status': status})
+
+def api_tarefa_rotina(request):
+    """Endpoint para retornar a lista de tarefas de rotina em formato JSON."""
+    search = request.GET.get('search', '')
+
+    qs = TipoTarefas.objects.filter(status=True).values()
+
+    if search:
+        qs = qs.filter(nome__icontains=search)
+
+    tarefas_rotina = list(qs)   
+
+    return JsonResponse({'message':'success','tarefasRotina': tarefas_rotina})
