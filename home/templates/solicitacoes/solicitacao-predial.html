@@ -97,6 +97,13 @@
                     <label for="data_abertura" class="form-label">Data de Abertura</label>
                     <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
                 </div>
+
+                <div class="col-md-3">
+                    <label for="atividadeRotina" class="form-label">Atividade de Rotina</label>
+                    <select class="form-select" id="atividadeRotina" name="atividadeRotina">
+                        <option value="">Selecione a Atividade</option>
+                    </select>
+                </div>
                 <!-- Filtro de Planejadas -->
                 <div class="col-md-3">
                     <div class="form-check form-switch mb-3">
@@ -1361,12 +1368,12 @@
                                                             <strong>Equipamento:</strong> ${item.nome_maquina || 'N/A'}
                                                         </div>
                                                         <div class="col-md-6 mb-2">
-                                                            <strong>Operador Responsável:</strong> ${item.operador_responsavel || 'N/A'}
+                                                            <strong>Impacto na Produção:</strong> ${item.impacto_producao || 'N/A'}
                                                         </div>
                                                     </div>
                                                     <div class="row">
                                                         <div class="col-md-6 mb-2">
-                                                            <strong>Impacto na Produção:</strong> ${item.impacto_producao || 'N/A'}
+                                                            <strong>Operador Responsável:</strong> ${item.operador_responsavel || 'N/A'}
                                                         </div>
                                                         <div class="col-md-6 mb-2">
                                                             <strong>Status de Andamento:</strong> ${item.status_andamento || 'N/A'}
@@ -1378,6 +1385,11 @@
                                                         </div>
                                                         <div class="col-md-6 mb-2">
                                                             <strong>Programação:</strong> ${new Date(item.programacao).toLocaleDateString('pt-BR') || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-12 mb-2">
+                                                            <strong>Tarefa de Rotina:</strong> ${item.nome_tarefa || 'N/A'}
                                                         </div>
                                                     </div>
                                                     <div class="row">
@@ -1484,6 +1496,50 @@
             allowClear: true,
             width: '100%',
             closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+        });
+    }); 
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicando Select2 para multiplo select de status no filtro
+        $('#atividadeRotina').select2({
+            language: 'pt-BR',
+            placeholder: 'Buscar atividade de rotina...',
+            minimumInputLength: 1,
+            allowClear: true,
+            ajax: {
+                url: '/api/tarefa-rotina/', // ajuste se sua rota for diferente
+                dataType: 'json',
+                delay: 250, // debounce
+                data: function (params) {
+                // params.term = texto digitado
+                return {
+                    search: params.term,    // nossa API usa 'search'
+                    limit: 25               // quantos resultados queremos (padrão do backend)
+                    // se mais tarde implementar paginação: enviar page: params.page
+                };
+                },
+                processResults: function (data /*, params */) {
+                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
+                const results = (data.tarefasRotina || []).map(m => ({
+                    id: m.id,
+                    text: `${m.id} - ${m.nome || ''}`
+                }));
+                return {
+                    results: results
+                    // se implementar paginação, retornar também pagination: { more: <boolean> }
+                };
+                },
+                cache: true
+            },
+            templateResult: function (item) {
+                if (!item.id) { return item.text; } // placeholder/loading
+                return $('<span>').text(item.text);
+            },
+            templateSelection: function (item) {
+                return item.text || item.id;
+            },
+            escapeMarkup: function (m) { return m; },
+            width: '100%'
         });
     }); 
 </script>

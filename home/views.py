@@ -358,6 +358,7 @@ def solicitacoes_predial(request):
     status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
+    tarefa_rotina = request.GET.get('atividadeRotina')
 
     base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='predial')
 
@@ -410,6 +411,9 @@ def solicitacoes_predial(request):
         solicitacoes = solicitacoes.filter(
             programacao__lt= now().date(),
         ).exclude(status_andamento='finalizada')
+    
+    if tarefa_rotina:
+        solicitacoes = solicitacoes.filter(tarefa=tarefa_rotina)
 
     # Paginação
     paginator = Paginator(solicitacoes, 10)
@@ -465,6 +469,8 @@ def aguardando_primeiro_atendimento_predial(request):
     data_abertura = request.GET.get('data_abertura')
     status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
+    tarefa_rotina = request.GET.get('atividadeRotina')
+
 
     # Inicia o queryset base
     aguardando_primeiro_atendimento = Solicitacao.objects.filter(
@@ -493,6 +499,9 @@ def aguardando_primeiro_atendimento_predial(request):
 
     if status:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(status_andamento__in=status)
+
+    if tarefa_rotina:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(tarefa=tarefa_rotina)
 
     # Paginação
     paginator = Paginator(aguardando_primeiro_atendimento, 10)
@@ -613,12 +622,14 @@ def mais_detalhes_ordem(request, pk):
         'atribuido',  # Relacionamento com Operador
         'maquina',    # Relacionamento com Maquina
         'setor',      # Relacionamento com Setor
-        'solicitante' # Relacionamento com Funcionario
+        'solicitante', # Relacionamento com Funcionario
+        'tarefa'      # Relacionamento com TipoTarefa
     ).annotate(
         nome_solicitante=F('solicitante__nome'),
         setor_nome=F('setor__nome'),
         operador_responsavel=F('atribuido__nome'),
-        nome_maquina=Concat(F('maquina__codigo'), Value(' - '), F('maquina__descricao'))
+        nome_maquina=Concat(F('maquina__codigo'), Value(' - '), F('maquina__descricao')),
+        nome_tarefa=F('tarefa__nome')
     ).values(
         'nome_solicitante',
         'setor_nome',
@@ -632,7 +643,8 @@ def mais_detalhes_ordem(request, pk):
         'status_andamento',
         'programacao',
         'operador_responsavel',
-        'nome_maquina'
+        'nome_maquina',
+        'nome_tarefa'
     )
 
     return JsonResponse({'solicitacoes': list(solicitacoes)})
