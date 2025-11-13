@@ -5,6 +5,7 @@ from django.forms import formset_factory
 from django.db.models import OuterRef, Subquery, Value, IntegerField, Q, Max
 from django.utils.timezone import datetime, timedelta, now
 from django.db import connection
+from django.db.models.functions import Lower
 
 from .models import PlanoPreventiva, TarefaPreventiva, SolicitacaoPreventiva
 from .forms import PlanoPreventivaForm, TarefaPreventivaForm, SolicitacaoPreventivaForm, TarefaPreventivaFormSet
@@ -87,7 +88,7 @@ def criar_solicitacao_preventiva(request):
 def list_preventivas(request):
     area = request.GET.get('area')  # Obtém o parâmetro 'area' da query string
     maquina = request.GET.get('maquina')  # Captura o filtro de Máquina
-    plano = request.GET.get('plano')  # Captura o filtro de Plano
+    plano = request.GET.get('plano')  # Captura o filtro de Plano ---- nome do plano
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         draw = int(request.GET.get('draw', 0))
@@ -662,6 +663,7 @@ def historico_preventivas(request):
         start = int(request.GET.get('start', 0))
         length = int(request.GET.get('length', 10))
         maquina_filtro = request.GET.get('maquina', None)  # Obtém o filtro de máquina
+        plano = request.GET.get('plano', None)  # Captura o filtro de Plano ---- nome do plano
 
         # Subquery para buscar o maior `n_execucao` de cada ordem preventiva finalizada
         subquery = Execucao.objects.filter(
@@ -678,6 +680,10 @@ def historico_preventivas(request):
         # Se um filtro de máquina foi fornecido, aplicamos o filtro
         if maquina_filtro:
             execucoes_finalizadas = execucoes_finalizadas.filter(ordem__maquina__codigo=maquina_filtro)
+        
+        # Filtro por Plano
+        if plano:
+            execucoes_finalizadas = execucoes_finalizadas.filter(ordem__descricao__icontains=plano)
 
         # Paginação
         paginator = Paginator(execucoes_finalizadas, length)
@@ -726,4 +732,42 @@ def maquina_critica(request):
         'data': data,
         'quantidade': len(planos_maquinas_criticas)
     })
+
+def api_buscar_planos(request):
+    """
+        Retorna uma lista de planos de preventiva ativos na área de produção.
+    """
+    # Obtém os parâmetros da requisição
+    search = request.GET.get('search', '').strip()  # Termo de busca
+    page = int(request.GET.get('page', 1))  # Página atual (padrão é 1)
+    per_page = int(request.GET.get('per_page', 10))  # Itens por página (padrão é 10)
+
+    # Filtra os planos de preventiva ativos
+    planos_query = PlanoPreventiva.objects.filter(
+       ativo=True, area='producao'  # Apenas máquinas com planos de preventiva ativos
+    ).annotate(
+        nome_lower=Lower('nome')
+    ).values('nome_lower').distinct()  # Remove duplicatas caso uma máquina esteja associada a múltiplos planos
+
+    # Aplica o filtro de busca, se necessário
+    if search:
+        planos_query = planos_query.filter(
+            Q(nome_lower__icontains=search)
+        )
+
+    # Paginação
+    paginator = Paginator(planos_query, per_page)
+    planos_page = paginator.get_page(page)
+
+    # Monta os resultados paginados no formato esperado pelo Select2
+    data = {
+        'results': [
+            {'id': plano['nome_lower'], 'text': f"{plano['nome_lower']}"} for plano in planos_page
+        ],
+        'pagination': {
+            'more': planos_page.has_next()  # Indica se há mais páginas disponíveis
+        },
+    }
+
+    return JsonResponse(data)
 
