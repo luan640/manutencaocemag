@@ -507,6 +507,7 @@ def aguardando_primeiro_atendimento_predial(request):
         'aguardando_primeiro_atendimento': aguardando_primeiro_atendimento,
         'area_manutencao': [('predial', 'Predial')],
         'tipo_manutencao': [('corretiva', 'Corretiva'),('planejada','Planejada'),('projetos','Projetos')],
+        'operadores': Operador.objects.filter(area='predial', status='ativo'),
     }
 
     # Verifica se é uma requisição AJAX
@@ -517,6 +518,7 @@ def aguardando_primeiro_atendimento_predial(request):
             'nextPage': page_obj.next_page_number() if page_obj.has_next() else None,
             'area_manutencao': [('predial', 'Predial')],
             'tipo_manutencao': [('corretiva', 'Corretiva'),('planejada','Planejada'),('projetos','Projetos')],
+            'operadores': Operador.objects.filter(area='predial', status='ativo'),
         }
 
         html = render_to_string('solicitacoes/partials/cards-predial-aguardando.html', context)

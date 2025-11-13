@@ -516,16 +516,19 @@
                 const dataProgramacao = document.getElementById('data_programacao_' + pk);
                 const campoProgramacao = document.getElementById('campoProgramacao_' + pk);
                 const campoNivelPrioridade = document.getElementById('prioridade_'+pk);
-                const rowPrioridade = document.getElementById('rowPrioridade_'+pk);
                 const campoTipoManutencao = document.getElementById('tipo_manutencao_'+pk);
                 const campoAreaManutencao = document.getElementById('area_manutencao_'+pk);
+                const campoAtribuirOperador = document.getElementById('rowAtribuirOperador_' + pk);
+                const campoOperador = document.getElementById('operador_'+pk);
 
                 // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
                 function toggleDataProgramacao() {
                     if (statusSelect.value === 'rejeitar') {
                         // Oculta o campo de data e remove a obrigatoriedade
                         campoProgramacao.style.display = 'none';
-                        rowPrioridade.style.display = 'none';
+                        campoAtribuirOperador.style.display = 'none';
+                        campoAtribuirOperador.value = '';
+                        campoOperador.removeAttribute('required');
                         dataProgramacao.removeAttribute('required');
                         campoNivelPrioridade.removeAttribute('required');
                         campoTipoManutencao.removeAttribute('required');
@@ -533,12 +536,12 @@
                     } else if (statusSelect.value === 'aprovar') {
                         // Exibe o campo de data e torna-o obrigatório
                         campoProgramacao.style.display = 'block';
-                        rowPrioridade.style.display = 'block';
+                        campoAtribuirOperador.style.display = 'block';
+                        campoOperador.setAttribute('required', 'required');
                         dataProgramacao.setAttribute('required', 'required');
                         campoNivelPrioridade.setAttribute('required', 'required');
                         campoTipoManutencao.setAttribute('required','required');
                         campoAreaManutencao.setAttribute('required','required');
-
                     }
                 }
 
@@ -691,6 +694,7 @@
 
                     // Criar um objeto FormData para capturar os dados do formulário
                     const formData = new FormData(form);
+
 
                     // Exibe o modal de carregamento
                     Swal.fire({

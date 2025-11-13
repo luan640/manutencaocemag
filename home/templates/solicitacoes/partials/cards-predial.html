@@ -11,6 +11,9 @@
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
+            <div class="text-center ms-auto">
+                <span>{{solicitacao.atribuido.nome}}</span>
+            </div>
             <div class="text-end ms-auto">
                 {% if solicitacao.status_andamento %}
                     {% if solicitacao.status_andamento == 'finalizada' %}
