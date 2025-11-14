@@ -474,7 +474,7 @@ def calcular_manutencoes_semanais(request):
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
                     'plano': plano.nome,
-                    'data': maintenance_date.strftime('%Y-%m-%d'),
+                    'data': maintenance_date.strftime('%d/%m/%Y'),
                     'status_manutencao': status,
                     'status_aprovacao': status_aprovacao
                 })
