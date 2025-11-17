@@ -165,6 +165,10 @@
                             {% endif %}
                         {% endif %}
                     {% endif %}
+                    <a id="btnEditarResponsavel_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+                        data-bs-target="#editarResponsavelModal{{ solicitacao.pk }}">
+                        Editar Responsável
+                    </a>
                 </ul>
             </div>
         </div>
@@ -622,6 +626,20 @@
                             <button type="submit" id='saveReprogramarSolicitacaoButton_{{solicitacao.pk}}'class="btn btn-primary">Salvar</button>
                         </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarResponsavelModal{{ solicitacao.pk }}" tabindex="-1" aria-labelledby="editarResponsavelModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarResponsavelModal{{ solicitacao.pk }}">Editar Responsável ordem #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bodyEditarResponsavel_{{solicitacao.pk}}" style="min-height: 200px; max-height: 700px; overflow-y: auto;">
+                
             </div>
         </div>
     </div>

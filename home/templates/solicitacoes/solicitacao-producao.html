@@ -410,7 +410,8 @@
                     attachSelect2Operador,
                     // attachVerificarData,
                     attachHistorico,
-                    attachMaisDetalhes
+                    attachMaisDetalhes,
+                    attachEditarResponsavel,
                 ] // Callback após carregar as solicitações
             );
 
@@ -755,7 +756,8 @@
                                     attachSelect2Operador,
                                     // attachVerificarData,
                                     attachHistorico,
-                                    attachMaisDetalhes
+                                    attachMaisDetalhes,
+                                    attachEditarResponsavel
                                 ])
 
                             ]).then(() => {
@@ -886,7 +888,8 @@
                                 attachSelect2Operador,
                                 // attachVerificarData,
                                 attachHistorico,
-                                attachMaisDetalhes
+                                attachMaisDetalhes,
+                                attachEditarResponsavel
                             ]),
 
 
@@ -1008,7 +1011,8 @@
                                 attachSelect2Operador,
                                 // attachVerificarData,
                                 attachHistorico,
-                                attachMaisDetalhes
+                                attachMaisDetalhes,
+                                attachEditarResponsavel
                             ]),
 
 
@@ -2061,6 +2065,106 @@
             });
         }
 
+        function attachEditarResponsavel() {
+            // Seleciona todos os elementos <a> com o id que começa com "btnEditarResponsavel_"
+            const buttons = document.querySelectorAll('[id^="btnEditarResponsavel_"]');
+
+            console.log(buttons);
+
+            // <a id="btnEditarResponsavel_{{ solicitacao.pk }}" class="dropdown-item" href="#" data-bs-toggle="modal"
+            //             data-bs-target="#editarResponsavelModal{{ solicitacao.pk }}">
+            //             Editar Responsável
+            //         </a>
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Extrai o número da chave primária (pk) do ID do botão
+                    const pk = this.id.split('_')[1];
+
+                    // Elemento onde o histórico será exibido
+                    const bodyEditarResponsavel = document.getElementById(`bodyEditarResponsavel_${pk}`);
+                    bodyEditarResponsavel.innerHTML = `<div class="loading-overlay" id="loading-editar-responsavel">
+                    <div class="spinner"></div>
+                    </div>`
+                    // bodyEditarResponsavel.innerHTML = ''; // Limpa o conteúdo atual
+
+                    // Envia uma solicitação fetch para buscar os dados do histórico no backend
+                    fetch(`/home/mais-detalhes/${pk}/`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Erro ao buscar histórico');
+                            }
+                            return response.json(); // Converte a resposta em JSON
+                        })
+                        .then(data => {
+                            if (data && data.solicitacoes.length > 0) {
+                                bodyDetalhes.innerHTML = '';
+                                data.solicitacoes.forEach(item => {
+
+                                    bodyDetalhes.innerHTML = `
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="container">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Solicitante:</strong> ${item.nome_solicitante || 'N/A'}
+                                                        </div>
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Setor:</strong> ${item.setor_nome || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Equipamento:</strong> ${item.nome_maquina || 'N/A'}
+                                                        </div>
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Operador Responsável:</strong> ${item.operador_responsavel || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Impacto na Produção:</strong> ${item.impacto_producao || 'N/A'}
+                                                        </div>
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Status de Andamento:</strong> ${item.status_andamento || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Data de Abertura:</strong> ${new Date(item.data_abertura).toLocaleString('pt-BR') || 'N/A'}
+                                                        </div>
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong>Programação:</strong> ${
+                                                                (() => {
+                                                                    const date = new Date(item.programacao);
+                                                                    date.setDate(date.getDate() + 1); // Adiciona 1 dia
+                                                                    return date.toLocaleDateString('pt-BR') || 'N/A';
+                                                                })()
+                                                            }                                                        
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <strong>Motivo:</strong> ${item.descricao || 'N/A'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                bodyDetalhes.innerHTML = '<p class="text-center">Detalhes não disponível para esta ordem.</p>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            bodyDetalhes.innerHTML = '<p class="text-center text-danger">Erro ao carregar o histórico.</p>';
+                        });
+                });
+            });
+        }
+
 
         Promise.all([
             
@@ -2085,6 +2189,7 @@
                 // attachVerificarData,
                 attachHistorico,
                 attachMaisDetalhes,
+                attachEditarResponsavel
             ]),
 
             document.getElementById('headingAguardandoPrimeiroAtendimento') 
