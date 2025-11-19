@@ -12,7 +12,9 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>#{{ solicitacao.pk }}</span>
             <div class="text-center ms-auto">
-                <span>{{solicitacao.atribuido.nome}}</span>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#alterarReponsavel{{ solicitacao.pk }}" class="text-decoration-none">
+                    <span id="responsavelAtual_{{ solicitacao.pk }}">{{ solicitacao.atribuido.nome }}</span>
+                </a>
             </div>
             <div class="text-end ms-auto">
                 {% if solicitacao.status_andamento %}
@@ -172,8 +174,7 @@
 </div>
 
 <!-- Modal para executar ordem -->
-<div class="modal fade" id="executarModal{{ solicitacao.pk }}"
-    aria-labelledby="executarModalLabel{{ solicitacao.pk }}" aria-hidden="true">
+<div class="modal fade" id="executarModal{{ solicitacao.pk }}" aria-labelledby="executarModalLabel{{ solicitacao.pk }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -627,7 +628,36 @@
     </div>
 </div>
 
-
-
+<!-- Modal para escolher outro responsável -->
+<div class="modal fade" id="alterarReponsavel{{ solicitacao.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="titleAlterarResponsavel{{ solicitacao.pk }}">Escolha o novo responsável pela tarefa #{{ solicitacao.pk }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form
+                    class="form-alterar-responsavel"
+                    method="post"
+                    action="{% url 'alterar_responsavel_producao' solicitacao.pk %}"
+                    data-solicitacao-id="{{ solicitacao.pk }}">
+                    {% csrf_token %}
+                    <label for="novoResponsavel{{solicitacao.pk}}" class="form-label">Operador</label>
+                    <select class="form-control" id="novoResponsavel{{solicitacao.pk}}" name="operador" required>
+                        {% for operador in operadores %}
+                        <option value="{{ operador.pk }}">{{ operador.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="mt-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="submitAlterarResponsavel">Salvar</button>
+                    </div>
+                    <div id="erroAlterarResponsavel_{{ solicitacao.pk }}" class="mt-2 text-danger small" style="display:none;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endfor %}    

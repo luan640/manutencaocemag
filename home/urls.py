@@ -22,6 +22,7 @@ urlpatterns = [
     path('dados-editar/<int:pk>/', views.dados_editar_execucao, name='dados_editar_execucao'),
     path('mais-detalhes/<int:pk>/', views.mais_detalhes_ordem, name='mais_detalhes_ordem'),
     path('historico/<int:pk>/editar/', views.editar_execucao, name='editar_execucao'),
+    path('producao/alterar-responsavel/<int:pk>/', views.alterar_responsavel_producao, name='alterar_responsavel_producao'),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -10,6 +10,7 @@ from django.utils.timezone import now, is_naive, make_naive, make_aware
 from django.urls import reverse
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.http import require_POST
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao
@@ -648,6 +649,26 @@ def mais_detalhes_ordem(request, pk):
     )
 
     return JsonResponse({'solicitacoes': list(solicitacoes)})
+
+
+@login_required
+@require_POST
+def alterar_responsavel_producao(request, pk):
+    try:
+        solicitacao = get_object_or_404(Solicitacao, pk=pk)
+        operador_id = request.POST.get('operador')
+
+        if not operador_id:
+            return JsonResponse({'success': False, 'error': 'Operador é obrigatório.'}, status=400)
+
+        operador = get_object_or_404(Operador, pk=operador_id)
+
+        solicitacao.atribuido = operador
+        solicitacao.save(update_fields=['atribuido'])
+
+        return JsonResponse({'success': True, 'novo_responsavel': operador.nome})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def editar_execucao(request, pk):
     if request.method == "POST":
