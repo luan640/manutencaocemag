@@ -318,75 +318,6 @@ def planejamento_anual(request):
 
     return render(request, 'plano/52semanas.html')
 
-# def calcular_manutencoes_semanais(request):
-
-#     """
-#     Para cada plano preventivo ativo (exceto os da máquina 'ETE'),
-#     gera um cronograma de 52 semanas a partir de 01/01 do ano do plano e
-#     calcula as datas de manutenção com base na periodicidade, iniciando
-#     em data_base + periodicidade.
-#     """
-
-#     from datetime import datetime, timedelta
-#     from django.http import JsonResponse
-
-#     # Filtra os planos ativos (exceto os da máquina com código 'ETE')
-#     planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
-#     response_data = []
-
-#     for plano in planos:
-
-#         # verifica se o plano.id e maquina_id existe dentro da consulta
-#         # caso exista, guardar o status para posteriormente juntar com as informações e da um drop na consulta para não gerar duplicadas.
-#         # caso não exista, guardar o status como não encontrada
-
-#         # Define o ano com base na data_base do plano; se não houver, usa o ano atual
-#         if plano.data_inicio:
-#             plano_data_base = datetime.combine(plano.data_inicio, datetime.min.time())
-#             year = datetime.today().year
-#         else:
-#             year = datetime.today().year
-#             plano_data_base = datetime(year, 1, 1)
-        
-#         # Define o início global do ano e o final considerando 52 semanas
-#         global_start = datetime(year, 1, 1)
-#         global_end = global_start + timedelta(days=52*7 - 1)
-
-#         # Gera o cronograma de 52 semanas a partir de 01/01 do ano
-#         weeks = []
-#         for week_num in range(52):
-#             week_start = global_start + timedelta(days=week_num * 7)
-#             week_end = week_start + timedelta(days=6)
-#             weeks.append({
-#                 'semana': week_num + 1,
-#                 'inicio': week_start.strftime('%Y-%m-%d'),
-#                 'fim': week_end.strftime('%Y-%m-%d'),
-#                 'manutencoes': []
-#             })
-
-#         # Calcula as manutenções a partir de data_base + periodicidade
-#         maintenance_date = plano_data_base + timedelta(days=plano.periodicidade)
-#         while maintenance_date <= global_end:
-#             # Calcula a posição da semana no cronograma global
-#             offset_days = (maintenance_date - global_start).days
-#             week_index = offset_days // 7  # 0-indexado
-#             if 0 <= week_index < 52:
-#                 weeks[week_index]['manutencoes'].append({
-#                     'maquina': plano.maquina.codigo,
-#                     'plano': plano.nome,
-#                     'data': maintenance_date.strftime('%Y-%m-%d')
-#                 })
-#             maintenance_date += timedelta(days=plano.periodicidade)
-
-#         response_data.append({
-#             'maquina': plano.maquina.codigo,
-#             'plano': plano.nome,
-#             'data_base': plano_data_base.strftime('%Y-%m-%d'),
-#             'semanas': weeks
-#         })
-
-#     return JsonResponse(response_data, safe=False)
-
 def calcular_manutencoes_semanais(request):
     """
     Agora linka as execuções reais sem depender da data exata: 
@@ -394,7 +325,7 @@ def calcular_manutencoes_semanais(request):
     conforme for usando.
     """
 
-    # 1️⃣ Executa a consulta para buscar todas as execuções reais
+    # Executa a consulta para buscar todas as execuções reais
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT 
@@ -403,11 +334,11 @@ def calcular_manutencoes_semanais(request):
                 pp.id AS plano_id,
                 ss.status_andamento,
                 ss.status AS status_aprovacao
-            FROM manutencao_v3.solicitacao_solicitacao ss
-            LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps ON ss.id = ps.ordem_id
-            LEFT JOIN manutencao_v3.execucao_execucao ee ON ss.id = ee.ordem_id
-            LEFT JOIN manutencao_v3.cadastro_maquina cm ON cm.id = ss.maquina_id
-            LEFT JOIN manutencao_v3.preventiva_planopreventiva pp ON pp.id = ps.plano_id 
+            FROM manutencao_testes.solicitacao_solicitacao ss
+            LEFT JOIN manutencao_testes.preventiva_solicitacaopreventiva ps ON ss.id = ps.ordem_id
+            LEFT JOIN manutencao_testes.execucao_execucao ee ON ss.id = ee.ordem_id
+            LEFT JOIN manutencao_testes.cadastro_maquina cm ON cm.id = ss.maquina_id
+            LEFT JOIN manutencao_testes.preventiva_planopreventiva pp ON pp.id = ps.plano_id 
             WHERE 
                 ss.planejada 
                 AND (pp.dias_antecedencia + ps.data) >= '2025-01-01'
@@ -416,7 +347,7 @@ def calcular_manutencoes_semanais(request):
                     ss.status = 'rejeitar' OR
                     ee.n_execucao = (
                         SELECT MAX(ee2.n_execucao)
-                        FROM manutencao_v3.execucao_execucao ee2
+                        FROM manutencao_testes.execucao_execucao ee2
                         WHERE ee2.ordem_id = ss.id
                     )
                 )
@@ -426,7 +357,7 @@ def calcular_manutencoes_semanais(request):
         columns = [col[0] for col in cursor.description]
         ordens_realizadas = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-    # 2️⃣ Agora, ao invés de indexar, vamos deixar como lista e ir removendo conforme usamos!
+    # Agora, ao invés de indexar, vamos deixar como lista e ir removendo conforme usamos!
     response_data = []
     planos = PlanoPreventiva.objects.filter(ativo=True).exclude(maquina__codigo='ETE')
 
@@ -467,16 +398,19 @@ def calcular_manutencoes_semanais(request):
                     ordem = ordens_realizadas.pop(ordem_index)
                     status = ordem['status_andamento']
                     status_aprovacao = ordem['status_aprovacao']
+                    numero_ordem = ordem['id']
                 else:
                     status = 'não encontrada'
                     status_aprovacao = None
+                    numero_ordem = None
 
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
                     'plano': plano.nome,
                     'data': maintenance_date.strftime('%Y-%m-%d'),
                     'status_manutencao': status,
-                    'status_aprovacao': status_aprovacao
+                    'status_aprovacao': status_aprovacao,
+                    'ordem': numero_ordem
                 })
 
             maintenance_date += timedelta(days=plano.periodicidade)
@@ -705,7 +639,6 @@ def historico_preventivas(request):
             'data': data
         })
     
-
 def maquina_critica(request):
     planos_maquinas_criticas = PlanoPreventiva.objects.filter(ativo=True)
     print(planos_maquinas_criticas)
