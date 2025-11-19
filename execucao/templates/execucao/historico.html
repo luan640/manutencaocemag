@@ -8,294 +8,725 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
 <style>
-    /* Tabela */
-    #execucaoTable {
-        font-size: 12px;
+    :root {
+        --color-primary: #2563eb;
+        --color-primary-dark: #1e40af;
+        --color-primary-light: #3b82f6;
+        --color-success: #10b981;
+        --color-danger: #ef4444;
+        --color-warning: #f59e0b;
+        --color-bg-light: #f8fafc;
+        --color-bg-white: #ffffff;
+        --color-border: #e2e8f0;
+        --color-text-primary: #1e293b;
+        --color-text-secondary: #64748b;
+        --color-text-light: #94a3b8;
     }
 
-    #execucaoTable th, #execucaoTable td {
-        padding: 4px 8px;
+    /* Reset e layout base */
+    body {
+        background-color: var(--color-bg-light);
     }
 
-    /* Dropdown de colunas */
+    .page-wrapper {
+        background-color: var(--color-bg-light);
+    }
+
+    /* Container principal com padding consistente */
+    .container-fluid {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    /* Cabeçalho destaca */
+    .header-section {
+        background-color: var(--color-bg-white);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid var(--color-primary);
+    }
+
+    .header-section h2 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        letter-spacing: -0.5px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* Seção de controles organizada */
+    .controls-section {
+        background-color: var(--color-bg-white);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--color-border);
+    }
+
+    .controls-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .controls-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .control-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        min-width: 100px;
+    }
+
+    /* Botões padronizados */
+    .btn {
+        border-radius: 8px;
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn i {
+        font-size: 1rem;
+    }
+
+    .btn-outline-secondary {
+        background-color: var(--color-bg-light);
+        border: 1.5px solid var(--color-border);
+        color: var(--color-text-primary);
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--color-bg-white);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        border: 1.5px solid #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+
+    .btn-primary {
+        background-color: var(--color-primary);
+        color: white;
+        border: 1.5px solid var(--color-primary);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--color-primary-dark);
+        border-color: var(--color-primary-dark);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-success {
+        background-color: var(--color-success);
+        color: white;
+        border: 1.5px solid var(--color-success);
+    }
+
+    .btn-success:hover {
+        background-color: #059669;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-outline-danger {
+        background-color: var(--color-bg-light);
+        border: 1.5px solid var(--color-danger);
+        color: var(--color-danger);
+    }
+
+    .btn-outline-danger:hover {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--color-danger);
+    }
+
+    /* Menu dropdown estilizado */
+    .btn-group {
+        position: relative;
+    }
+
+    .dropdown-toggle::after {
+        margin-left: 0.5rem;
+    }
+
+    .dropdown-menu {
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Menu de filtros específico */
+    #filtrosMenu {
+        background-color: var(--color-bg-white);
+        width: 520px !important;
+        max-height: 650px;
+        border-radius: 10px;
+        padding: 0 !important;
+    }
+
+    .filters-content {
+        max-height: 520px;
+        overflow-y: auto;
+        padding: 1.25rem;
+    }
+
+    .filters-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .filters-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .filters-content::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+
+    .filters-content::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-light);
+    }
+
+    /* Grupos de filtros com estilo */
+    .filter-group {
+        border-left: 3px solid var(--color-primary);
+        background-color: #f0f4f8;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 6px;
+    }
+
+    .filter-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .group-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    /* Formulários de filtro */
+    .form-control,
+    .form-select {
+        border-radius: 6px;
+        border: 1px solid var(--color-border);
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        background-color: white;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        background-color: white;
+    }
+
+    .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Botões fixos no fundo do menu */
+    .filters-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        background-color: var(--color-bg-light);
+        border-top: 1px solid var(--color-border);
+        padding: 1rem 1.25rem;
+        border-radius: 0 0 10px 10px;
+        flex-wrap: wrap;
+    }
+
+    .filters-footer .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .filters-footer-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Status de filtros */
+    .filters-status-section {
+        background-color: var(--color-bg-white);
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border-left: 3px solid var(--color-primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .filters-status-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    #filtrosAtivos {
+        font-size: 0.95rem;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Menu de colunas */
+    #columnToggleMenu {
+        background-color: var(--color-bg-white);
+        border-radius: 8px;
+        min-width: 240px;
+    }
+
     #columnToggleMenu .form-check {
-        margin-bottom: 6px;
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 0;
+    }
+
+    #columnToggleMenu .form-check-input {
+        border-radius: 4px;
+        width: 1.1rem;
+        height: 1.1rem;
+        border: 1.5px solid var(--color-border);
+        cursor: pointer;
+    }
+
+    #columnToggleMenu .form-check-input:checked {
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
     }
 
     #columnToggleMenu label {
         font-size: 0.9rem;
         cursor: pointer;
+        color: var(--color-text-primary);
+        font-weight: 500;
+        margin-bottom: 0;
     }
 
-    /* Botões */
-    .btn-toolbar .btn {
-        font-size: 0.9rem;
-    }
-
-    .dropdown-menu.shadow {
-        border-radius: 8px;
-    }
-
-    .btn-outline-secondary,
-    .btn-outline-danger {
+    #btnSelectAllColumns {
         border-radius: 6px;
+        font-weight: 600;
+        width: 100%;
+        margin-bottom: 0.75rem;
     }
 
-    /* Layout responsivo para mobile */
-    @media (max-width: 576px) {
-        .btn-toolbar {
-            width: 100%;
-            justify-content: flex-start;
-            margin-top: 0.5rem;
-        }
+    /* Tabela em destaque */
+    .table-wrapper {
+        background-color: var(--color-bg-white);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--color-border);
     }
 
-    #filtrosMenu .filters-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* 2 colunas */
-        gap: 12px; /* espaço entre filtros */
+    .table-responsive {
+        margin-bottom: 0;
     }
 
-    @media (max-width: 576px) {
-    #filtrosMenu .filters-grid {
-        grid-template-columns: 1fr; /* 1 coluna em mobile */
-        }
-    }
-
-    .filter-group {
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 8px;
-        margin-bottom: 8px;
-    }
-
-    .group-title {
+    #execucaoTable {
         font-size: 0.9rem;
-        color: #333;
-        margin-bottom: 6px;
+        background-color: var(--color-bg-white);
+        margin-bottom: 0;
     }
 
+    #execucaoTable thead {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        color: white;
+    }
 
+    #execucaoTable th {
+        font-weight: 700;
+        color: white;
+        padding: 1.25rem 1rem;
+        white-space: nowrap;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.3px;
+        border: none;
+    }
+
+    #execucaoTable td {
+        padding: 1rem;
+        color: var(--color-text-secondary);
+        border-color: var(--color-border);
+    }
+
+    #execucaoTable tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    #execucaoTable tbody tr:hover {
+        background-color: #f0f7ff;
+    }
+
+    #execucaoTable tbody tr:nth-child(odd) {
+        background-color: #fafbfc;
+    }
+
+    #execucaoTable tbody tr:nth-child(even) {
+        background-color: var(--color-bg-white);
+    }
+
+    /* Responsividade */
+    @media (max-width: 1200px) {
+        #filtrosMenu {
+            width: 450px !important;
+        }
+
+        .container-fluid {
+            padding: 1.5rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 1rem;
+        }
+
+        .header-section {
+            padding: 1.5rem;
+        }
+
+        .header-section h2 {
+            font-size: 1.5rem;
+        }
+
+        .controls-section {
+            padding: 1rem;
+        }
+
+        .controls-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .control-label {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        #filtrosMenu {
+            width: 90vw !important;
+            max-width: 90vw;
+        }
+
+        #execucaoTable {
+            font-size: 0.85rem;
+        }
+
+        #execucaoTable th {
+            padding: 0.875rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        #execucaoTable td {
+            padding: 0.75rem 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding: 0.75rem;
+        }
+
+        .header-section {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .header-section h2 {
+            font-size: 1.25rem;
+        }
+
+        .controls-section {
+            padding: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .controls-row {
+            gap: 0.5rem;
+        }
+
+        .filters-footer {
+            padding: 0.75rem;
+        }
+
+        #filtrosMenu {
+            width: 95vw !important;
+        }
+
+        .filters-footer-buttons {
+            width: 100%;
+        }
+
+        .filters-footer-buttons .btn {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+
+    /* Transições suaves */
+    .btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:active {
+        transform: scale(0.98);
+    }
 </style>
 
 {% endblock %}
 
 {% block content %}
 
-<div class="container-fluid px-3">
+<!-- Wrapper da página -->
+<div class="page-wrapper">
+    <div class="container-fluid">
 
-    <!-- Cabeçalho e botões -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-        <h2 class="mb-0">Histórico de Execuções</h2>
+        <!-- Seção de cabeçalho separada e destaca -->
+        <div class="header-section">
+            <h2>
+                <i class="bi bi-clock-history"></i>
+                Histórico de Execuções
+            </h2>
+        </div>
 
-        <div class="btn-toolbar mt-2 mt-sm-0">
-            <div class="btn-group me-2">
-                <button id="btnColumnToggle"
-                        class="btn btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <i class="bi bi-layout-three-columns"></i> Colunas
-                </button>
-                <div id="columnToggleMenu"
-                    class="dropdown-menu dropdown-menu-end p-3 shadow"
-                    style="max-height: 300px; overflow:auto; min-width: 220px;">
-                    <!-- Checkboxes das colunas via JS -->
-                     <button type="button" id="btnSelectAllColumns" class="btn btn-sm btn-outline-primary mb-2 w-100">
-                        Selecionar Todos
+        <!-- Seção de controles bem organizada -->
+        <div class="controls-section">
+            <!-- Linha 1: Filtros e Colunas -->
+            <div class="controls-row">
+                <span class="control-label">Controles:</span>
+                
+                <!-- Botão Filtros -->
+                <div class="btn-group">
+                    <button type="button" id="btnFiltros" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="false">
+                        <i class="bi bi-funnel"></i> Filtros
                     </button>
+                    <div class="dropdown-menu" id="filtrosMenu">
+                        <div class="filters-content">
+                            <!-- Grupo 1: Identificação da Ordem -->
+                            <div class="filter-group">
+                                <span class="group-title">Identificação da Ordem</span>
+                                <div class="row g-2">
+                                    <div class="col-6 filter-item" data-name='OS'>
+                                        <label for="filterOrdem" class="form-label">OS</label>
+                                        <input type="number" class="form-control form-control-sm" id="filterOrdem" placeholder="Nº da ordem">
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Execução'>
+                                        <label for="filterExecucao" class="form-label">Execução</label>
+                                        <input type="text" class="form-control form-control-sm" id="filterExecucao" placeholder="Nº Execução">
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Setor'>
+                                        <label for="filterSetor" class="form-label">Setor</label>
+                                        <select class="form-select form-select-sm" id="filterSetor"></select>
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Solicitante'>
+                                        <label for="filterSolicitante" class="form-label">Solicitante</label>
+                                        <input type="text" class="form-control form-control-sm" id="filterSolicitante" placeholder="Nome">
+                                    </div>
+                                    <div class="col-12 filter-item" data-name='Operadores'>
+                                        <label for="filterOperadores" class="form-label">Operadores</label>
+                                        <select class="form-select form-select-sm" id="filterOperadores" multiple></select>
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Área'>
+                                        <label for="filterArea" class="form-label">Área</label>
+                                        <select class="form-select form-select-sm" id="filterArea">
+                                            <option value=""></option>
+                                            <option value="producao">Produção</option>
+                                            <option value="predial">Predial</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grupo 2: Máquina e Manutenção -->
+                            <div class="filter-group">
+                                <span class="group-title">Máquina e Manutenção</span>
+                                <div class="row g-2">
+                                    <div class="col-12 filter-item" data-name='Máquina'>
+                                        <label for="filterMaquina" class="form-label">Máquina</label>
+                                        <select class="form-select form-select-sm" id="filterMaquina"></select>
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Tipo da manutenção'>
+                                        <label for="filterTipoManutencao" class="form-label">Tipo de Manutenção</label>
+                                        <select class="form-select form-select-sm" id="filterTipoManutencao" multiple size="2"></select>
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Área da manutenção'>
+                                        <label for="filterAreaManutencao" class="form-label">Área da Manutenção</label>
+                                        <select class="form-select form-select-sm" id="filterAreaManutencao" multiple size="2">
+                                            <option value="mecanica">Mecânica</option>
+                                            <option value="predial">Predial</option>
+                                            <option value="eletrica">Elétrica</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Horas executadas'>
+                                        <label class="form-label">Qtd. Horas (HH:MM)</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasInicial" placeholder="Início">
+                                            <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasFinal" placeholder="Fim">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grupo 3: Datas -->
+                            <div class="filter-group">
+                                <span class="group-title">Datas</span>
+                                <div class="mb-3 filter-item" data-name='Data de abertura'>
+                                    <label class="form-label">Data de Abertura</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataAberturaInicial">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataAberturaFinal">
+                                    </div>
+                                </div>
+                                <div class="mb-3 filter-item" data-name='Data de início'>
+                                    <label class="form-label">Data de Início</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataInicioInicial">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataInicioFinal">
+                                    </div>
+                                </div>
+                                <div class="mb-3 filter-item" data-name='Data de fim'>
+                                    <label class="form-label">Data de Fim</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataFinalInicial">
+                                        <input type="date" class="form-control form-control-sm" id="filterDataFinalFinal">
+                                    </div>
+                                </div>
+                                <div class="mb-3 filter-item" data-name='Última atualização'>
+                                    <label class="form-label">Última Atualização</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoInicial">
+                                        <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoFinal">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grupo 4: Status e Comentários -->
+                            <div class="filter-group">
+                                <span class="group-title">Status e Comentários</span>
+                                <div class="row g-2">
+                                    <div class="col-12 filter-item" data-name='Status'>
+                                        <label for="filterStatus" class="form-label">Status</label>
+                                        <select class="form-select form-select-sm" id="filterStatus" multiple size="1"></select>
+                                    </div>
+                                    <div class="col-12 filter-item" data-name='Comentário da manutenção'>
+                                        <label for="filterComentarioManutencao" class="form-label">Comentário da Manutenção</label>
+                                        <input type="text" class="form-control form-control-sm" id="filterComentarioManutencao" placeholder="Comentário">
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Motivo'>
+                                        <label for="filterMotivo" class="form-label">Motivo</label>
+                                        <input type="text" class="form-control form-control-sm" id="filterMotivo" placeholder="Motivo">
+                                    </div>
+                                    <div class="col-6 filter-item" data-name='Obs do executante'>
+                                        <label for="filterObsExecutante" class="form-label">Obs do Executante</label>
+                                        <input type="text" class="form-control form-control-sm" id="filterObsExecutante" placeholder="Observação">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botões fixos no footer do menu -->
+                        <div class="filters-footer">
+                            <button type="button" id="btnFecharFiltros" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-x-lg"></i> Fechar
+                            </button>
+                            <div class="filters-footer-buttons">
+                                <button id="btnLimparFiltro" class="btn btn-secondary btn-sm">
+                                    <i class="bi bi-arrow-clockwise"></i> Limpar
+                                </button>
+                                <button id="btnFiltrarEnvio" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-check-lg"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Botão Colunas -->
+                <div class="btn-group">
+                    <button id="btnColumnToggle" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-columns-gap"></i> Colunas
+                    </button>
+                    <div id="columnToggleMenu" class="dropdown-menu dropdown-menu-end" style="max-height: 300px; overflow:auto;">
+                        <button type="button" id="btnSelectAllColumns" class="btn btn-sm btn-outline-primary">
+                            Selecionar Todos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botão Exportar -->
+                <button id="btnExportarExcel" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                </button>
             </div>
-
-
         </div>
+
+        <!-- Status de filtros ativos -->
+        <div class="filters-status-section">
+            <span class="filters-status-label">Filtros Ativos:</span>
+            <div id="filtrosAtivos">Nenhum filtro aplicado</div>
+        </div>
+
     </div>
-
-    <!-- Botão que abre/fecha filtros -->
-  <div class="mb-3">
-  <!-- Botão que abre o dropdown de filtros -->
-  <div class="btn-group">
-    <button type="button" id="btnFiltros" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="false">
-      Filtros
-    </button>
-    <div class="dropdown-menu p-3" style="width: 450px; max-height: 500px; position: relative;" id="filtrosMenu">
-      <div class="filters-content" style="max-height: 500px; overflow-y: auto; padding-bottom: 70px;">
-      <!-- Grupo 1: Identificação da Ordem -->
-      <div class="filter-group mb-3">
-        <div class="group-title fw-bold mb-2">Identificação da Ordem</div>
-
-        <div class="row g-2">
-          <div class="col-6 filter-item" data-name='OS'>
-            <label for="filterOrdem" class="form-label">#OS</label>
-            <input type="number" class="form-control form-control-sm" id="filterOrdem" placeholder="Número da ordem">
-          </div>
-
-          <div class="col-6 filter-item" data-name='Execução'>
-            <label for="filterExecucao" class="form-label">Execução</label>
-            <input type="text" class="form-control form-control-sm" id="filterExecucao" placeholder="Nº Execução">
-          </div>
-
-          <div class="col-6 filter-item" data-name='Setor'>
-            <label for="filterSetor" class="form-label">Setor</label>
-            <select class="form-select form-select-sm" id="filterSetor">
-              <!-- opções de setor -->
-            </select>
-          </div>
-
-         <div class="col-6 filter-item" data-name='Solicitante'>
-            <label for="filterSolicitante" class="form-label">Solicitante</label>
-            <input type="text" class="form-control form-control-sm" id="filterSolicitante" placeholder="Nome do solicitante">
-          </div>
-          <div class="col-12 filter-item" data-name='Operadores'>
-            <label for="filterOperadores" class="form-label">Operadores</label>
-           <select class="form-select form-select-sm" id="filterOperadores" multiple>
-              <!-- opções de setor -->
-            </select>
-          </div>
-          <div class="col-6 filter-item" data-name='Área'>
-            <label for="filterArea" class="form-label">Área</label>
-            <select class="form-select form-select-sm" id="filterArea" placeholder="Selecione uma Área">
-                <option value=""></option>
-                <option value="producao">Produção</option>
-                <option value="predial">Predial</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Grupo 2: Máquina e Manutenção -->
-      <div class="filter-group mb-3">
-        <div class="group-title fw-bold mb-2">Máquina e Manutenção</div>
-
-        <div class="row g-2">
-          <div class="col-12 filter-item" data-name='Máquina'>
-            <label for="filterMaquina" class="form-label">Máquina</label>
-            <select class="form-select form-select-sm" id="filterMaquina">
-              <!-- opções de máquina -->
-            </select>
-          </div>
-
-          <div class="col-6 filter-item" data-name='Tipo da manutenção'>
-            <label for="filterTipoManutencao" class="form-label">Tipo de Manutenção</label>
-            <select class="form-select form-select-sm" id="filterTipoManutencao" multiple size="2">
-            </select>
-          </div>
-
-          <div class="col-6 filter-item" data-name='Área da manutenção'>
-            <label for="filterAreaManutencao" class="form-label">Área da Manutenção</label>
-            <select class="form-select form-select-sm" id="filterAreaManutencao" multiple size="2">
-              <option value="mecanica">Mecânica</option>
-              <option value="predial">Predial</option>
-              <option value="eletrica">Elétrica</option>
-            </select>
-          </div>
-
-          <div class="col-6 filter-item" data-name='Horas executadas'>
-            <label class="form-label">Qtd. Horas Executadas</label> (Formato -  HH:MM) 
-            <div class="d-flex gap-2">
-              <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasInicial" placeholder="Inicio">
-              <input type="text" class="form-control form-control-sm" id="filterHorasExecutadasFinal" placeholder="Fim">
-            </div>
-          </div>
-        </div>
-      </div>
-
-    <!-- Grupo 3: Datas -->
-    <div class="filter-group mb-3">
-        <div class="group-title fw-bold mb-2">Datas</div>
-
-        <!-- Cada filtro de data ocupa 100% da largura -->
-        <div class="mb-3 filter-item" data-name='Data de abertura'>
-            <label class="form-label">Data de Abertura</label>
-            <div class="d-flex gap-2">
-                <input type="date" class="form-control form-control-sm" id="filterDataAberturaInicial" placeholder="Inicial">
-                <input type="date" class="form-control form-control-sm" id="filterDataAberturaFinal" placeholder="Final">
-            </div>
-        </div>
-
-        <div class="mb-3 filter-item" data-name='Data de início'>
-            <label class="form-label">Data de Início</label>
-            <div class="d-flex gap-2">
-                <input type="date" class="form-control form-control-sm" id="filterDataInicioInicial" placeholder="Inicial">
-                <input type="date" class="form-control form-control-sm" id="filterDataInicioFinal" placeholder="Final">
-            </div>
-        </div>
-
-        <div class="mb-3 filter-item" data-name='Data de fim'>
-            <label class="form-label">Data de Fim</label>
-            <div class="d-flex gap-2">
-                <input type="date" class="form-control form-control-sm" id="filterDataFinalInicial" placeholder="Inicial">
-                <input type="date" class="form-control form-control-sm" id="filterDataFinalFinal" placeholder="Final">
-            </div>
-        </div>
-
-        <div class="mb-3 filter-item" data-name='Última atualização'>
-            <label class="form-label">Última Atualização</label>
-            <div class="d-flex gap-2">
-                <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoInicial" placeholder="Inicial">
-                <input type="date" class="form-control form-control-sm" id="filterUltimaAtualizacaoFinal" placeholder="Final">
-            </div>
-        </div>
-    </div>
-
-      <!-- Grupo 4: Status e Comentários -->
-      <div class="filter-group mb-3">
-        <div class="group-title fw-bold mb-2">Status e Comentários</div>
-
-        <div class="row g-2">
-          <div class="col-12 filter-item" data-name='Status'>
-            <label for="filterStatus" class="form-label">Status</label>
-            <select class="form-select form-select-sm" name="status" id="filterStatus" multiple size="1">
-              <!-- opções de status -->
-            </select>
-          </div>
-
-          <div class="col-12 filter-item" data-name='Comentário da manutenção'>
-            <label for="filterComentarioManutencao" class="form-label">Comentário da Manutenção</label>
-            <input type="text" class="form-control form-control-sm" id="filterComentarioManutencao" placeholder="Comentário">
-          </div>
-
-          <div class="col-6 filter-item" data-name='Motivo'>
-            <label for="filterMotivo" class="form-label">Motivo</label>
-            <input type="text" class="form-control form-control-sm" id="filterMotivo" placeholder="Motivo">
-          </div>
-
-          <div class="col-6 filter-item" data-name='Obs do executante'>
-            <label for="filterObsExecutante" class="form-label">Obs do Executante</label>
-            <input type="text" class="form-control form-control-sm" id="filterObsExecutante" placeholder="Observação">
-          </div>
-        </div>
-      </div>
-      
-      <!-- Botões fixos no fundo -->
-      <div class="d-flex justify-content-between position-absolute bottom-0 start-0 end-0 p-3 bg-white border-top">
-          <button type="button" id="btnFecharFiltros" class="btn btn-sm btn-outline-danger">
-            Fechar
-          </button>
-
-          <div>
-              <button id="btnLimparFiltro" class="btn btn-secondary btn-sm"><i class="bi bi-eraser"></i> Limpar Filtros</button>
-              <button id="btnFiltrarEnvio" class="btn btn-primary btn-sm">Filtrar</button>
-          </div>
-      </div>
-    </div>
-  </div>
-  </div>
-
-  <div class="d-flex justify-content-end">
-      <button id="btnExportarExcel" class="btn btn-success text-end"> Exportar Excel</button>
-  </div>
-  
-  <div class="mt-2">
-    <div class="mt-2 text-secondary text-end"> Filtros Ativos: </div>
-    <div id="filtrosAtivos" class="mt-2 text-secondary text-end">Nenhum filtro aplicado</div>
-  </div>
-  
-  
 </div>
 
-
-
-
-    <!-- Tabela -->
+<!-- Tabela em destaque com wrapper -->
+<div class="table-wrapper">
     <div class="table-responsive">
         <table id="execucaoTable" class="table table-bordered table-striped table-sm">
             <thead>
@@ -325,7 +756,6 @@
             </tbody>
         </table>
     </div>
-
 </div>
 
 {% endblock %}
