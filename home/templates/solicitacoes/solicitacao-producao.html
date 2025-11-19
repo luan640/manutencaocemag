@@ -2475,6 +2475,98 @@
 </script>
 
 <script>
+    // Helpers de CSRF para requisições AJAX
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener('submit', function (event) {
+        const form = event.target;
+        const btnSubmit = document.getElementById('submitAlterarResponsavel');
+
+        btnSubmit.innerHTML = 'Salvando...';
+
+        if (!form.classList.contains('form-alterar-responsavel')) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const url = form.getAttribute('action');
+        const solicitacaoId = form.getAttribute('data-solicitacao-id');
+        const erroEl = document.getElementById('erroAlterarResponsavel_' + solicitacaoId);
+
+        if (erroEl) {
+            erroEl.style.display = 'none';
+            erroEl.textContent = '';
+        }
+
+        const formData = new FormData(form);
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, status: response.status, data })))
+        .then(({ ok, data }) => {
+            if (!ok || !data.success) {
+                const msg = data.error || 'Erro ao alterar responsável.';
+                if (erroEl) {
+                    erroEl.textContent = msg;
+                    erroEl.style.display = 'block';
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            // Atualiza o nome do responsável no card
+            if (data.novo_responsavel) {
+                const spanResponsavel = document.getElementById('responsavelAtual_' + solicitacaoId);
+                if (spanResponsavel) {
+                    spanResponsavel.textContent = data.novo_responsavel;
+                }
+            }
+
+            // Fecha o modal
+            const modalEl = form.closest('.modal');
+            if (modalEl) {
+                const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modalInstance.hide();
+            }
+            btnSubmit.innerHTML = 'Salvar';
+
+        })
+        .catch(() => {
+            const msg = 'Erro inesperado ao alterar responsável.';
+            if (erroEl) {
+                erroEl.textContent = msg;
+                erroEl.style.display = 'block';
+                btnSubmit.innerHTML = 'Salvar';
+
+            } else {
+                alert(msg);
+            }
+        });
+    });
+</script>
+
+<script>
     document.addEventListener("DOMContentLoaded", function() {
         // Inicializa Select2 para lookup de máquinas
         $('#maquina').select2({
