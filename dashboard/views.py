@@ -823,12 +823,14 @@ def ordens_prazo(request):
     setor = request.GET.get('setor')
     area = request.GET.get('area')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
 
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     filtros = {
         'status_andamento': 'finalizada',
-        'area': area
+        'area': area,
     }
     if setor:
         filtros['setor_id'] = int(setor)
@@ -837,7 +839,7 @@ def ordens_prazo(request):
 
     # Subquery para pegar a última execução de cada solicitação
     ultima_execucao_subquery = (
-        Execucao.objects.filter(ordem=OuterRef('pk'), ordem__area=area)
+        Execucao.objects.filter(ordem=OuterRef('pk'), ordem__area=area, data_fim__gte=data_inicio, data_fim__lte=data_fim)
         .order_by('-data_fim')
         .values('data_fim')[:1]
     )
