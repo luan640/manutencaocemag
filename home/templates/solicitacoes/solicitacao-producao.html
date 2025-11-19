@@ -2480,30 +2480,27 @@
         $('#maquina').select2({
             language: 'pt-BR',
             placeholder: 'Buscar máquina por código ou descrição...',
-            minimumInputLength: 1,
+            minimumInputLength: 0,   // <-- permite abrir e buscar sem digitar nada
             allowClear: true,
             ajax: {
                 url: '/api/maquinas/', // ajuste se sua rota for diferente
                 dataType: 'json',
                 delay: 250, // debounce
                 data: function (params) {
-                // params.term = texto digitado
-                return {
-                    search: params.term,    // nossa API usa 'search'
-                    limit: 25               // quantos resultados queremos (padrão do backend)
-                    // se mais tarde implementar paginação: enviar page: params.page
-                };
+                    return {
+                        search: params.term || '', // <-- se não digitou nada, manda string vazia
+                        limit: 25                  // bate com o backend (ou altere se quiser)
+                    };
                 },
                 processResults: function (data /*, params */) {
-                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
-                const results = (data.maquinas || []).map(m => ({
-                    id: m.id,
-                    text: `${m.codigo} - ${m.descricao || ''}`
-                }));
-                return {
-                    results: results
-                    // se implementar paginação, retornar também pagination: { more: <boolean> }
-                };
+                    const results = (data.maquinas || []).map(m => ({
+                        id: m.id,
+                        text: `${m.codigo} - ${m.descricao || ''}`
+                    }));
+                    return {
+                        results: results
+                        // se implementar paginação, retornar também pagination: { more: <boolean> }
+                    };
                 },
                 cache: true
             },

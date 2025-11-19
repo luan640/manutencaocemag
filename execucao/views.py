@@ -403,7 +403,7 @@ def execucao_data(request):
 
     # Verifica se é exportação ou não
     filtros_estado = {}
-    # print(request.POST)
+    print(request.POST)
     exportar_plan = request.POST.get('exportar_xlsx', '')
 
     # Filtros personalizados
@@ -417,8 +417,8 @@ def execucao_data(request):
 
     # // Grupo 2: Máquina e Manutenção
     maquina = request.POST.get('maquina', '')
-    tipo_manutencao = request.POST.get('tipoManutencao', '')
-    area_manutencao = request.POST.get('areaManutencao', '')
+    tipo_manutencao = request.POST.getlist('tipoManutencao[]')
+    area_manutencao = request.POST.getlist('areaManutencao[]', '')
     horas_executadas_inicial = request.POST.get('horasExecutadasInicial', '')
     horas_executadas_final = request.POST.get('horasExecutadasFinal', '')
 
@@ -438,7 +438,7 @@ def execucao_data(request):
     obs_executante = request.POST.get('obsExecutante', '')
     status = request.POST.getlist('status[]', '')
 
-     # Verificação de intervalo de horas correto
+    # Verificação de intervalo de horas correto
     horas_executadas_corretas = True
     if len(horas_executadas_inicial) > 0 and len(horas_executadas_final) > 0:
         try:
@@ -500,9 +500,9 @@ def execucao_data(request):
     if maquina:
         execucoes = execucoes.filter(ordem__maquina=maquina)
     if tipo_manutencao:
-        execucoes = execucoes.filter(tipo_manutencao=tipo_manutencao)
+        execucoes = execucoes.filter(ordem__info_solicitacao__tipo_manutencao__in=tipo_manutencao)
     if area_manutencao:
-        execucoes = execucoes.filter(area_manutencao=area_manutencao)
+        execucoes = execucoes.filter(ordem__info_solicitacao__area_manutencao__in=area_manutencao)
     if horas_executadas_inicial:
         if horas_executadas_corretas:
             delta_hora_inicial = str_para_timedelta(horas_executadas_inicial)

@@ -273,6 +273,7 @@ def importar_csv_maquina(request):
 
 def api_operadores(request):
     search = request.GET.get('search', '')
+    limit = int(request.GET.get('limit', 25))
 
     if request.user.tipo_acesso == 'administrador' and not request.user.is_staff:
         operadores = Operador.objects.filter(area=request.user.area)
@@ -281,21 +282,24 @@ def api_operadores(request):
 
     if search:
         operadores = operadores.filter(nome__icontains=search)
-    
-    operadores = list(operadores.values())
+
+    operadores = list(operadores.values()[:limit])
     return JsonResponse({'operadores': operadores})
 
 def api_maquinas(request):
     """API para retornar a lista de máquinas em formato JSON."""
     search = request.GET.get('search', '')
+    limit = int(request.GET.get('limit', 25))  # permite controlar o limite via querystring
 
     qs = Maquina.objects.filter(area='producao')
 
     if search:
-        qs = qs.filter(Q(codigo__icontains=search) | Q(descricao__icontains=search))
+        qs = qs.filter(
+            Q(codigo__icontains=search) |
+            Q(descricao__icontains=search)
+        )
 
-    maquinas = list(qs.values('id', 'codigo','descricao')[:25])
-        
+    maquinas = list(qs.values('id', 'codigo', 'descricao')[:limit])
 
     return JsonResponse({'maquinas': maquinas})
 
