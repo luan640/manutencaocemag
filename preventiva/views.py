@@ -407,7 +407,7 @@ def calcular_manutencoes_semanais(request):
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
                     'plano': plano.nome,
-                    'data': maintenance_date.strftime('%Y-%m-%d'),
+                    'data': maintenance_date.strftime('%d/%m/%Y'),
                     'status_manutencao': status,
                     'status_aprovacao': status_aprovacao,
                     'ordem': numero_ordem
@@ -418,7 +418,7 @@ def calcular_manutencoes_semanais(request):
         response_data.append({
             'maquina': plano.maquina.codigo,
             'plano': plano.nome,
-            'data_base': plano_data_base.strftime('%Y-%m-%d'),
+            'data_base': plano_data_base.strftime('%d/%m/%Y'),
             'semanas': weeks
         })
 
@@ -570,7 +570,7 @@ def buscar_historico(request):
         for solicitacao in solicitacoes_anotadas:
             historico_preventivas.append({
                 "os": solicitacao['id'],
-                "data": solicitacao['data_fim'],
+                "data": solicitacao['data_fim'].strftime('%d/%m/%Y'),
                 "descricao": solicitacao['descricao'],
                 "status": solicitacao['status_andamento'] if solicitacao['status_andamento'] else "Sem execução"
             })
