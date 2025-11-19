@@ -78,6 +78,42 @@ $(document).ready(function () {
     });
 
 
+    // Atualiza cards de indicadores quando os dados são carregados
+    table.on('xhr.dt', function (e, settings, json) {
+        const total = json && json.recordsTotal != null ? json.recordsTotal : 0;
+        const filtrado = json && json.recordsFiltered != null ? json.recordsFiltered : total;
+
+        $('#kpiTotalExecucoes').text(total);
+        $('#kpiExecucoesFiltradas').text(filtrado);
+    });
+
+    // Atualiza soma de horas da página atual
+    table.on('draw', function () {
+        let totalMinutos = 0;
+
+        function parseHoras(str) {
+            if (!str) return 0;
+            const partes = String(str).split(':');
+            if (partes.length < 2) return 0;
+            const h = parseInt(partes[0], 10) || 0;
+            const m = parseInt(partes[1], 10) || 0;
+            return h * 60 + m;
+        }
+
+        table.column(17, { page: 'current' }).data().each(function (valor) {
+            totalMinutos += parseHoras(valor);
+        });
+
+        const horas = Math.floor(totalMinutos / 60);
+        const minutos = totalMinutos % 60;
+        const formatado =
+            String(horas).padStart(2, '0') + ':' +
+            String(minutos).padStart(2, '0');
+
+        $('#kpiHorasPagina').text(formatado);
+    });
+
+
     // Adiciona checkboxes de colunas no menu
     const columnMenu = $('#columnToggleMenu');
     table.columns().every(function (index) {
