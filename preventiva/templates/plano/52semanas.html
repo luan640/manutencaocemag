@@ -4,232 +4,267 @@
 Manutenções Semanais
 {% endblock %}
 
-{% block links %}    
-    <style>
-        /* Container do cabeçalho */
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background-color: #0284c7;
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
+{% block links %}
+<style>
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background-color: #0284c7;
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
 
-        .header-container h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: bold;
-        }
+    .header-container h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: bold;
+    }
 
-        /* Botão para voltar */
-        .btn-voltar {
-            background-color: #f44336;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-            transition: 0.3s;
-        }
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-        .btn-voltar:hover {
-            background-color: #d32f2f;
-        }
+    .filtro-maquina {
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+        min-width: 220px;
+    }
 
-        /* Container geral das semanas */
-        .semanas-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            padding: 20px;
-        }
+    .btn-voltar {
+        background-color: #f44336;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+        transition: 0.3s;
+    }
 
-        /* Cada semana será um quadrado */
-        .semana-card {
-            width: 220px;
-            min-height: 180px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            text-align: center;
-            transition: 0.3s;
-        }
+    .btn-voltar:hover {
+        background-color: #d32f2f;
+    }
 
-        .semana-card:hover {
-            transform: scale(1.05);
-        }
+    .semanas-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+        padding: 20px;
+    }
 
-        /* Semana atual destacada */
-        .semana-atual {
-            border: 3px solid #ff9800;
-            box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);
-        }
+    .semana-card {
+        width: 220px;
+        min-height: 180px;
+        background: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        text-align: center;
+        transition: 0.3s;
+    }
 
-        /* Título da semana */
-        .semana-card h3 {
-            margin: 0;
-            padding: 8px;
-            font-size: 16px;
-            background: #ddd;
-            border-radius: 5px;
-        }
+    .semana-card:hover {
+        transform: scale(1.05);
+    }
 
-        /* Lista das manutenções dentro do quadrado */
-        .manutencoes {
-            margin-top: 8px;
-            text-align: left;
-            font-size: 14px;
-            padding: 5px;
-        }
+    .semana-atual {
+        border: 3px solid #ff9800;
+        box-shadow: 0 0 10px rgba(255, 152, 0, 0.6);
+    }
 
-        /* Cores diferentes para cada mês */
-        .janeiro { background-color: #f0f8ff; }    /* Azul Claro */
-        .fevereiro { background-color: #faebd7; }  /* Branco Antigo */
-        .marco { background-color: #ffe4e1; }      /* Rosa Claro */
-        .abril { background-color: #f5f5dc; }      /* Bege */
-        .maio { background-color: #f0fff0; }       /* Verde Claro */
-        .junho { background-color: #e6e6fa; }      /* Lavanda */
-        .julho { background-color: #fffacd; }      /* Amarelo Pastel */
-        .agosto { background-color: #fdf5e6; }     /* Creme */
-        .setembro { background-color: #fafad2; }   /* Dourado Claro */
-        .outubro { background-color: #ffe4b5; }    /* Laranja Suave */
-        .novembro { background-color: #ffdab9; }   /* Pêssego */
-        .dezembro { background-color: #e0ffff; }   /* Ciano Claro */
-    </style>
+    .semana-card h3 {
+        margin: 0;
+        padding: 8px;
+        font-size: 16px;
+        background: #ddd;
+        border-radius: 5px;
+    }
+
+    .manutencoes {
+        margin-top: 8px;
+        text-align: left;
+        font-size: 14px;
+        padding: 5px;
+    }
+
+    .janeiro { background-color: #f0f8ff; }
+    .fevereiro { background-color: #faebd7; }
+    .marco { background-color: #ffe4e1; }
+    .abril { background-color: #f5f5dc; }
+    .maio { background-color: #f0fff0; }
+    .junho { background-color: #e6e6fa; }
+    .julho { background-color: #fffacd; }
+    .agosto { background-color: #fdf5e6; }
+    .setembro { background-color: #fafad2; }
+    .outubro { background-color: #ffe4b5; }
+    .novembro { background-color: #ffdab9; }
+    .dezembro { background-color: #e0ffff; }
+</style>
 {% endblock %}
 
 {% block content %}
 
-<!-- Cabeçalho -->
 <div class="header-container">
     <h2 id="semana-atual-info">Semana Atual: Carregando...</h2>
-    <a href="/preventiva/" class="btn-voltar">🔙 Voltar para Preventivas</a>
+    <div class="header-right">
+        <label for="filtro-maquina">Buscar máquina:</label>
+        <input
+            id="filtro-maquina"
+            class="filtro-maquina"
+            type="text"
+            placeholder="Digite o nome da máquina"
+            list="lista-maquinas" />
+        <datalist id="lista-maquinas"></datalist>
+        <a href="/preventiva/" class="btn-voltar">Voltar para Preventivas</a>
+    </div>
 </div>
 
-<!-- Container de semanas -->
 <div id="semanas-container" class="semanas-container"></div>
 
 <script>
-
 document.addEventListener('DOMContentLoaded', function () {
     fetch('/manutencoes-semana/')
         .then(response => response.json())
         .then(data => {
-            // data é um array de objetos, cada um com:
-            // { maquina, plano, data_base, semanas: [ { semana, inicio, fim, manutencoes: [...] }, ... ] }
-            let globalWeeks = [];
-            // Se houver pelo menos um plano, usamos a estrutura de semanas do primeiro como "template"
-            if (data.length > 0) {
-                globalWeeks = data[0].semanas.map(week => ({
-                    semana: week.semana,
-                    inicio: week.inicio,
-                    fim: week.fim,
-                    manutencoes: []
-                }));
-            }
-            
-            // Itera por cada plano e agrupa as manutenções na semana correspondente
-            data.forEach(plan => {
-                plan.semanas.forEach(week => {
-                    if (week.manutencoes && week.manutencoes.length > 0) {
-                        week.manutencoes.forEach(event => {
-                            // globalWeeks é indexado por (semana - 1)
-                            globalWeeks[week.semana - 1].manutencoes.push({
-                                maquina: event.maquina,
-                                plano: event.plano,
-                                data: event.data,
-                                status_manutencao: event.status_manutencao,
-                                status_aprovacao: event.status_aprovacao
-                            });
-                        });
+            const weeks = [];
+            const maquinasSet = new Set();
+
+            if (Array.isArray(data)) {
+                data.forEach(plan => {
+                    if (!plan || !Array.isArray(plan.semanas)) {
+                        return;
                     }
+
+                    plan.semanas.forEach(week => {
+                        const idx = (week.semana || 0) - 1;
+                        if (idx < 0) {
+                            return;
+                        }
+
+                        if (!weeks[idx]) {
+                            weeks[idx] = {
+                                semana: week.semana,
+                                inicio: week.inicio,
+                                fim: week.fim,
+                                manutencoes: []
+                            };
+                        }
+
+                        if (Array.isArray(week.manutencoes)) {
+                            week.manutencoes.forEach(ev => {
+                                weeks[idx].manutencoes.push({
+                                    maquina: ev.maquina,
+                                    plano: ev.plano,
+                                    data: ev.data,
+                                    status_manutencao: ev.status_manutencao,
+                                    status_aprovacao: ev.status_aprovacao,
+                                    numero_ordem: ev.ordem
+                                });
+
+                                if (ev.maquina) {
+                                    maquinasSet.add(ev.maquina);
+                                }
+                            });
+                        }
+                    });
                 });
-            });
-            
+            }
+
+            const weeksNormalizadas = weeks.filter(Boolean);
             const semanaAtual = getSemanaAtual();
-            renderSemanas(globalWeeks, semanaAtual);
+            const nomesMaquinas = Array.from(maquinasSet).sort();
+
+            inicializarBuscaMaquinas(weeksNormalizadas, semanaAtual, nomesMaquinas);
         })
-        .catch(error => console.error('Erro ao carregar os dados:', error));
-    
-    function renderSemanas(weeks, semanaAtual) {
+        .catch(error => {
+            console.error('Erro ao carregar os dados:', error);
+        });
+
+    function inicializarBuscaMaquinas(weeks, semanaAtual, nomesMaquinas) {
+        const input = document.getElementById('filtro-maquina');
+        const datalist = document.getElementById('lista-maquinas');
+
+        if (!input) {
+            renderSemanas(weeks, semanaAtual, '');
+            return;
+        }
+
+        if (datalist) {
+            datalist.innerHTML = '';
+            nomesMaquinas.forEach(nome => {
+                const option = document.createElement('option');
+                option.value = nome;
+                datalist.appendChild(option);
+            });
+        }
+
+        input.addEventListener('input', function () {
+            const termo = (this.value || '').toLowerCase();
+            renderSemanas(weeks, semanaAtual, termo);
+        });
+
+        // Ao focar (clicar), mantém todas as máquinas visíveis;
+        // o filtro só entra em ação quando o usuário digita.
+        renderSemanas(weeks, semanaAtual, '');
+    }
+
+    function renderSemanas(weeks, semanaAtual, filtroNome) {
         const container = document.getElementById('semanas-container');
-        container.innerHTML = '';  // Limpa o container
+        container.innerHTML = '';
 
         weeks.forEach(week => {
             const semanaCard = document.createElement('div');
             semanaCard.classList.add('semana-card');
 
-            // Adiciona uma classe referente ao mês (para estilo)
             const mesClasse = getMesClasse(week.inicio);
-            semanaCard.classList.add(mesClasse);
+            if (mesClasse) {
+                semanaCard.classList.add(mesClasse);
+            }
 
-            // Se for a semana atual, adiciona destaque
             if (week.inicio === semanaAtual) {
                 semanaCard.classList.add('semana-atual');
             }
 
-            // Cria o título do card com o número da semana
             const titulo = document.createElement('h3');
-            titulo.textContent = `Semana ${week.semana}`;
+            titulo.textContent = 'Semana ' + week.semana;
             semanaCard.appendChild(titulo);
 
-            // Cria a área para listar as manutenções
             const manutencoesDiv = document.createElement('div');
             manutencoesDiv.classList.add('manutencoes');
 
-            if (week.manutencoes.length === 0) {
-                manutencoesDiv.innerHTML = `<em>Sem manutenções</em>`;
+            const listaManutencoes = filtroNome
+                ? week.manutencoes.filter(m =>
+                    (m.maquina || '').toLowerCase().includes(filtroNome)
+                  )
+                : week.manutencoes;
+
+            if (!listaManutencoes || listaManutencoes.length === 0) {
+                manutencoesDiv.innerHTML = '<em>Sem manutencoes</em>';
             } else {
-                week.manutencoes.forEach(manutencao => {
-                    console.log(manutencao);
+                listaManutencoes.forEach(manutencao => {
                     const manutencaoItem = document.createElement('div');
-                    
-                    // Função para formatar o status de forma mais legível
-                    const formatarStatus = (statusManutencao, statusAprovacao) => {
-                        // Se o status de aprovação for "rejeitar", mostra apenas "Rejeitada"
-                        if (statusAprovacao === 'rejeitar') {
-                            return '🚫 Rejeitada';
-                        }
-                        
-                        // Se for "aprovar" ou null, mostra apenas o status da manutenção
-                        let statusTexto = '';
-                        
-                        if (statusManutencao) {
-                            switch(statusManutencao) {
-                                case 'finalizada':
-                                    statusTexto = '✅ Finalizada';
-                                    break;
-                                case 'em_espera':
-                                    statusTexto = '⏳ Em espera';
-                                    break;
-                                case 'não encontrada':
-                                    statusTexto = '❌ Não encontrada';
-                                    break;
-                                default:
-                                    statusTexto = statusManutencao;
-                            }
-                        }
-                        
-                        return statusTexto || '❓ Status indefinido';
-                    };
-                    
-                    const statusFormatado = formatarStatus(manutencao.status_manutencao, manutencao.status_aprovacao);
-                    
-                    manutencaoItem.innerHTML = `
-                        🔧 <strong>${manutencao.maquina}</strong> - ${manutencao.plano} 
-                        <br><small>📅 ${manutencao.data}</small>
-                        <br><small>${statusFormatado}</small>
-                    `;
-                    
-                    // Adiciona classes CSS baseadas no status para estilização
+
+                    const statusFormatado = formatarStatus(
+                        manutencao.status_manutencao,
+                        manutencao.status_aprovacao
+                    );
+
+                    manutencaoItem.innerHTML =
+                        '<strong>' + (manutencao.maquina || '') + '</strong> - ' + (manutencao.plano || '') +
+                        '<br><small>' + (manutencao.data || '') + '</small>' +
+                        '<br><small>' + statusFormatado + '</small>' +
+                        (manutencao.numero_ordem ? '<br><small>Ordem: ' + manutencao.numero_ordem + '</small>' : '');
+
                     if (manutencao.status_aprovacao === 'rejeitar') {
                         manutencaoItem.style.borderLeft = '4px solid #9C27B0';
                         manutencaoItem.style.backgroundColor = '#f3e5f5';
@@ -239,15 +274,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else if (manutencao.status_manutencao === 'em_espera') {
                         manutencaoItem.style.borderLeft = '4px solid #FF9800';
                         manutencaoItem.style.backgroundColor = '#fff3e0';
-                    } else if (manutencao.status_manutencao === 'não encontrada') {
+                    } else if (manutencao.status_manutencao === 'nao_encontrada' || manutencao.status_manutencao === 'não encontrada') {
                         manutencaoItem.style.borderLeft = '4px solid #f44336';
                         manutencaoItem.style.backgroundColor = '#ffebee';
                     }
-                    
+
                     manutencaoItem.style.padding = '8px';
                     manutencaoItem.style.margin = '4px 0';
                     manutencaoItem.style.borderRadius = '4px';
-                    
+
                     manutencoesDiv.appendChild(manutencaoItem);
                 });
             }
@@ -256,26 +291,49 @@ document.addEventListener('DOMContentLoaded', function () {
             container.appendChild(semanaCard);
         });
 
-        // Atualiza o cabeçalho com a semana atual
-        document.getElementById('semana-atual-info').textContent = `Semana Atual: ${getSemanaAtualNumero()}`;
+        const headerInfo = document.getElementById('semana-atual-info');
+        if (headerInfo) {
+            headerInfo.textContent = 'Semana Atual: ' + getSemanaAtualNumero();
+        }
     }
 
-    // Retorna a classe CSS do mês correspondente à data (para fins de estilo)
+    function formatarStatus(statusManutencao, statusAprovacao) {
+        if (statusAprovacao === 'rejeitar') {
+            return 'Rejeitada';
+        }
+
+        switch (statusManutencao) {
+            case 'finalizada':
+                return 'Finalizada';
+            case 'em_espera':
+                return 'Em espera';
+            case 'nao_encontrada':
+            case 'não encontrada':
+                return 'Não encontrada';
+            default:
+                return statusManutencao || 'Status indefinido';
+        }
+    }
+
     function getMesClasse(dataString) {
+        if (!dataString) return '';
+
         const meses = [
             'janeiro', 'fevereiro', 'marco', 'abril',
             'maio', 'junho', 'julho', 'agosto',
             'setembro', 'outubro', 'novembro', 'dezembro'
         ];
-        const mesIndex = new Date(dataString).getMonth();
-        return meses[mesIndex];
+
+        const data = new Date(dataString);
+        if (Number.isNaN(data.getTime())) return '';
+
+        const mesIndex = data.getMonth();
+        return meses[mesIndex] || '';
     }
 
-    // Calcula e retorna a data (segunda-feira) da semana atual no formato YYYY-MM-DD
     function getSemanaAtual() {
         const hoje = new Date();
-        const diaDaSemana = hoje.getDay(); // 0 = domingo, 1 = segunda, etc.
-        // Ajusta: se hoje é domingo, trata como se fosse o último dia da semana anterior
+        const diaDaSemana = hoje.getDay();
         const diffSegunda = hoje.getDate() - (diaDaSemana === 0 ? 6 : diaDaSemana - 1);
         const segundaFeira = new Date(hoje);
         segundaFeira.setDate(diffSegunda);
@@ -284,16 +342,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getSemanaAtualNumero() {
         const hoje = new Date();
-        // Copia a data para não alterar o original e ajusta para UTC
         const d = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()));
-        // Ajusta para a quinta-feira da semana atual (ISO: a semana é definida pela quinta-feira)
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        // Calcula o número da semana
-        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
         return weekNo;
     }
 });
 </script>
 
 {% endblock %}
+
