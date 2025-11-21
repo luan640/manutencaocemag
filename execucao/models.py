@@ -53,7 +53,6 @@ class Execucao(models.Model):
     
     ultima_atualizacao = models.DateTimeField(auto_now=True)
 
-
     class Meta:
         unique_together = ('ordem', 'n_execucao')
 
@@ -66,8 +65,6 @@ class Execucao(models.Model):
 
         super().save(*args, **kwargs)
 
-        print(self.apos_exec_maq_parada)
-        print(self.n_execucao)
         # Se a execução é nova (número de execução é 1) ou se há uma condição para atualizar MaquinaParada
         if creating:
             if self.n_execucao == 0:
