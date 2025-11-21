@@ -397,6 +397,19 @@
                                     {% endfor %}
                                 </select>
                             </div>
+
+                            {# Motivo do atraso (opcional) - só para ordens atrasadas #}
+                            {% if solicitacao.programacao and solicitacao.programacao < today %}
+                            <div class="mb-3" id="motivo-atraso-{{ solicitacao.pk }}" style="display: none;">
+                                <label for="motivo_atraso_{{ solicitacao.pk }}" class="form-label">Ordem em atraso, informe o motivo (opcional)</label>
+                                <textarea
+                                    class="form-control"
+                                    id="motivo_atraso_{{ solicitacao.pk }}"
+                                    name="motivo_atraso"
+                                    rows="3"></textarea>
+                            </div>
+                            {% endif %}
+
                             <hr>
 
                             <div id="container-reabrir-ordem" style="display: none;">
@@ -415,6 +428,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     
                         <!-- Botão de Envio -->
@@ -661,3 +675,4 @@
 </div>
 
 {% endfor %}    
+

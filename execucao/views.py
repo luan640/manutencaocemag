@@ -47,7 +47,8 @@ def criar_execucao(request, solicitacao_id):
             che_maq_parada = request.POST.get('che_maq_parada') == 'sim'
             exec_maq_parada = request.POST.get('exec_maq_parada') == 'sim'
             apos_exec_maq_parada = request.POST.get('apos_exec_maq_parada') == 'sim'
-            
+            motivo_atraso = request.POST.get("motivo_atraso")
+
             # Campos apenas para ETE
             pvlye = float(request.POST.get('pvlye').replace(",",".")) if request.POST.get('pvlye') else None
             paplus = float(request.POST.get('paplus').replace(",",".")) if request.POST.get('paplus') else None
@@ -72,6 +73,9 @@ def criar_execucao(request, solicitacao_id):
                     solicitacao.maq_parada = True
                 
             solicitacao.status_andamento = status
+
+            if motivo_atraso:
+                solicitacao.motivo_atraso = motivo_atraso
 
             solicitacao.save()
 

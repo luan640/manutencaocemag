@@ -410,7 +410,7 @@
                     attachSelect2Operador,
                     // attachVerificarData,
                     attachHistorico,
-                    attachMaisDetalhes
+                    attachMaisDetalhes,
                 ] // Callback após carregar as solicitações
             );
 
@@ -755,7 +755,7 @@
                                     attachSelect2Operador,
                                     // attachVerificarData,
                                     attachHistorico,
-                                    attachMaisDetalhes
+                                    attachMaisDetalhes,
                                 ])
 
                             ]).then(() => {
@@ -886,7 +886,7 @@
                                 attachSelect2Operador,
                                 // attachVerificarData,
                                 attachHistorico,
-                                attachMaisDetalhes
+                                attachMaisDetalhes,
                             ]),
 
 
@@ -1008,9 +1008,8 @@
                                 attachSelect2Operador,
                                 // attachVerificarData,
                                 attachHistorico,
-                                attachMaisDetalhes
+                                attachMaisDetalhes,
                             ]),
-
 
 
                             ]).then(() => {
@@ -1057,17 +1056,25 @@
                     const solicitarAberturaNovaOrdem = document.querySelector(`#executarModal${modalId} #solicitarAberturaNovaOrdem_${modalId}`)
                     const checkboxSim = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada_sim`);
                     const checkboxNao = document.querySelector(`#executarModal${modalId} #id_apos_exec_maq_parada_nao`);
-
+                    const containerMotivoAtraso = document.querySelector(`#executarModal${modalId} #motivo-atraso-${modalId}`);
+                    
                     if (isFinalizada) {
                         checkboxNao.checked = true;
                         checkboxSim.disabled = true;
                         containerReabrirOrdem.style.display = 'block';
                         solicitarAberturaNovaOrdem.setAttribute('required', 'required');
+                        if (containerMotivoAtraso) {
+                            containerMotivoAtraso.style.display = 'block';
+                        }
                     } else {
                         checkboxNao.checked = false;
                         checkboxSim.disabled = false;
                         containerReabrirOrdem.style.display = 'none';
                         solicitarAberturaNovaOrdem.removeAttribute('required');
+                        if (containerMotivoAtraso) {
+                            containerMotivoAtraso.style.display = 'none';
+                        }
+
                     }
                 });
             });
@@ -1096,9 +1103,6 @@
             });
 
         };
-        
-
-        
 
         function attachModalEventListeners() {
             
@@ -2617,6 +2621,30 @@
 
 
         
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusSelect = document.getElementById('id_status_{{ solicitacao.pk }}');
+        const motivoDiv = document.getElementById('motivo-atraso-{{ solicitacao.pk }}');
+
+        // Se não tiver motivoDiv, é porque não está atrasada → não faz nada
+        if (!motivoDiv || !statusSelect) return;
+
+        function toggleMotivo() {
+            if (statusSelect.value === 'finalizada') {  // troque 'finalizada' se o value for outro
+                motivoDiv.style.display = 'block';
+            } else {
+                motivoDiv.style.display = 'none';
+            }
+        }
+
+        // Na troca do status
+        statusSelect.addEventListener('change', toggleMotivo);
+
+        // Estado inicial (caso já venha com status finalizada)
+        toggleMotivo();
     });
 </script>
 
