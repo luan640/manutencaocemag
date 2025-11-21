@@ -17,15 +17,20 @@ def operadores_all(area):
     return operadores
 
 def maquinas_paradas():
-    # Filtra as máquinas que estão paradas (data_fim=None)
-    maquinas_paradas = MaquinaParada.objects.filter(data_fim=None)
+    maquinas_paradas = (
+        MaquinaParada.objects
+        .filter(data_fim=None)
+        .select_related('ordem__maquina')
+    )
     
-    # Dicionário para armazenar as ordens associadas a cada máquina
     maquinas_com_ordens = defaultdict(list)
 
-    for maquina_parada in maquinas_paradas:
-        maquina = maquina_parada.ordem.maquina
-        maquinas_com_ordens[maquina].append(maquina_parada.ordem)
+    for maq_parada in maquinas_paradas:
+        ordem = maq_parada.ordem
+        maquina = ordem.maquina
+
+        # Adiciona o objeto da ordem (não string!)
+        maquinas_com_ordens[maquina].append(ordem)
 
     return maquinas_com_ordens
 

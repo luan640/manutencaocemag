@@ -2,14 +2,19 @@
 <div class="col-md-4">
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span data-bs-toggle="tooltip" title="{{ maquina.codigo }} - {{ maquina.descricao }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+            <span data-bs-toggle="tooltip" title="{{ maquina.codigo }} - {{ maquina.descricao }}"
+                  style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
                 {{ maquina.codigo }} - {{ maquina.descricao }}
             </span>
         </div>
         <div class="card-body">
             <h5 class="card-title d-flex justify-content-between align-items-center">
                 {% for ordem in ordens %}
-                    #{{ ordem.pk }}{% if not forloop.last %}, {% endif %}
+                    #{{ ordem.pk }}
+                    {% if ordem.tipo_ferramenta and ordem.codigo_ferramenta %}
+                        ({{ ordem.tipo_ferramenta }} {{ ordem.codigo_ferramenta }})
+                    {% endif %}
+                    {% if not forloop.last %}, {% endif %}
                 {% endfor %}
             </h5>
         </div>
