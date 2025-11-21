@@ -349,6 +349,7 @@ def calcular_manutencoes_semanais(request):
                         SELECT MAX(ee2.n_execucao)
                         FROM manutencao_v3.execucao_execucao ee2
                         WHERE ee2.ordem_id = ss.id
+                        AND ee2.data_fim >= '2025-01-01 00:00:00'
                     )
                 )
                 AND ss.maquina_id <> 31
