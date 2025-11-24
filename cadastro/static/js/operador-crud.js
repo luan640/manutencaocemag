@@ -20,6 +20,8 @@ function eventosPagina(){
 
     const matriculaOperadorModalInput = document.getElementById('matriculaOperador');
     const nomeOperadorModalInput = document.getElementById('nomeOperador');
+    const areaAtualOperadorInput = document.getElementById('areaAtualOperador');
+    const areaOperadorSelect = document.getElementById('areaOperador');
     const nomeOperadorSpan = document.getElementById('operadorDesativar');
     const tableOperadores = document.getElementById('tableOperadores');
 
@@ -49,6 +51,21 @@ function eventosPagina(){
             //Preenchendo inputs
             matriculaOperadorModalInput.value = document.getElementById(`operadorMatricula-${idOperador}`).textContent;
             nomeOperadorModalInput.value = document.getElementById(`operadorNome-${idOperador}`).textContent;
+            const areaTexto = document.getElementById(`operadorArea-${idOperador}`).textContent.trim();
+
+            if (areaAtualOperadorInput){
+                if (areaTexto === 'producao'){
+                    areaAtualOperadorInput.value = 'Produção';
+                } else if (areaTexto === 'predial'){
+                    areaAtualOperadorInput.value = 'Predial';
+                } else {
+                    areaAtualOperadorInput.value = areaTexto;
+                }
+            }
+
+            if (areaOperadorSelect){
+                areaOperadorSelect.value = areaTexto;
+            }
 
             modalEditOperador.show();
             // console.log(event.target.id);

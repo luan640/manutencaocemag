@@ -21,23 +21,25 @@
             <input class="form-control" type="text" name="nome" required>
           </div>
 
-          <!-- Setor -->
-          <!-- <div class="form-group mb-4">
+          <!-- Setor / Área (definida automaticamente pela área do usuário) -->
+          <!--
+          <div class="form-group mb-4">
             <label class="form-label" style="font-weight: 500; color: #555;">Área</label>
             <select name="area" class="form-control" required>
               <option value="">-----</option>
               <option value="producao">Produção</option>
               <option value="predial">Predial</option>
             </select>
-          </div> -->
+          </div>
+          -->
         </div>
         <div class="modal-footer">
-          
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Fechar
           </button>
           <button type="submit" class="btn btn-primary">
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>Salvar Alterações
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+            Salvar Alterações
           </button>
         </div>
       </form>
@@ -68,23 +70,23 @@
             <input class="form-control" type="text" id="nomeOperador" name="nome">
           </div>
 
-          <!-- Área -->
-          <!-- <div class="form-group mb-4">
+          <!-- Área atual -->
+          <div class="form-group mb-4">
             <label for="areaOperador" class="form-label" style="font-weight: 500; color: #555;">Área</label>
             <select name="area" id="areaOperador" class="form-control" required>
               <option value="">-----</option>
               <option value="producao">Produção</option>
               <option value="predial">Predial</option>
             </select>
-          </div> -->
+          </div>
         </div>
         <div class="modal-footer">
-          
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             Fechar
           </button>
           <button type="submit" class="btn btn-primary">
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>Salvar Alterações
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+            Salvar Alterações
           </button>
         </div>
       </form>
@@ -103,16 +105,21 @@
       </div>
 
       <div class="modal-body">
-        <span id="textoConfirmacao">Você confirma a desativação do operador <strong><span id="operadorDesativar">xxxxx</span></strong>?</span>
+        <span id="textoConfirmacao">
+          Você confirma a desativação do operador
+          <strong><span id="operadorDesativar">xxxxx</span></strong>?
+        </span>
         <input type="hidden" name="operador_id" id="operadorIdDesativar">
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
         <button type="submit" class="btn btn-primary">
-          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>Confirmar Desativação
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+          Confirmar Desativação
         </button>
       </div>
     </form>
   </div>
 </div>
+

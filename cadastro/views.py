@@ -208,6 +208,8 @@ def edit_operador(request,pk):
                     operador.matricula = dados['matricula']
                 if operador.nome != dados['nome']:
                     operador.nome = dados['nome']
+                if 'area' in dados and operador.area != dados['area']:
+                    operador.area = dados['area']
                 operador.save()
 
                 return JsonResponse({'message': 'Ok'}, status=200)
@@ -275,15 +277,12 @@ def api_operadores(request):
     search = request.GET.get('search', '')
     limit = int(request.GET.get('limit', 25))
 
-    if request.user.tipo_acesso == 'administrador' and not request.user.is_staff:
-        operadores = Operador.objects.filter(area=request.user.area)
-    else:
-        operadores = Operador.objects.all()
+    operadores = Operador.objects.all()
 
     if search:
         operadores = operadores.filter(nome__icontains=search)
 
-    operadores = list(operadores.values()[:limit])
+    operadores = list(operadores.values())
     return JsonResponse({'operadores': operadores})
 
 def api_maquinas(request):
