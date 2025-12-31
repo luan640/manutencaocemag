@@ -527,6 +527,8 @@
                 const campoAreaManutencao = document.getElementById('area_manutencao_'+pk);
                 const campoAtribuirOperador = document.getElementById('rowAtribuirOperador_' + pk);
                 const campoOperador = document.getElementById('operador_'+pk);
+                const formAtual = statusSelect.closest('form');
+                const campoComentario = formAtual ? formAtual.querySelector('textarea[name="comentario_manutencao"]') : null;
 
                 // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
                 function toggleDataProgramacao() {
@@ -540,6 +542,9 @@
                         campoNivelPrioridade.removeAttribute('required');
                         campoTipoManutencao.removeAttribute('required');
                         campoAreaManutencao.removeAttribute('required');
+                        if (campoComentario) {
+                            campoComentario.setAttribute('required', 'required');
+                        }
                     } else if (statusSelect.value === 'aprovar') {
                         // Exibe o campo de data e torna-o obrigatório
                         campoProgramacao.style.display = 'block';
@@ -549,6 +554,9 @@
                         campoNivelPrioridade.setAttribute('required', 'required');
                         campoTipoManutencao.setAttribute('required','required');
                         campoAreaManutencao.setAttribute('required','required');
+                        if (campoComentario) {
+                            campoComentario.removeAttribute('required');
+                        }
                     }
                 }
 

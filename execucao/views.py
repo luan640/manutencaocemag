@@ -257,6 +257,35 @@ def editar_solicitacao(request, solicitacao_id):
 
                 solicitacao.save()
 
+                if status_inicial == 'rejeitar' and solicitacao.area == 'predial' and solicitacao.solicitante.is_active:
+
+                    telefone = buscar_telefone(solicitacao.solicitante.matricula)
+
+                    if telefone:
+                        if solicitacao.maquina:
+                            local_maquina = f"{solicitacao.maquina.codigo} - {solicitacao.maquina.descricao}"
+                        elif solicitacao.tarefa:
+                            local_maquina = str(solicitacao.tarefa)
+                        elif solicitacao.codigo_ferramenta:
+                            local_maquina = solicitacao.codigo_ferramenta
+                        else:
+                            local_maquina = solicitacao.setor.nome
+
+                        kwargs = {
+                            'ordem': solicitacao.pk,
+                            'data_abertura': solicitacao.data_abertura,
+                            'local_maquina': local_maquina,
+                            'motivo': solicitacao.descricao or 'Nao informado',
+                            'motivo_cancelamento': comentario_pcm or 'Nao informado',
+                            'solicitante': solicitacao.solicitante.nome
+                        }
+
+                        try:
+                            ordem_service = OrdemServiceWpp()
+                            ordem_service.mensagem_ordem_rejeitada_predial(telefone, kwargs)
+                        except:
+                            pass
+
                 if not status_inicial == 'rejeitar':
                     if tipo_manutencao == 'preventiva_programada' and plano:
                         SolicitacaoPreventiva.objects.create(

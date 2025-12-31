@@ -72,15 +72,19 @@
                         <div class="collapse" id="collapseApontamento" aria-labelledby="headingOne"
                             data-bs-parent="#sidenavAccordion">
                             <nav class="sb-sidenav-menu-nested nav">
+                                <!-- Se o usuário for staff, exibe todas as opções -->
                                 {% if request.user.is_staff %}
-                                    <!-- Se o usuário for staff, exibe todas as opções -->
+                                    {% if request.user.area == 'producao' %}
                                     <a class="nav-link" href="{% url 'home_producao' %}">Solicitações Produção</a>
-                                    <a class="nav-link" href="{% url 'home_predial' %}">Solicitações Predial</a>
                                     <a class="nav-link" href="{% url 'criar_solicitacao' %}">Abrir os p/ Produção</a>
-                                    <a class="nav-link" href="{% url 'criar_solicitacao_predial' %}">Abrir os p/ Predial</a>
                                     <a class="nav-link" href="{% url 'programacao' 'producao' %}">Programação Produção</a>
+                                    {% endif %}
+                                    {% if request.user.area == 'predial' %}
+                                    <a class="nav-link" href="{% url 'home_predial' %}">Solicitações Predial</a>
+                                    <a class="nav-link" href="{% url 'criar_solicitacao_predial' %}">Abrir os p/ Predial</a>
                                     <a class="nav-link" href="{% url 'programacao' 'predial' %}">Programação Predial</a>
                                     <a class="nav-link" href="{% url 'criar_execucao_rotina' %}">Tarefa de rotina</a>
+                                    {% endif %}
                                     <a class="nav-link" href="{% url 'historico_execucao' %}">Histórico</a>
                                 {% else %}
                                     <!-- Para não-staff, verifique o tipo de acesso -->
@@ -113,6 +117,7 @@
                         
                         {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
                             <!-- Apenas administradores e staff -->
+                            {% if request.user.area == 'producao' %}
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
                                 data-bs-target="#collpasePreventivas" aria-expanded="false" aria-controls="collpasePreventivas">
                                 <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
@@ -137,12 +142,15 @@
                                     <a class="nav-link" href="{% url 'dashboard' %}">Dashboard Produção</a>
                                 </nav>
                             </div>
+                            {% endif %}
+                            {% if request.user.area == 'predial' %}
                             <div class="collapse" id="collpasePreventivas" aria-labelledby="headingOne"
                                 data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{% url 'dashboard-predial' %}">Dashboard Predial</a>
                                 </nav> 
                             </div>
+                            {% endif %}
 
                         {% endif %}
                         

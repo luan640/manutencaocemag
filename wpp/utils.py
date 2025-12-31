@@ -106,6 +106,7 @@ class OrdemServiceWpp:
 
         # Enviando a requisição
         response = requests.post(self.url, headers=self.headers, data=json.dumps(payload))
+        print(response.status_code, response.text)
         return response.status_code, response.json()
 
     def reenviar_mensagem_finalizar_ordem(self, recipient_number, kwargs):
@@ -216,6 +217,48 @@ class OrdemServiceWpp:
         response = requests.post(self.url, headers=self.headers, data=json.dumps(payload))
         print(response.status_code, response.text)  # Logar a resposta completa
 
+        return response.status_code, response.json()
+
+    def mensagem_ordem_rejeitada_predial(self, recipient_number, kwargs):
+        ordem = str(kwargs.get('ordem', 'N/A'))
+        solicitante = str(kwargs.get('solicitante', 'N/A'))
+        data_abertura = kwargs.get('data_abertura', 'N/A')
+        local_maquina = str(kwargs.get('local_maquina', 'N/A'))
+        motivo = str(kwargs.get('motivo', 'N/A'))
+        motivo_cancelamento = str(kwargs.get('motivo_cancelamento', 'N/A'))
+
+        if isinstance(data_abertura, str):
+            data_abertura_str = data_abertura
+        else:
+            data_abertura_str = data_abertura.strftime("%d/%m/%Y")
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": self.tratar_numero_wa(recipient_number),
+            "type": "template",
+            "template": {
+                "name": "ordem_rejeitada_predial",
+                "language": {
+                    "code": "en_US"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {"type": "text", "text": f"*{solicitante}*"},
+                            {"type": "text", "text": f"#OS{ordem}"},
+                            {"type": "text", "text": data_abertura_str},
+                            {"type": "text", "text": local_maquina},
+                            {"type": "text", "text": motivo},
+                            {"type": "text", "text": motivo_cancelamento},
+                        ]
+                    },
+                ]
+            }
+        }
+
+        response = requests.post(self.url, headers=self.headers, data=json.dumps(payload))
+        print(response.status_code, response.text)
         return response.status_code, response.json()
 
     def sucesso_criar_conta(self, number_cadastrado, kwargs):
