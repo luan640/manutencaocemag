@@ -111,7 +111,7 @@ def criar_solicitacao_predial(request):
 @login_required
 def criar_execucao_rotina(request):
     # maquinas_predial = Maquina.objects.filter(area='predial')
-    operadores = Operador.objects.filter(area='predial')
+    operadores = Operador.objects.filter(area='predial', status='ativo')
     tipo_tarefas = TipoTarefas.objects.filter(status=True)
 
     if request.method == 'POST':
