@@ -117,16 +117,35 @@ def processar_maquina(request):
 
     # Filtrando as máquinas (se houver busca)
     search_value = request.POST.get('search[value]', '')
+    filtro_maquina = request.POST.get('maquina', '')
+    filtro_criticidade = request.POST.get('criticidade', '')
+    filtro_maquina_critica = request.POST.get('maquina_critica', '')
+    filtro_setor = request.POST.get('setor', '')
 
-    if request.user.is_staff:
-        maquinas = Maquina.objects.all()
-    else:
+    if request.user.area in ['producao', 'predial']:
         maquinas = Maquina.objects.filter(area=request.user.area)
+    else:
+        maquinas = Maquina.objects.all()
 
     if search_value:
         maquinas = maquinas.filter(
-            codigo__icontains=search_value
+            Q(codigo__icontains=search_value) |
+            Q(descricao__icontains=search_value) |
+            Q(apelido__icontains=search_value) |
+            Q(setor__nome__icontains=search_value)
         )
+
+    if filtro_maquina:
+        maquinas = maquinas.filter(id=filtro_maquina)
+    if filtro_criticidade:
+        maquinas = maquinas.filter(criticidade=filtro_criticidade)
+    if filtro_setor:
+        maquinas = maquinas.filter(setor_id=filtro_setor)
+    if filtro_maquina_critica:
+        if filtro_maquina_critica == 'sim':
+            maquinas = maquinas.filter(maquina_critica=True)
+        elif filtro_maquina_critica == 'nao':
+            maquinas = maquinas.filter(maquina_critica=False)
 
     # Aplicando ordenação
     maquinas = maquinas.order_by(order_column)
@@ -299,6 +318,27 @@ def api_maquinas(request):
         )
 
     maquinas = list(qs.values('id', 'codigo', 'descricao')[:limit])
+
+    return JsonResponse({'maquinas': maquinas})
+
+def api_maquinas_list(request):
+    """API para retornar a lista de mǭquinas conforme a Ç­rea do usuÇ­rio."""
+    search = request.GET.get('search', '')
+    limit = int(request.GET.get('limit', 500))
+
+    if request.user.area in ['producao', 'predial']:
+        qs = Maquina.objects.filter(area=request.user.area)
+    else:
+        qs = Maquina.objects.all()
+
+    if search:
+        qs = qs.filter(
+            Q(codigo__icontains=search) |
+            Q(descricao__icontains=search) |
+            Q(apelido__icontains=search)
+        )
+
+    maquinas = list(qs.order_by('codigo').values('id', 'codigo', 'descricao')[:limit])
 
     return JsonResponse({'maquinas': maquinas})
 

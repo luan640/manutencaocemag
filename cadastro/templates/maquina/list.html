@@ -35,6 +35,43 @@
         </button>
     </div>
 
+    <div class="filters-container">
+        <div class="filter-item">
+            <label for="filterMaquina" class="form-label">Maquina</label>
+            <select id="filterMaquina" class="form-select">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="filterCriticidade" class="form-label">Criticidade</label>
+            <select id="filterCriticidade" class="form-select">
+                <option value="">Todas</option>
+                <option value="a">A</option>
+                <option value="b">B</option>
+                <option value="c">C</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="filterMaquinaCritica" class="form-label">Maquina critica</label>
+            <select id="filterMaquinaCritica" class="form-select">
+                <option value="">Todas</option>
+                <option value="sim">Sim</option>
+                <option value="nao">Nao</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label for="filterSetor" class="form-label">Setor</label>
+            <select id="filterSetor" class="form-select">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="button" id="btnLimparFiltrosMaquina" class="btn btn-outline-secondary btn-sm">
+                Limpar filtros
+            </button>
+        </div>
+    </div>
+
     <!-- Tabela estilizada dentro de um card -->
     <div class="table-card">
         <div class="table-responsive">

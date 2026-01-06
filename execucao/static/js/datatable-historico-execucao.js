@@ -63,6 +63,9 @@ $(document).ready(function () {
             { data: 'data_inicio' },
             { data: 'data_fim' },
             { data: 'observacao' },
+            { data: 'paplus' },
+            { data: 'ph_agua' },
+            { data: 'pvlye' },
             { data: 'status' },
             { data: 'tipo_manutencao' },
             { data: 'area_manutencao' },
@@ -100,7 +103,7 @@ $(document).ready(function () {
             return h * 60 + m;
         }
 
-        table.column(17, { page: 'current' }).data().each(function (valor) {
+        table.column(20, { page: 'current' }).data().each(function (valor) {
             totalMinutos += parseHoras(valor);
         });
 

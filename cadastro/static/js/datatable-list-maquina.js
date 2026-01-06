@@ -14,6 +14,12 @@ $(document).ready(function () {
         ajax: {
             url: 'processar',
             type: 'POST',
+            data: function (d) {
+                d.maquina = $('#filterMaquina').val();
+                d.criticidade = $('#filterCriticidade').val();
+                d.maquina_critica = $('#filterMaquinaCritica').val();
+                d.setor = $('#filterSetor').val();
+            },
         },
         dom: 'lrtip', // 👈 remove a barra de busca padrão
         columns: [
@@ -81,9 +87,68 @@ $(document).ready(function () {
         tableMaq.search(this.value).draw();
     });
 
+    $('#filterMaquina, #filterCriticidade, #filterMaquinaCritica, #filterSetor').on('change', function () {
+        tableMaq.ajax.reload();
+    });
+
+    $('#btnLimparFiltrosMaquina').on('click', function () {
+        $('#filterMaquina').val(null).trigger('change');
+        $('#filterCriticidade').val('');
+        $('#filterMaquinaCritica').val('');
+        $('#filterSetor').val('');
+        tableMaq.ajax.reload();
+    });
+
+    carregarFiltrosMaquina();
+
     // Opcional: mostrar overlay de loading (se desejar usar visualmente)
     // tableMaq.on('processing.dt', function (e, settings, processing) {
     //     $('#overlayLoading').toggle(processing);
     //     // $('#overlayLoading').css('display', processing ? 'flex' : 'none');
     // });
 });
+
+function carregarFiltrosMaquina() {
+    inicializarSelectMaquina();
+
+    fetch('/api/maquinas-list/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('filterMaquina');
+            if (!select) return;
+            (data.maquinas || []).forEach(maquina => {
+                const option = document.createElement('option');
+                option.value = maquina.id;
+                option.textContent = `${maquina.codigo} - ${maquina.descricao}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erro ao carregar maquinas:', error));
+
+    fetch('/api/setores/')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('filterSetor');
+            if (!select) return;
+            (data.setores || []).forEach(setor => {
+                const option = document.createElement('option');
+                option.value = setor.id;
+                option.textContent = setor.nome;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Erro ao carregar setores:', error));
+}
+
+function inicializarSelectMaquina() {
+    const $select = $('#filterMaquina');
+    if (!$select.length) return;
+    if ($select.data('select2')) return;
+
+    $select.select2({
+        placeholder: 'Todas',
+        allowClear: true,
+        width: '100%',
+        language: 'pt-BR'
+    });
+}
