@@ -333,7 +333,8 @@ def calcular_manutencoes_semanais(request):
                 ss.maquina_id,
                 pp.id AS plano_id,
                 ss.status_andamento,
-                ss.status AS status_aprovacao
+                ss.status AS status_aprovacao,
+                ss.comentario_manutencao
             FROM manutencao_v3.solicitacao_solicitacao ss
             LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps ON ss.id = ps.ordem_id
             LEFT JOIN manutencao_v3.execucao_execucao ee ON ss.id = ee.ordem_id
@@ -341,7 +342,7 @@ def calcular_manutencoes_semanais(request):
             LEFT JOIN manutencao_v3.preventiva_planopreventiva pp ON pp.id = ps.plano_id 
             WHERE 
                 ss.planejada 
-                AND (pp.dias_antecedencia + ps.data) >= '2025-01-01'
+                AND (pp.dias_antecedencia + ps.data) >= '2026-01-01'
                 AND ss.area = 'producao'
                 AND (
                     ss.status = 'rejeitar' OR
@@ -349,7 +350,7 @@ def calcular_manutencoes_semanais(request):
                         SELECT MAX(ee2.n_execucao)
                         FROM manutencao_v3.execucao_execucao ee2
                         WHERE ee2.ordem_id = ss.id
-                        AND ee2.data_fim >= '2025-01-01 00:00:00'
+                        AND ee2.data_fim >= '2026-01-01 00:00:00'
                     )
                 )
                 AND ss.maquina_id <> 31
@@ -400,10 +401,12 @@ def calcular_manutencoes_semanais(request):
                     status = ordem['status_andamento']
                     status_aprovacao = ordem['status_aprovacao']
                     numero_ordem = ordem['id']
+                    comentario_manutencao = ordem['comentario_manutencao']
                 else:
                     status = 'não encontrada'
                     status_aprovacao = None
                     numero_ordem = None
+                    comentario_manutencao = None
 
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
@@ -411,7 +414,8 @@ def calcular_manutencoes_semanais(request):
                     'data': maintenance_date.strftime('%d/%m/%Y'),
                     'status_manutencao': status,
                     'status_aprovacao': status_aprovacao,
-                    'ordem': numero_ordem
+                    'ordem': numero_ordem,
+                    'comentario_manutencao': comentario_manutencao
                 })
 
             maintenance_date += timedelta(days=plano.periodicidade)

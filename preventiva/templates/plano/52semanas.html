@@ -97,6 +97,94 @@ Manutenções Semanais
         padding: 5px;
     }
 
+    .btn-detalhes {
+        margin-top: 6px;
+        background-color: #0284c7;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-detalhes:hover {
+        background-color: #0369a1;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .modal-backdrop.hidden {
+        display: none;
+    }
+
+    .modal-content {
+        width: 90%;
+        max-width: 520px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .modal-close {
+        background: transparent;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: #475569;
+    }
+
+    .modal-body {
+        padding: 16px;
+        font-size: 14px;
+    }
+
+    .modal-row {
+        display: flex;
+        gap: 8px;
+        padding: 4px 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .modal-row:last-child {
+        border-bottom: none;
+    }
+
+    .modal-label {
+        min-width: 140px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .modal-value {
+        color: #0f172a;
+        word-break: break-word;
+    }
+
     .janeiro { background-color: #f0f8ff; }
     .fevereiro { background-color: #faebd7; }
     .marco { background-color: #ffe4e1; }
@@ -123,13 +211,23 @@ Manutenções Semanais
             class="filtro-maquina"
             type="text"
             placeholder="Digite o nome da máquina"
-            list="lista-maquinas" />
+            list="lista-maquinas" autocomplete="off"/>
         <datalist id="lista-maquinas"></datalist>
         <a href="/preventiva/" class="btn-voltar">Voltar para Preventivas</a>
     </div>
 </div>
 
 <div id="semanas-container" class="semanas-container"></div>
+
+<div id="modal-detalhes" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-detalhes-titulo">
+        <div class="modal-header">
+            <h3 id="modal-detalhes-titulo">Detalhes da OS</h3>
+            <button type="button" class="modal-close" aria-label="Fechar">X</button>
+        </div>
+        <div class="modal-body" id="modal-detalhes-body"></div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -168,7 +266,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                     data: ev.data,
                                     status_manutencao: ev.status_manutencao,
                                     status_aprovacao: ev.status_aprovacao,
-                                    numero_ordem: ev.ordem
+                                    numero_ordem: ev.ordem,
+                                    comentario_manutencao: ev.comentario_manutencao
                                 });
 
                                 if (ev.maquina) {
@@ -265,6 +364,15 @@ document.addEventListener('DOMContentLoaded', function () {
                         '<br><small>' + statusFormatado + '</small>' +
                         (manutencao.numero_ordem ? '<br><small>Ordem: ' + manutencao.numero_ordem + '</small>' : '');
 
+                    const detalhesBtn = document.createElement('button');
+                    detalhesBtn.type = 'button';
+                    detalhesBtn.className = 'btn-detalhes';
+                    detalhesBtn.textContent = 'Detalhes';
+                    detalhesBtn.addEventListener('click', function () {
+                        abrirModalDetalhes(manutencao, statusFormatado);
+                    });
+                    manutencaoItem.appendChild(detalhesBtn);
+
                     if (manutencao.status_aprovacao === 'rejeitar') {
                         manutencaoItem.style.borderLeft = '4px solid #9C27B0';
                         manutencaoItem.style.backgroundColor = '#f3e5f5';
@@ -348,6 +456,76 @@ document.addEventListener('DOMContentLoaded', function () {
         const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
         return weekNo;
     }
+
+    function abrirModalDetalhes(manutencao, statusFormatado) {
+        const modal = document.getElementById('modal-detalhes');
+        const modalBody = document.getElementById('modal-detalhes-body');
+        if (!modal || !modalBody) return;
+
+        modalBody.innerHTML = '';
+        adicionarLinha(modalBody, 'Maquina', manutencao.maquina || '-');
+        adicionarLinha(modalBody, 'Plano', manutencao.plano || '-');
+        adicionarLinha(modalBody, 'Data prevista', manutencao.data || '-');
+        adicionarLinha(modalBody, 'Status', statusFormatado || '-');
+        adicionarLinha(modalBody, 'Aprovacao', formatarAprovacao(manutencao.status_aprovacao));
+        adicionarLinha(modalBody, 'Ordem', manutencao.numero_ordem ? String(manutencao.numero_ordem) : '-');
+        adicionarLinha(modalBody, 'Comentario', manutencao.comentario_manutencao || '-');
+
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function adicionarLinha(container, label, value) {
+        const row = document.createElement('div');
+        row.className = 'modal-row';
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'modal-label';
+        labelEl.textContent = label + ':';
+
+        const valueEl = document.createElement('span');
+        valueEl.className = 'modal-value';
+        valueEl.textContent = value;
+
+        row.appendChild(labelEl);
+        row.appendChild(valueEl);
+        container.appendChild(row);
+    }
+
+    function formatarAprovacao(statusAprovacao) {
+        if (!statusAprovacao) return '-';
+        if (statusAprovacao === 'rejeitar') return 'Rejeitada';
+        return statusAprovacao;
+    }
+
+    function fecharModalDetalhes() {
+        const modal = document.getElementById('modal-detalhes');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    const modal = document.getElementById('modal-detalhes');
+    if (modal) {
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', fecharModalDetalhes);
+        }
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                fecharModalDetalhes();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            fecharModalDetalhes();
+        }
+    });
 });
 </script>
 

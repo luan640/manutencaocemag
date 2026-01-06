@@ -430,9 +430,10 @@ def execucao_data(request):
         ),
         tipo_manutencao=F('ordem__info_solicitacao__tipo_manutencao'),  # Atualize o nome aqui
         area_manutencao=F('ordem__info_solicitacao__area_manutencao')  # Atualize o nome aqui
-    ).filter(
-        ordem__status="aprovar",
     )
+    #.filter(
+    #    ordem__status="aprovar",
+    #)
 
     # Verifica se é exportação ou não
     filtros_estado = {}
