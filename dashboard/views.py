@@ -1245,6 +1245,8 @@ def quantidade_atrasada(filtros):
 
 def quantidade_atrasada_view(request):
 
+    data_inicio = datetime.strptime(request.GET.get('data-inicial') + ' 00:00:00', '%Y-%m-%d %H:%M:%S')
+    data_fim = datetime.strptime(request.GET.get('data-final') + ' 23:59:59', '%Y-%m-%d %H:%M:%S')
     setor = request.GET.get('setor')
     area = request.GET.get('area')
     maquinas_criticas = request.GET.get('maquina-critica',"False")
@@ -1252,7 +1254,11 @@ def quantidade_atrasada_view(request):
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Define os filtros para a solicitação
-    filtros={'area':area}
+    filtros = {
+        'area': area,
+        'programacao__gte': data_inicio,
+        'programacao__lte': data_fim,
+    }
     if setor:
         filtros['setor_id'] = int(setor)  # Aplica o filtro de setor, se fornecido
     if maquinas_criticas:
