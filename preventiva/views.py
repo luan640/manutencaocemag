@@ -60,10 +60,10 @@ def criar_plano_preventiva(request, pk_maquina):
             return JsonResponse({'success': False, 'errors': plano_form.errors})
 
     # Renderiza o formulário, associando-o à máquina
-    # return render(request, 'plano/add.html', {
-    #     'plano_form': PlanoPreventivaForm(),
-    #     'maquina': maquina,
-    # })
+    return render(request, 'plano/add.html', {
+        'plano_form': PlanoPreventivaForm(),
+        'maquina': maquina,
+    })
 
 def criar_tarefa_preventiva(request):
     if request.method == 'POST':

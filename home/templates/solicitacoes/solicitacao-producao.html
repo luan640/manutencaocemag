@@ -43,6 +43,13 @@
         color: red;  /* Tornando o asterisco vermelho */
     }
 
+    .maquina-parada-badge {
+        background: #f8d7da;
+        color: #842029;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
 </style>
 {% endblock %}
 
@@ -2645,6 +2652,36 @@
 
         // Estado inicial (caso já venha com status finalizada)
         toggleMotivo();
+    });
+</script>
+
+<script>
+    function formatarDuracaoParada(ms) {
+        const totalSegundos = Math.max(0, Math.floor(ms / 1000));
+        const horas = Math.floor(totalSegundos / 3600);
+        const minutos = Math.floor((totalSegundos % 3600) / 60);
+        const segundos = totalSegundos % 60;
+        return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    }
+
+    function atualizarBadgesParadas() {
+        const badges = document.querySelectorAll('.maquina-parada-badge[data-parada-inicio]');
+        const agora = Date.now();
+
+        badges.forEach(badge => {
+            const inicio = badge.getAttribute('data-parada-inicio');
+            const inicioDate = new Date(inicio);
+            if (!inicio || Number.isNaN(inicioDate.getTime())) {
+                badge.textContent = '00:00:00';
+                return;
+            }
+            badge.textContent = formatarDuracaoParada(agora - inicioDate.getTime());
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        atualizarBadgesParadas();
+        setInterval(atualizarBadgesParadas, 1000);
     });
 </script>
 
