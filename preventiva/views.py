@@ -345,7 +345,8 @@ def calcular_manutencoes_semanais(request):
             LEFT JOIN manutencao_v3.preventiva_planopreventiva pp 
                 ON pp.id = ps.plano_id 
             WHERE 
-                ss.planejada 
+                ss.planejada
+                AND ss.data_abertura >= '2026-01-01 00:00:00'
                 AND (pp.dias_antecedencia + ps.data) >= '2026-01-01'
                 AND ss.area = 'producao'
                 AND (

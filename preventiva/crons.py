@@ -30,8 +30,10 @@ def debug_verificar_abertura_solicitacoes_preventivas():
     
     for plano in planos:
         if plano.data_base:
+            data_base = plano.data_base
+            
             # Calcula a data de vencimento com base na data_base
-            data_vencimento = plano.data_base + timedelta(days=plano.periodicidade)
+            data_vencimento = data_base + timedelta(days=plano.periodicidade)
 
             # Calcula a data de abertura com base na antecedência configurada
             dias_antecedencia = plano.dias_antecedencia or 0
@@ -43,36 +45,14 @@ def debug_verificar_abertura_solicitacoes_preventivas():
 
             # Verifica se hoje é o dia de abertura
             if hoje >= data_abertura:
-                # Verifica se existe solicitação preventiva aberta (não finalizada) para o plano
-                solicitacao_aberta = SolicitacaoPreventiva.objects.filter(
-                    plano=plano, 
-                    finalizada=False
-                ).first()
-
                 # Verifica se já existe solicitação para hoje
-                solicitacao_hoje = SolicitacaoPreventiva.objects.filter(
+                solicitacao_recente = SolicitacaoPreventiva.objects.filter(
                     plano=plano, 
                     data=hoje
                 ).exists()
 
-                deve_abrir = False
-                motivo = ""
-                
-                if solicitacao_aberta:
-                    # Se a solicitação aberta tem data menor que hoje, foi perdida
-                    if solicitacao_aberta.data < hoje:
-                        deve_abrir = True
-                        motivo = f"ORDEM ATRASADA - Ordem {solicitacao_aberta.ordem_id} de {solicitacao_aberta.data} não foi processada"
-                    else:
-                        motivo = f"Já existe solicitação aberta para {solicitacao_aberta.data}"
-                else:
-                    # Se não existe solicitação aberta, cria uma nova
-                    if not solicitacao_hoje:
-                        deve_abrir = True
-                        motivo = "Nova ordem para ser aberta"
-                    else:
-                        motivo = "Já existe solicitação para hoje"
-
+                deve_abrir = not solicitacao_recente
+                motivo = "Nova ordem para ser aberta" if deve_abrir else "Já existe solicitação para hoje"
                 status = "✓ DEVE ABRIR" if deve_abrir else "✗ NÃO ABRE"
                 
                 print(f"Plano: {plano.id} - {plano.maquina.codigo} - {plano.nome}")
@@ -115,11 +95,13 @@ def verificar_abertura_solicitacoes_preventivas():
     planos = PlanoPreventiva.objects.filter(ativo=True)
     
     for plano in planos:
-        # Verifica se a data_base está definida
+        # Verifica se a data_base está definida, caso contrário, usa a data de criação do plano
+        data_base = plano.data_base 
+        
         if plano.data_base:
 
             # Calcula a data de vencimento com base na data_base
-            data_vencimento = plano.data_base + timedelta(days=plano.periodicidade)
+            data_vencimento = data_base + timedelta(days=plano.periodicidade)
 
             # Calcula a data de abertura com base na antecedência configurada
             dias_antecedencia = plano.dias_antecedencia
@@ -129,61 +111,39 @@ def verificar_abertura_solicitacoes_preventivas():
             if plano.periodicidade <= dias_antecedencia:
                 data_abertura = hoje
 
-            # Verifica se hoje é o dia de abertura
+            # Verifica se hoje é o dia de abertura e se não existe solicitação aberta hoje
             if hoje >= data_abertura:
-                # Verifica se existe solicitação preventiva aberta (não finalizada) para o plano
-                solicitacao_aberta = SolicitacaoPreventiva.objects.filter(
-                    plano=plano, 
-                    finalizada=False
-                ).first()
-
-                # Se existe solicitação aberta mas está atrasada (data < hoje), significa que falhou
-                # Se não existe solicitação aberta, precisa criar uma nova
-                deve_abrir = False
+                solicitacao_recente = SolicitacaoPreventiva.objects.filter(plano=plano, data=hoje).exists()
                 
-                if solicitacao_aberta:
-                    # Se a solicitação aberta tem data menor que hoje, foi perdida na execução anterior
-                    if solicitacao_aberta.data < hoje:
-                        deve_abrir = True
-                else:
-                    # Se não existe solicitação aberta, cria uma nova
-                    deve_abrir = True
+                if not solicitacao_recente:
 
-                if deve_abrir:
-                    # Verifica se já existe solicitação para hoje
-                    solicitacao_hoje = SolicitacaoPreventiva.objects.filter(
-                        plano=plano, 
+                    # Cria uma nova solicitação preventiva
+                    nova_solicitacao = Solicitacao.objects.create(
+                        impacto_producao='baixo',
+                        maquina=plano.maquina,
+                        setor=plano.maquina.setor,
+                        solicitante=solicitante,
+                        descricao=f'Preventiva: {plano.nome}',
+                        area=plano.maquina.area,
+                        planejada=True,
+                    )
+
+                    # Cria a solicitação preventiva associada
+                    SolicitacaoPreventiva.objects.create(
+                        ordem=nova_solicitacao,
+                        plano=plano,
                         data=hoje
-                    ).exists()
-                    
-                    if not solicitacao_hoje:
-                        # Cria uma nova solicitação preventiva
-                        nova_solicitacao = Solicitacao.objects.create(
-                            impacto_producao='baixo',
-                            maquina=plano.maquina,
-                            setor=plano.maquina.setor,
-                            solicitante=solicitante,
-                            descricao=f'Preventiva: {plano.nome}',
-                            area=plano.maquina.area,
-                            planejada=True,
-                        )
+                    )
 
-                        # Cria a solicitação preventiva associada
-                        SolicitacaoPreventiva.objects.create(
-                            ordem=nova_solicitacao,
-                            plano=plano,
-                            data=hoje
-                        )
+                    # Cria o registro de informações da solicitação
+                    InfoSolicitacao.objects.create(
+                        solicitacao=nova_solicitacao,
+                        tipo_manutencao='preventiva_programada',
+                    )
 
-                        # Cria o registro de informações da solicitação
-                        InfoSolicitacao.objects.create(
-                            solicitacao=nova_solicitacao,
-                            tipo_manutencao='preventiva_programada',
-                        )
-
-                        # Atualiza a data_base para a data em que a ordem foi criada
-                        plano.data_base = hoje
-                        plano.save()
+                    # Atualiza a data_base para a data em que a ordem foi criada
+                    plano.data_base = hoje
+                    plano.save()
 
 def inserir_ordens_preventivas_historicas_arquivo(file_path):
     

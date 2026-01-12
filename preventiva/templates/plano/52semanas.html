@@ -213,6 +213,14 @@ Manutenções Semanais
             placeholder="Digite o nome da máquina"
             list="lista-maquinas" autocomplete="off"/>
         <datalist id="lista-maquinas"></datalist>
+        <label for="filtro-status">Filtrar status:</label>
+        <select id="filtro-status" class="filtro-maquina">
+            <option value="">Todos os status</option>
+            <option value="em_espera">Em espera</option>
+            <option value="aguardando_atendimento">Aguardando Atendimento</option>
+            <option value="finalizada">Finalizada</option>
+            <option value="rejeitada">Rejeitada</option>
+        </select>
         <a href="/preventiva/" class="btn-voltar">Voltar para Preventivas</a>
     </div>
 </div>
@@ -292,9 +300,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function inicializarBuscaMaquinas(weeks, semanaAtual, nomesMaquinas) {
         const input = document.getElementById('filtro-maquina');
         const datalist = document.getElementById('lista-maquinas');
+        const selectStatus = document.getElementById('filtro-status');
 
         if (!input) {
-            renderSemanas(weeks, semanaAtual, '');
+            renderSemanas(weeks, semanaAtual, '', '');
             return;
         }
 
@@ -309,15 +318,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         input.addEventListener('input', function () {
             const termo = (this.value || '').toLowerCase();
-            renderSemanas(weeks, semanaAtual, termo);
+            const status = (selectStatus.value || '');
+            renderSemanas(weeks, semanaAtual, termo, status);
         });
+
+        if (selectStatus) {
+            selectStatus.addEventListener('change', function () {
+                const termo = (input.value || '').toLowerCase();
+                const status = (this.value || '');
+                renderSemanas(weeks, semanaAtual, termo, status);
+            });
+        }
 
         // Ao focar (clicar), mantém todas as máquinas visíveis;
         // o filtro só entra em ação quando o usuário digita.
-        renderSemanas(weeks, semanaAtual, '');
+        renderSemanas(weeks, semanaAtual, '', '');
     }
 
-    function renderSemanas(weeks, semanaAtual, filtroNome) {
+    function renderSemanas(weeks, semanaAtual, filtroNome, filtroStatus) {
         const container = document.getElementById('semanas-container');
         container.innerHTML = '';
 
@@ -341,11 +359,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const manutencoesDiv = document.createElement('div');
             manutencoesDiv.classList.add('manutencoes');
 
-            const listaManutencoes = filtroNome
-                ? week.manutencoes.filter(m =>
-                    (m.maquina || '').toLowerCase().includes(filtroNome)
-                  )
-                : week.manutencoes;
+            const listaManutencoes = week.manutencoes.filter(m => {
+                const matchMaquina = !filtroNome || (m.maquina || '').toLowerCase().includes(filtroNome);
+                let matchStatus = true;
+                
+                if (filtroStatus) {
+                    if (filtroStatus === 'rejeitada') {
+                        matchStatus = m.status_aprovacao === 'rejeitar';
+                    } else {
+                        // Para outros status, verificar o status_manutencao E que não seja rejeitada
+                        matchStatus = m.status_manutencao === filtroStatus && m.status_aprovacao !== 'rejeitar';
+                    }
+                }
+                
+                return matchMaquina && matchStatus;
+            });
 
             if (!listaManutencoes || listaManutencoes.length === 0) {
                 manutencoesDiv.innerHTML = '<em>Sem manutencoes</em>';
