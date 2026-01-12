@@ -336,17 +336,22 @@ def calcular_manutencoes_semanais(request):
                 ss.status AS status_aprovacao,
                 ss.comentario_manutencao
             FROM manutencao_v3.solicitacao_solicitacao ss
-            LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps ON ss.id = ps.ordem_id
-            LEFT JOIN manutencao_v3.execucao_execucao ee ON ss.id = ee.ordem_id
-            LEFT JOIN manutencao_v3.cadastro_maquina cm ON cm.id = ss.maquina_id
-            LEFT JOIN manutencao_v3.preventiva_planopreventiva pp ON pp.id = ps.plano_id 
+            LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps 
+                ON ss.id = ps.ordem_id
+            LEFT JOIN manutencao_v3.execucao_execucao ee 
+                ON ss.id = ee.ordem_id
+            LEFT JOIN manutencao_v3.cadastro_maquina cm 
+                ON cm.id = ss.maquina_id
+            LEFT JOIN manutencao_v3.preventiva_planopreventiva pp 
+                ON pp.id = ps.plano_id 
             WHERE 
                 ss.planejada 
                 AND (pp.dias_antecedencia + ps.data) >= '2026-01-01'
                 AND ss.area = 'producao'
                 AND (
-                    ss.status = 'rejeitar' OR
-                    ee.n_execucao = (
+                    ss.status = 'rejeitar'
+                    OR ee.n_execucao IS NULL
+                    OR ee.n_execucao = (
                         SELECT MAX(ee2.n_execucao)
                         FROM manutencao_v3.execucao_execucao ee2
                         WHERE ee2.ordem_id = ss.id

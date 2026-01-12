@@ -10,7 +10,7 @@ class PlanoPreventivaForm(forms.ModelForm):
     dias_antecedencia = forms.IntegerField(help_text="Dias para abertura com antecedência",label='Abertura com antecedência de:', widget=forms.NumberInput(attrs={'class': 'form-control'}))
     data_inicio = forms.DateField(label='Data para inicio da contagem',required=True,widget=forms.DateInput(attrs={'class': 'form-control','type': 'date'},format='%Y-%m-%d'))
     abertura_automatica = forms.BooleanField(label='Abertura Automática', required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
-    data_base = forms.DateField(label='Data da próxima abertura',required=True,widget=forms.DateInput(attrs={'class': 'form-control','type': 'date'},format='%Y-%m-%d'))
+    data_base = forms.DateField(label='Data da última abertura',required=True,widget=forms.DateInput(attrs={'class': 'form-control','type': 'date'},format='%Y-%m-%d'))
 
     class Meta:
         model = PlanoPreventiva
