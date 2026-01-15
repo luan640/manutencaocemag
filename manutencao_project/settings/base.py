@@ -139,6 +139,11 @@ AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME')
 
 DEFAULT_FILE_STORAGE = env('DEFAULT_FILE_STORAGE')
 
+STORAGES = {
+    "default": {"BACKEND": DEFAULT_FILE_STORAGE},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 
 # Define a base URL para servir arquivos de mídia

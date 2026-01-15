@@ -27,10 +27,11 @@ DATABASES = {
 
 # Configurações para servir arquivos estáticos
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES["staticfiles"] = {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"}
 
 # Middleware adicional para produção
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+WHITENOISE_MAX_AGE = 0
 
 # Configurações de segurança para produção (certifique-se de ajustar essas conforme necessário)
 SECURE_SSL_REDIRECT = True
