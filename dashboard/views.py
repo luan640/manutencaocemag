@@ -81,8 +81,21 @@ def mtbf_maquina(request):
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Considera 9 horas de expediente por dia
+    
+    # COM DOMINGO
+    # dias_mes = (data_fim - data_inicio).days + 1
+    # tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    # SEM DOMINGO
     dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    dias_uteis = 0
+    for i in range(dias_mes):
+        dia = data_inicio + timedelta(days=i)
+        if dia.weekday() != 6:  # 6 = domingo
+            dias_uteis += 1
+
+    tempo_atividade_esperada = dias_uteis * 9
 
     # Filtros base para consultas
     filtros_base = {
@@ -213,8 +226,20 @@ def exportar_mtbf_maquina(request):
     maquinas_criticas = maquinas_criticas.lower() == 'true'
 
     # Considera 9 horas de expediente por dia
+    # COM DOMINGO
+    # dias_mes = (data_fim - data_inicio).days + 1
+    # tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    # SEM DOMINGO
     dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    dias_uteis = 0
+    for i in range(dias_mes):
+        dia = data_inicio + timedelta(days=i)
+        if dia.weekday() != 6:  # 6 = domingo
+            dias_uteis += 1
+
+    tempo_atividade_esperada = dias_uteis * 9
 
     # Filtros base para consultas
     filtros_base = {
@@ -549,7 +574,21 @@ def disponibilidade_maquina(request):
 
     # Tempo de atividade esperada: 9 horas por dia
     dias_mes = (data_fim - data_inicio).days + 1
-    tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+
+    # COM DOMINGO
+
+    # tempo_atividade_esperada = dias_mes * 9  # Total de horas esperadas no mês
+    # dias_mes = (data_fim - data_inicio).days + 1
+
+    # RETIRANDO DOMINGO
+
+    dias_uteis = 0
+    for i in range(dias_mes):
+        dia = data_inicio + timedelta(days=i)
+        if dia.weekday() != 6:  # 6 = domingo
+            dias_uteis += 1
+
+    tempo_atividade_esperada = dias_uteis * 9
 
     # Filtros base
     filtros_base = {

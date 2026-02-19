@@ -9,7 +9,7 @@ ALLOWED_HOSTS = [
     'manutencaocemag.com.br',
     'www.manutencaocemag.com.br',
     'manutencaocemag-4fu7.onrender.com',
-    'citysearch-revolutionary-noble-reforms.trycloudflare.com',]
+    'hour-show-instructions-briefly.trycloudflare.com',]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://07fd-177-19-132-134.ngrok-free.app'

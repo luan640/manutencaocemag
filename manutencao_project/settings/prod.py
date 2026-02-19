@@ -8,7 +8,8 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'manutencaocemag.com.br',
     'www.manutencaocemag.com.br',
-    'manutencaocemag-4fu7.onrender.com',]
+    'manutencaocemag-4fu7.onrender.com',
+    'hour-show-instructions-briefly.trycloudflare.com']
 
 # Banco de dados para produção
 DATABASES = {
