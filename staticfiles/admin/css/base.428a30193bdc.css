@@ -35,15 +35,15 @@ html[data-theme="light"],
     --error-fg: #ba2121;
 
     --message-debug-bg: #efefef;
-    --message-debug-icon: url(../img/icon-debug.svg);
+    --message-debug-icon: url("../img/icon-debug.55d305d70611.svg");
     --message-info-bg: #ccefff;
-    --message-info-icon: url(../img/icon-info.svg);
+    --message-info-icon: url("../img/icon-info.8d7f595627bc.svg");
     --message-success-bg: #dfd;
-    --message-success-icon: url(../img/icon-yes.svg);
+    --message-success-icon: url("../img/icon-yes.29488ce3e9f8.svg");
     --message-warning-bg: #ffc;
-    --message-warning-icon: url(../img/icon-alert.svg);
+    --message-warning-icon: url("../img/icon-alert.22a12b18ffea.svg");
     --message-error-bg: #ffefef;
-    --message-error-icon: url(../img/icon-no.svg);
+    --message-error-icon: url("../img/icon-no.030751157345.svg");
 
     --darkened-bg: #f8f8f8; /* A bit darker than --body-bg */
     --selected-bg: #e4e4e4; /* E.g. selected table cells */
@@ -441,7 +441,7 @@ table thead th.sorted .sortoptions a {
     width: 14px;
     height: 14px;
     display: inline-block;
-    background: url(../img/sorting-icons.svg) 0 0 no-repeat;
+    background: url("../img/sorting-icons.c9d975052c55.svg") 0 0 no-repeat;
     background-size: 14px auto;
 }
 
@@ -774,27 +774,27 @@ div.breadcrumbs a:focus, div.breadcrumbs a:hover {
 
 .viewlink, .inlineviewlink {
     padding-left: 16px;
-    background: url(../img/icon-viewlink.svg) 0 1px no-repeat;
+    background: url("../img/icon-viewlink.4a14a61a9e85.svg") 0 1px no-repeat;
 }
 
 .hidelink {
     padding-left: 16px;
-    background: url(../img/icon-hidelink.svg) 0 1px no-repeat;
+    background: url("../img/icon-hidelink.e152bbd56430.svg") 0 1px no-repeat;
 }
 
 .addlink {
     padding-left: 16px;
-    background: url(../img/icon-addlink.svg) 0 1px no-repeat;
+    background: url("../img/icon-addlink.cf2357b7d0e6.svg") 0 1px no-repeat;
 }
 
 .changelink, .inlinechangelink {
     padding-left: 16px;
-    background: url(../img/icon-changelink.svg) 0 1px no-repeat;
+    background: url("../img/icon-changelink.b592a93b41be.svg") 0 1px no-repeat;
 }
 
 .deletelink {
     padding-left: 16px;
-    background: url(../img/icon-deletelink.svg) 0 1px no-repeat;
+    background: url("../img/icon-deletelink.d730f4e28cce.svg") 0 1px no-repeat;
 }
 
 a.deletelink:link, a.deletelink:visited {
@@ -855,11 +855,11 @@ a.deletelink:focus, a.deletelink:hover {
 }
 
 .object-tools a.viewsitelink {
-    background-image: url(../img/tooltag-arrowright.svg);
+    background-image: url("../img/tooltag-arrowright.838d69f08fa9.svg");
 }
 
 .object-tools a.addlink {
-    background-image: url(../img/tooltag-add.svg);
+    background-image: url("../img/tooltag-add.16a3e1048c7e.svg");
 }
 
 /* OBJECT HISTORY */

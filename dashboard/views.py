@@ -636,6 +636,10 @@ def disponibilidade_maquina(request):
         fim_parada = data_fim_parada
 
         while dia_atual <= fim_parada.date():
+            if dia_atual.weekday() == 6:  # 6 = domingo
+                dia_atual += timedelta(days=1)
+                continue
+
             # Define janela de trabalho do dia (9h)
             inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
             fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
@@ -695,7 +699,11 @@ def disponibilidade_maquina(request):
     resultados = []
     for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
         # Fórmula simplificada de disponibilidade
-        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+        disponibilidade = (
+            (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+            if tempo_atividade_esperada > 0 else 0
+        )
+        disponibilidade = max(0, disponibilidade)
 
         resultados.append({
             'maquina': maquina,
@@ -769,6 +777,10 @@ def exportar_disponibilidade_maquina(request):
         fim_parada = data_fim_parada
 
         while dia_atual <= fim_parada.date():
+            if dia_atual.weekday() == 6:  # 6 = domingo
+                dia_atual += timedelta(days=1)
+                continue
+
             # Define janela de trabalho do dia (9h)
             inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
             fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
@@ -828,7 +840,11 @@ def exportar_disponibilidade_maquina(request):
     resultados = []
     for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
         # Fórmula simplificada de disponibilidade
-        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+        disponibilidade = (
+            (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+            if tempo_atividade_esperada > 0 else 0
+        )
+        disponibilidade = max(0, disponibilidade)
 
         resultados.append({
             'maquina': maquina,
@@ -1716,6 +1732,10 @@ def disponibilidade_geral(request):
         fim_parada = data_fim_parada
 
         while dia_atual <= fim_parada.date():
+            if dia_atual.weekday() == 6:  # 6 = domingo
+                dia_atual += timedelta(days=1)
+                continue
+
             # Define janela de trabalho do dia (9h)
             inicio_jornada = datetime.combine(dia_atual, time(8, 0))  # exemplo: início 08:00
             fim_jornada = datetime.combine(dia_atual, time(17, 0))    # fim 17:00 (9h)
@@ -1775,7 +1795,11 @@ def disponibilidade_geral(request):
     resultados = []
     for maquina, (tempo_total_paradas, qtd_paradas) in mtbf_dict.items():
         # Fórmula simplificada de disponibilidade
-        disponibilidade = (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+        disponibilidade = (
+            (tempo_atividade_esperada - tempo_total_paradas) / tempo_atividade_esperada
+            if tempo_atividade_esperada > 0 else 0
+        )
+        disponibilidade = max(0, disponibilidade)
 
         resultados.append({
             'maquina': maquina,

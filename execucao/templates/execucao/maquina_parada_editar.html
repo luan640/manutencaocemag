@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Editar MaquinaParada</title>
+{% endblock %}
+
+{% block content %}
+<div class="mt-4 mb-3 d-flex justify-content-between align-items-center">
+    <div>
+        <h3 class="mb-1">Editar MaquinaParada #{{ registro.id }}</h3>
+        <p class="text-muted mb-0">Ajuste os valores do registro com contexto da ordem vinculada.</p>
+    </div>
+    <a href="{% url 'base_maquina_parada' %}" class="btn btn-outline-secondary">Voltar</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>Dados da Ordem (Solicitacao)</strong>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">OS</dt>
+                    <dd class="col-sm-7">#{{ registro.ordem.id }}</dd>
+
+                    <dt class="col-sm-5">Setor</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.setor.nome }}</dd>
+
+                    <dt class="col-sm-5">Solicitante</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.solicitante.nome|default:registro.ordem.solicitante }}</dd>
+
+                    <dt class="col-sm-5">Máquina</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.maquina.codigo|default:"-" }}</dd>
+
+                    <dt class="col-sm-5">Nome máquina</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.maquina.descricao|default:"-" }}</dd>
+
+                    <dt class="col-sm-5">Status ordem</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.get_status_andamento_display|default:registro.ordem.status_andamento }}</dd>
+
+                    <dt class="col-sm-5">Abertura</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.data_abertura|date:"d/m/Y H:i" }}</dd>
+
+                    <dt class="col-sm-5">Descrição</dt>
+                    <dd class="col-sm-7">{{ registro.ordem.descricao|default:"-" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <strong>Dados editáveis da base MaquinaParada</strong>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.execucao.id_for_label }}">Execução vinculada</label>
+                        {{ form.execucao }}
+                        {% if form.execucao.errors %}
+                        <div class="text-danger small mt-1">{{ form.execucao.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.data_inicio.id_for_label }}">Data início</label>
+                        {{ form.data_inicio }}
+                        {% if form.data_inicio.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_inicio.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.data_fim.id_for_label }}">Data fim</label>
+                        {{ form.data_fim }}
+                        <div class="form-text">Deixe em branco se a parada ainda estiver em andamento.</div>
+                        {% if form.data_fim.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_fim.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <a href="{% url 'base_maquina_parada' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

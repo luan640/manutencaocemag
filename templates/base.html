@@ -86,6 +86,7 @@
                                     <a class="nav-link" href="{% url 'criar_execucao_rotina' %}">Tarefa de rotina</a>
                                     {% endif %}
                                     <a class="nav-link" href="{% url 'historico_execucao' %}">Histórico</a>
+                                    <a class="nav-link" href="{% url 'base_maquina_parada' %}">Base Máquina Parada</a>
                                 {% else %}
                                     <!-- Para não-staff, verifique o tipo de acesso -->
                                     {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
@@ -96,6 +97,7 @@
                                             <a class="nav-link" href="{% url 'programacao' 'producao' %}">Programação Produção</a>
                                             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                                             <a class="nav-link" href="{% url 'historico_execucao' %}">Histórico</a>
+                                            <a class="nav-link" href="{% url 'base_maquina_parada' %}">Base Máquina Parada</a>
                                         {% else %}
                                             <a class="nav-link" href="{% url 'home_predial' %}">Solicitações</a>
                                             <a class="nav-link" href="{% url 'criar_solicitacao' %}">Abrir os p/ Produção</a>
@@ -104,6 +106,7 @@
                                             <a class="nav-link" href="{% url 'criar_execucao_rotina' %}">Tarefa de rotina</a>
                                             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                                             <a class="nav-link" href="{% url 'historico_execucao' %}">Histórico</a>
+                                            <a class="nav-link" href="{% url 'base_maquina_parada' %}">Base Máquina Parada</a>
                                         {% endif %}
                                     {% elif request.user.tipo_acesso == 'solicitante' %}
                                         <a class="nav-link" href="{% url 'home_producao' %}">Solicitações Produção</a>
@@ -136,22 +139,25 @@
                                     <a class="nav-link" href="{% url 'planejamento_anual' %}">Planejamento anual</a>
                                 </nav>
                             </div>
-                            <div class="collapse" id="collpasePreventivas" aria-labelledby="headingOne"
-                                data-bs-parent="#sidenavAccordion">
-                                <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard Produção</a>
-                                </nav>
-                            </div>
                             {% endif %}
                             {% if request.user.area == 'predial' %}
-                            <div class="collapse" id="collpasePreventivas" aria-labelledby="headingOne"
-                                data-bs-parent="#sidenavAccordion">
-                                <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{% url 'dashboard-predial' %}">Dashboard Predial</a>
-                                </nav> 
-                            </div>
                             {% endif %}
 
+                        {% endif %}
+                        
+                        {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
+                            {% if request.user.area == 'producao' %}
+                            <a class="nav-link" href="{% url 'dashboard' %}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
+                                Dashboard Produção
+                            </a>
+                            {% endif %}
+                            {% if request.user.area == 'predial' %}
+                            <a class="nav-link" href="{% url 'dashboard-predial' %}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
+                                Dashboard Predial
+                            </a>
+                            {% endif %}
                         {% endif %}
                         
                         {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Base Maquina Parada</title>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <div>
+        <h3 class="mb-1">Base de MaquinaParada</h3>
+        <p class="text-muted mb-0">Registros com dados da ordem e máquina vinculada.</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label for="q" class="form-label">Buscar (OS, código/nome da máquina, setor, solicitante)</label>
+                <input type="text" id="q" name="q" value="{{ termo }}" class="form-control" placeholder="Ex.: 1234 ou Prensa">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'base_maquina_parada' %}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-sm mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>OS</th>
+                        <th>Execução</th>
+                        <th>Setor</th>
+                        <th>Solicitante</th>
+                        <th>Máquina</th>
+                        <th>Nome da máquina</th>
+                        <th>Status ordem</th>
+                        <th>Abertura OS</th>
+                        <th>Início parada</th>
+                        <th>Fim parada</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in page_obj %}
+                    <tr>
+                        <td>{{ registro.id }}</td>
+                        <td>#{{ registro.ordem.id }}</td>
+                        <td>
+                            {% if registro.execucao %}
+                                {{ registro.execucao.n_execucao }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ registro.ordem.setor.nome }}</td>
+                        <td>{{ registro.ordem.solicitante.nome|default:registro.ordem.solicitante }}</td>
+                        <td>{{ registro.ordem.maquina.codigo|default:"-" }}</td>
+                        <td>{{ registro.ordem.maquina.descricao|default:"-" }}</td>
+                        <td>{{ registro.ordem.get_status_andamento_display|default:registro.ordem.status_andamento }}</td>
+                        <td>{{ registro.ordem.data_abertura|date:"d/m/Y H:i" }}</td>
+                        <td>{{ registro.data_inicio|date:"d/m/Y H:i" }}</td>
+                        <td>{{ registro.data_fim|date:"d/m/Y H:i"|default:"Em andamento" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'editar_maquina_parada' registro.id %}" class="btn btn-sm btn-outline-primary">
+                                Editar
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" class="text-center py-4 text-muted">Nenhum registro encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-3" aria-label="Paginação">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ termo }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ termo }}&page={{ page_obj.next_page_number }}">Próxima</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

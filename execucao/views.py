@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
@@ -8,12 +9,13 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import F, Value, CharField, ExpressionWrapper, fields
+from django.db.models import F, Value, CharField, ExpressionWrapper, fields, Q
 from django.db.models.functions import Concat
 from django.contrib.postgres.aggregates import StringAgg
 
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao, InfoSolicitacao, MaquinaParada
+from .forms import MaquinaParadaForm
 from cadastro.models import Maquina, Setor, Operador
 from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
 
@@ -54,6 +56,28 @@ def criar_execucao(request, solicitacao_id):
             paplus = float(request.POST.get('paplus').replace(",",".")) if request.POST.get('paplus') else None
             tratamento_ete = request.POST.get('tratamento_ete', None)
             phagua = float(request.POST.get('phagua').replace(",",".")) if request.POST.get('phagua') else None
+
+            if not data_inicio or not data_fim:
+                return JsonResponse({
+                    'error': 'Data de início e data de fim inválidas.'
+                }, status=400)
+
+            agora = timezone.now()
+
+            def alinhar_timezone(dt):
+                if timezone.is_aware(agora) and timezone.is_naive(dt):
+                    return timezone.make_aware(dt, timezone.get_current_timezone())
+                if timezone.is_naive(agora) and timezone.is_aware(dt):
+                    return timezone.make_naive(dt, timezone.get_current_timezone())
+                return dt
+
+            data_inicio_cmp = alinhar_timezone(data_inicio)
+            data_fim_cmp = alinhar_timezone(data_fim)
+
+            if data_inicio_cmp > agora or data_fim_cmp > agora:
+                return JsonResponse({
+                    'error': 'Não é permitido lançar execução com horário maior que o horário atual.'
+                }, status=400)
 
             if ultima_execucao:
                 if data_inicio < ultima_execucao.data_fim:
@@ -371,6 +395,69 @@ def criar_execucao_predial(request, solicitacao_id):
 def historico_execucao(request):
 
     return render(request, 'execucao/historico.html')
+
+
+@login_required
+def base_maquina_parada(request):
+    termo = (request.GET.get("q") or "").strip()
+
+    registros = (
+        MaquinaParada.objects.select_related(
+            "ordem",
+            "ordem__maquina",
+            "ordem__setor",
+            "ordem__solicitante",
+            "execucao",
+        )
+        .order_by("-data_inicio", "-id")
+    )
+
+    if termo:
+        filtro = (
+            Q(ordem__maquina__codigo__icontains=termo)
+            | Q(ordem__maquina__descricao__icontains=termo)
+            | Q(ordem__setor__nome__icontains=termo)
+            | Q(ordem__solicitante__nome__icontains=termo)
+        )
+        if termo.isdigit():
+            filtro = filtro | Q(ordem__id=int(termo))
+        registros = registros.filter(filtro)
+
+    paginator = Paginator(registros, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "page_obj": page_obj,
+        "termo": termo,
+    }
+    return render(request, "execucao/maquina_parada_lista.html", context)
+
+
+@login_required
+def editar_maquina_parada(request, maquinaparada_id):
+    registro = get_object_or_404(
+        MaquinaParada.objects.select_related("ordem", "ordem__maquina", "execucao"),
+        pk=maquinaparada_id,
+    )
+
+    if request.method == "POST":
+        form = MaquinaParadaForm(request.POST, instance=registro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Registro de máquina parada #{registro.pk} atualizado.")
+            return redirect("base_maquina_parada")
+        messages.error(request, "Não foi possível salvar. Verifique os campos informados.")
+    else:
+        form = MaquinaParadaForm(instance=registro)
+
+    return render(
+        request,
+        "execucao/maquina_parada_editar.html",
+        {
+            "registro": registro,
+            "form": form,
+        },
+    )
 
 @csrf_exempt
 def execucao_data(request):

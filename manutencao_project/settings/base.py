@@ -13,7 +13,7 @@ AUTH_USER_MODEL = 'funcionario.Funcionario'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-ALLOWED_HOSTS = ['hour-show-instructions-briefly.trycloudflare.com', 'localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com', 'citysearch-revolutionary-noble-reforms.trycloudflare.com']
+ALLOWED_HOSTS = ['localhost', 'localhost', '127.0.0.1', 'manutencaocemag.onrender.com','projeto-exec.onrender.com','manutencaocemag-4fu7.onrender.com', 'citysearch-revolutionary-noble-reforms.trycloudflare.com']
 LOGOUT_REDIRECT_URL = 'login'  # Redireciona para a página de login
 
 INSTALLED_APPS = [

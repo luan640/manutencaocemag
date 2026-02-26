@@ -2,14 +2,14 @@ from .base import *
 
 # Configurações específicas de desenvolvimento
 DEBUG = env.bool('DEBUG', default=True)
-SECURE_SSL_REDIRECT = False
+# SECURE_SSL_REDIRECT = False
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'manutencaocemag.com.br',
     'www.manutencaocemag.com.br',
     'manutencaocemag-4fu7.onrender.com',
-    'hour-show-instructions-briefly.trycloudflare.com',]
+    'hour-show-instructions-briefly.trycloudflare.com','localhost']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://07fd-177-19-132-134.ngrok-free.app'

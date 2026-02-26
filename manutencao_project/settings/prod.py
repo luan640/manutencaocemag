@@ -9,7 +9,7 @@ ALLOWED_HOSTS = [
     'manutencaocemag.com.br',
     'www.manutencaocemag.com.br',
     'manutencaocemag-4fu7.onrender.com',
-    'hour-show-instructions-briefly.trycloudflare.com']
+    'localhost']
 
 # Banco de dados para produção
 DATABASES = {
@@ -35,6 +35,6 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 WHITENOISE_MAX_AGE = 0
 
 # Configurações de segurança para produção (certifique-se de ajustar essas conforme necessário)
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
