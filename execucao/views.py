@@ -541,6 +541,7 @@ def execucao_data(request):
 
     # // Grupo 2: Máquina e Manutenção
     maquina = request.POST.get('maquina', '')
+    maquina_critica = request.POST.get('maquinaCritica', '')
     tipo_manutencao = request.POST.getlist('tipoManutencao[]')
     area_manutencao = request.POST.getlist('areaManutencao[]', '')
     horas_executadas_inicial = request.POST.get('horasExecutadasInicial', '')
@@ -623,6 +624,8 @@ def execucao_data(request):
         execucoes = execucoes.filter(status__in=status)
     if maquina:
         execucoes = execucoes.filter(ordem__maquina=maquina)
+    if str(maquina_critica).lower() == 'true':
+        execucoes = execucoes.filter(ordem__maquina__maquina_critica=True)
     if tipo_manutencao:
         execucoes = execucoes.filter(ordem__info_solicitacao__tipo_manutencao__in=tipo_manutencao)
     if area_manutencao:

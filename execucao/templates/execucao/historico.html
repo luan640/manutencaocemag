@@ -34,8 +34,9 @@
 
     /* Container principal com padding consistente */
     .container-fluid {
-        max-width: 1400px;
-        margin: 0 auto;
+        max-width: none;
+        width: 100%;
+        margin: 0;
         padding: 2rem;
     }
 
@@ -366,6 +367,7 @@
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--color-border);
+        width: 100%;
     }
 
     .table-responsive {
@@ -600,6 +602,12 @@
                                     <div class="col-12 filter-item" data-name='Máquina'>
                                         <label for="filterMaquina" class="form-label">Máquina</label>
                                         <select class="form-select form-select-sm" id="filterMaquina"></select>
+                                    </div>
+                                    <div class="col-12 filter-item" data-name='Máquinas críticas'>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="filterMaquinaCritica">
+                                            <label class="form-check-label" for="filterMaquinaCritica">Trazer apenas máquinas consideradas críticas</label>
+                                        </div>
                                     </div>
                                     <div class="col-6 filter-item" data-name='Tipo da manutenção'>
                                         <label for="filterTipoManutencao" class="form-label">Tipo de Manutenção</label>

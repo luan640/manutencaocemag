@@ -27,6 +27,7 @@ $(document).ready(function () {
 
                 // Grupo 2: Máquina e Manutenção
                 d.maquina = $('#filterMaquina').val();
+                d.maquinaCritica = $('#filterMaquinaCritica').is(':checked');
                 d.tipoManutencao = $('#filterTipoManutencao').val();
                 d.areaManutencao = $('#filterAreaManutencao').val();
                 d.horasExecutadasInicial = $('#filterHorasExecutadasInicial').val();
@@ -187,6 +188,8 @@ $(document).ready(function () {
                 if ($(this).find('option[value=""]').length) {
                     $(this).val('');
                 }
+                } else if (this.type === 'checkbox') {
+                    this.checked = false;
                 } else {
                     // limpa inputs (text, number, date etc.)
                     $(this).val('');
@@ -610,5 +613,50 @@ $(document).ready(function () {
             }
         });
     });
+
+    atualizarFiltrosAtivos = function() {
+        const filtrosAtivos = [];
+
+        $('#filtrosMenu .filter-item').each(function () {
+            const label = $(this).find('label').first().text().trim();
+            const inputs = $(this).find('input, select');
+            let valor = '';
+
+            if (inputs.length === 1) {
+                const input = inputs.first();
+
+                if (input.is(':checkbox')) {
+                    valor = input.is(':checked') ? 'Sim' : '';
+                } else if (input.is('select')) {
+                    const selecionadas = input.find('option:selected').map(function () {
+                        return $(this).text().trim();
+                    }).get();
+
+                    valor = selecionadas.filter(v => v !== '' && v.toLowerCase() !== 'todos').join(', ');
+                } else {
+                    valor = input.val();
+                }
+            } else if (inputs.length === 2) {
+                const v1 = $(inputs[0]).val();
+                const v2 = $(inputs[1]).val();
+
+                if (v1 || v2) {
+                    if (v1 && v2) valor = `${v1} até ${v2}`;
+                    else if (v1) valor = `a partir de ${v1}`;
+                    else valor = `até ${v2}`;
+                }
+            }
+
+            if (valor && valor !== '') {
+                filtrosAtivos.push(`<span class="badge bg-primary text-white">${label}: ${valor}</span>`);
+            }
+        });
+
+        if (filtrosAtivos.length > 0) {
+            $('#filtrosAtivos').html(filtrosAtivos.join(' '));
+        } else {
+            $('#filtrosAtivos').html('<span class="text-muted">Nenhum filtro aplicado</span>');
+        }
+    };
 
   });
