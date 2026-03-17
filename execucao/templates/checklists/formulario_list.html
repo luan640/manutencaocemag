@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+<title>Checklists Autonomos</title>
+{% endblock %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static 'css/checklist.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3 checklist-header">
+    <div>
+        <h3 class="mb-1">Checklists autonomos</h3>
+        <p class="text-muted mb-0">Gerencie formularios versionados e links publicos para preenchimento.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'checklist_respostas_historico' %}" class="btn btn-outline-secondary">Historico de respostas</a>
+        <a href="{% url 'checklist_formulario_criar' %}" class="btn btn-primary">Novo formulario</a>
+    </div>
+</div>
+
+{% if not backend_ready %}
+<div class="alert alert-warning">
+    Backend de checklist nao encontrado. Assim que os modelos forem adicionados, esta tela passa a listar os formularios.
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Titulo</th>
+                        <th>Maquina</th>
+                        <th>Versao ativa</th>
+                        <th>Total de versoes</th>
+                        <th>Link publico</th>
+                        <th class="text-center">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for formulario in formularios %}
+                    <tr>
+                        <td>{{ formulario.titulo }}</td>
+                        <td>
+                            {% if formulario.maquina %}
+                                {{ formulario.maquina.codigo }} - {{ formulario.maquina.descricao|default:"Sem descricao" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if formulario.versao_ativa %}
+                                #{{ formulario.versao_ativa.numero }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ formulario.total_versoes|default:"0" }}</td>
+                        <td style="min-width: 320px;">
+                            {% if formulario.token_publico %}
+                            <div class="input-group input-group-sm">
+                                <input type="text" readonly class="form-control" value="{{ request.scheme }}://{{ request.get_host }}{% url 'checklist_publico' formulario.token_publico %}" id="link-publico-{{ formulario.id }}">
+                                <button type="button" class="btn btn-outline-secondary btn-copiar-link" data-target="link-publico-{{ formulario.id }}">Copiar</button>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Sem token publico</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-inline-flex gap-2">
+                                <a href="{% url 'checklist_formulario_editar' formulario.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                <form method="post" action="{% url 'checklist_formulario_excluir' formulario.id %}" onsubmit="return confirm('Confirma exclusao do formulario?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Excluir</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Nenhum formulario cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.btn-copiar-link').forEach((button) => {
+    button.addEventListener('click', () => {
+        const targetId = button.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (!input) {
+            return;
+        }
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value);
+        button.textContent = 'Copiado';
+        setTimeout(() => {
+            button.textContent = 'Copiar';
+        }, 1500);
+    });
+});
+</script>
+{% endblock %}

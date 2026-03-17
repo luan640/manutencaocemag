@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Checklists Autônomos</title>
+{% endblock %}
+
+{% block links %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <div>
+        <h1 class="mb-1">Checklists autônomos</h1>
+        <p class="text-muted mb-0">Gerencie formulários versionados e links públicos para manutenções autônomas.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="button" id="new-form-button">Novo formulário</button>
+        <a href="{% url 'checklists_history_view' %}" class="btn btn-outline-primary">Ver histórico</a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <strong>Formulários cadastrados</strong>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-5">
+                <label class="form-label" for="table-machine-filter">Máquina</label>
+                <select class="form-select" id="table-machine-filter">
+                    <option value="">Todas</option>
+                    {% for maquina in maquinas %}
+                        <option value="{{ maquina.id }}">{{ maquina.codigo }}{% if maquina.descricao %} - {{ maquina.descricao }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary" type="button" id="clear-table-filter">Limpar</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Máquina</th>
+                        <th>Versão atual</th>
+                        <th>Link público</th>
+                        <th>Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="forms-table-body">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<template id="question-template">
+    <div class="card border question-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Pergunta <span class="question-index"></span></h6>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-question">Remover</button>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Texto</label>
+                <input type="text" class="form-control question-text" maxlength="255">
+            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label">Tipo</label>
+                    <select class="form-select question-type">
+                        <option value="input">Campo aberto</option>
+                        <option value="single_choice">Uma escolha</option>
+                        <option value="multiple_choice">Mais de uma escolha</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input question-required" type="checkbox" checked>
+                        <label class="form-check-label">Obrigatória</label>
+                    </div>
+                </div>
+            </div>
+            <div class="options-wrapper mt-3 d-none">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Opções</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary add-option">Adicionar opção</button>
+                </div>
+                <div class="options-container d-grid gap-2"></div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="option-template">
+    <div class="input-group option-row">
+        <input type="text" class="form-control option-value" maxlength="255" placeholder="Opção">
+        <button type="button" class="btn btn-outline-danger remove-option">Remover</button>
+    </div>
+</template>
+
+<div class="modal fade" id="checklistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="checklist-modal-title">Checklist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-alert" class="mb-3"></div>
+
+                <div id="edit-panel">
+                    <form id="builder-form" class="d-grid gap-3">
+                        {% csrf_token %}
+                        <input type="hidden" id="form-id">
+                        <div>
+                            <label class="form-label" for="form-title">Título</label>
+                            <input type="text" class="form-control" id="form-title" maxlength="160" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="machine-id">Máquina</label>
+                            <select class="form-select" id="machine-id" required>
+                                <option value="">Selecione</option>
+                                {% for maquina in maquinas %}
+                                    <option value="{{ maquina.id }}">{{ maquina.codigo }}{% if maquina.descricao %} - {{ maquina.descricao }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Perguntas</h5>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" id="add-question-button">Adicionar pergunta</button>
+                        </div>
+                        <div id="questions-container" class="d-grid gap-3"></div>
+                    </form>
+                </div>
+
+                <div id="versions-panel" class="d-none">
+                    <p class="text-muted mb-0">Carregando versões...</p>
+                </div>
+            </div>
+            <div class="modal-footer" id="edit-footer">
+                <button class="btn btn-outline-warning d-none" type="button" id="toggle-active-button">Inativar</button>
+                <button class="btn btn-outline-danger d-none" type="button" id="delete-form-button">Excluir</button>
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Fechar</button>
+                <button class="btn btn-primary" type="button" id="save-form-button">
+                    <span class="default-label">Salvar</span>
+                    <span class="loading-label d-none">Salvando...</span>
+                </button>
+            </div>
+            <div class="modal-footer d-none" id="versions-footer">
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
+<script>
+    (function () {
+        const formsEndpoint = "{% url 'api_checklist_forms' %}";
+        const detailsBase = "/checklists/api/forms/";
+        const questionTemplate = document.getElementById("question-template");
+        const optionTemplate = document.getElementById("option-template");
+        const tableBody = document.getElementById("forms-table-body");
+        const questionsContainer = document.getElementById("questions-container");
+        const versionsPanel = document.getElementById("versions-panel");
+        const modalAlert = document.getElementById("modal-alert");
+        const machineSelect = $("#machine-id");
+        const tableMachineFilter = $("#table-machine-filter");
+        const modalEl = document.getElementById("checklistModal");
+        const checklistModal = new bootstrap.Modal(modalEl);
+        const saveButton = document.getElementById("save-form-button");
+
+        machineSelect.select2({ dropdownParent: $("#checklistModal"), width: "100%", placeholder: "Selecione uma máquina", language: "pt-BR" });
+        tableMachineFilter.select2({ width: "100%", placeholder: "Todas", allowClear: true, language: "pt-BR" });
+
+        function csrfToken() {
+            const input = document.querySelector("input[name=csrfmiddlewaretoken]");
+            return input ? input.value : "";
+        }
+
+        function showAlert(message, type = "danger") {
+            modalAlert.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
+        }
+
+        function clearAlert() {
+            modalAlert.innerHTML = "";
+        }
+
+        function setSaveLoading(isLoading) {
+            saveButton.disabled = isLoading;
+            saveButton.querySelector(".default-label").classList.toggle("d-none", isLoading);
+            saveButton.querySelector(".loading-label").classList.toggle("d-none", !isLoading);
+        }
+
+        function setModalMode(mode, title) {
+            document.getElementById("checklist-modal-title").textContent = title;
+            document.getElementById("edit-panel").classList.toggle("d-none", mode !== "edit");
+            versionsPanel.classList.toggle("d-none", mode !== "versions");
+            document.getElementById("edit-footer").classList.toggle("d-none", mode !== "edit");
+            document.getElementById("versions-footer").classList.toggle("d-none", mode !== "versions");
+            clearAlert();
+        }
+
+        function refreshQuestionIndexes() {
+            questionsContainer.querySelectorAll(".question-card").forEach((card, index) => {
+                card.querySelector(".question-index").textContent = index + 1;
+            });
+        }
+
+        function addOption(card, value = "") {
+            const row = optionTemplate.content.firstElementChild.cloneNode(true);
+            row.querySelector(".option-value").value = value;
+            row.querySelector(".remove-option").addEventListener("click", () => row.remove());
+            card.querySelector(".options-container").appendChild(row);
+        }
+
+        function toggleOptions(card) {
+            const needsOptions = card.querySelector(".question-type").value !== "input";
+            const wrapper = card.querySelector(".options-wrapper");
+            const container = card.querySelector(".options-container");
+            wrapper.classList.toggle("d-none", !needsOptions);
+            if (needsOptions && container.children.length === 0) {
+                addOption(card);
+                addOption(card);
+            }
+        }
+
+        function addQuestion(data = null) {
+            const card = questionTemplate.content.firstElementChild.cloneNode(true);
+            card.querySelector(".question-text").value = data?.text || "";
+            card.querySelector(".question-type").value = data?.type || "input";
+            card.querySelector(".question-required").checked = data?.required !== false;
+            card.querySelector(".remove-question").addEventListener("click", () => {
+                card.remove();
+                refreshQuestionIndexes();
+            });
+            card.querySelector(".question-type").addEventListener("change", () => toggleOptions(card));
+            card.querySelector(".add-option").addEventListener("click", () => addOption(card));
+            questionsContainer.appendChild(card);
+            if (Array.isArray(data?.options)) {
+                data.options.forEach((option) => addOption(card, option.value || option));
+            }
+            toggleOptions(card);
+            refreshQuestionIndexes();
+        }
+
+        function collectQuestions() {
+            return Array.from(questionsContainer.querySelectorAll(".question-card")).map((card, index) => ({
+                order: index + 1,
+                text: card.querySelector(".question-text").value.trim(),
+                type: card.querySelector(".question-type").value,
+                required: card.querySelector(".question-required").checked,
+                options: Array.from(card.querySelectorAll(".option-value")).map((input) => input.value.trim()).filter(Boolean),
+            })).filter((item) => item.text);
+        }
+
+        function resetEditor() {
+            document.getElementById("form-id").value = "";
+            document.getElementById("form-title").value = "";
+            machineSelect.val("").trigger("change");
+            document.getElementById("toggle-active-button").className = "btn btn-outline-warning d-none";
+            document.getElementById("toggle-active-button").textContent = "Inativar";
+            document.getElementById("delete-form-button").classList.add("d-none");
+            questionsContainer.innerHTML = "";
+            addQuestion();
+        }
+
+        async function loadVersions(formId, formTitle) {
+            setModalMode("versions", `Versões: ${formTitle}`);
+            versionsPanel.innerHTML = '<p class="text-muted mb-0">Carregando versões...</p>';
+            checklistModal.show();
+            const response = await fetch(`${detailsBase}${formId}/versions/`);
+            const data = await response.json();
+            if (!response.ok) {
+                versionsPanel.innerHTML = `<p class="text-danger mb-0">${data.error || "Erro ao carregar versões."}</p>`;
+                return;
+            }
+            if (!data.versions.length) {
+                versionsPanel.innerHTML = '<p class="text-muted mb-0">Sem versões disponíveis.</p>';
+                return;
+            }
+            versionsPanel.innerHTML = data.versions.map((version) => `
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Versão ${version.number}</strong>
+                        <small class="text-muted">${new Date(version.created_at).toLocaleString("pt-BR")}</small>
+                    </div>
+                    <div class="text-muted mb-2">${version.machine.codigo}${version.machine.descricao ? ` - ${version.machine.descricao}` : ""}</div>
+                    <ul class="mb-0">
+                        ${version.questions.map((question) => `<li>${question.text} <span class="text-muted">(${question.type})</span></li>`).join("")}
+                    </ul>
+                </div>
+            `).join("");
+        }
+
+        async function loadFormIntoEditor(formId) {
+            setModalMode("edit", "Editar formulário");
+            resetEditor();
+            checklistModal.show();
+            const response = await fetch(`${detailsBase}${formId}/`);
+            const data = await response.json();
+            if (!response.ok) {
+                showAlert(data.error || "Não foi possível carregar o formulário.");
+                return;
+            }
+            document.getElementById("form-id").value = data.form.id;
+            document.getElementById("form-title").value = data.form.title;
+            machineSelect.val(String(data.form.machine.id)).trigger("change");
+            const toggleActiveButton = document.getElementById("toggle-active-button");
+            toggleActiveButton.className = data.form.active ? "btn btn-outline-warning" : "btn btn-outline-success";
+            toggleActiveButton.textContent = data.form.active ? "Inativar" : "Ativar";
+            document.getElementById("delete-form-button").classList.remove("d-none");
+            questionsContainer.innerHTML = "";
+            data.version.questions.forEach((question) => addQuestion(question));
+        }
+
+        async function loadForms() {
+            const params = new URLSearchParams();
+            if (tableMachineFilter.val()) {
+                params.set("maquina_id", tableMachineFilter.val());
+            }
+            const response = await fetch(`${formsEndpoint}?${params.toString()}`);
+            const data = await response.json();
+            if (!response.ok) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.error || "Erro ao carregar formulários."}</td></tr>`;
+                return;
+            }
+            if (!data.forms.length) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhum formulário cadastrado.</td></tr>';
+                return;
+            }
+            tableBody.innerHTML = data.forms.map((form) => `
+                <tr>
+                    <td>${form.title}</td>
+                    <td>${form.machine.codigo}${form.machine.descricao ? ` - ${form.machine.descricao}` : ""}</td>
+                    <td>${form.current_version || "-"}</td>
+                    <td>${form.public_url ? `<a href="${form.public_url}" target="_blank">Abrir</a>` : "-"}</td>
+                    <td><span class="badge ${form.active ? "text-bg-success" : "text-bg-secondary"}">${form.active ? "Ativo" : "Inativo"}</span></td>
+                    <td class="text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary edit-form" data-id="${form.id}" title="Editar" aria-label="Editar">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <a class="btn btn-sm btn-outline-secondary" href="/checklists/${form.id}/qrcode/" target="_blank" title="QR Code" aria-label="QR Code">
+                                <i class="bi bi-qr-code"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-dark view-versions" data-id="${form.id}" data-title="${form.title}" title="Versões" aria-label="Versões">
+                                <i class="bi bi-clock-history"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+            tableBody.querySelectorAll(".edit-form").forEach((button) => {
+                button.addEventListener("click", () => loadFormIntoEditor(button.dataset.id));
+            });
+            tableBody.querySelectorAll(".view-versions").forEach((button) => {
+                button.addEventListener("click", () => loadVersions(button.dataset.id, button.dataset.title));
+            });
+        }
+
+        async function saveForm() {
+            const formId = document.getElementById("form-id").value;
+            const payload = {
+                title: document.getElementById("form-title").value.trim(),
+                machine_id: machineSelect.val(),
+                questions: collectQuestions(),
+            };
+            if (!payload.title || !payload.machine_id || !payload.questions.length) {
+                showAlert("Preencha título, máquina e pelo menos uma pergunta.");
+                return;
+            }
+
+            setSaveLoading(true);
+            try {
+                const response = await fetch(formId ? `${detailsBase}${formId}/` : formsEndpoint, {
+                    method: formId ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showAlert(data.error || "Não foi possível salvar o formulário.");
+                    return;
+                }
+                checklistModal.hide();
+                await loadForms();
+            } finally {
+                setSaveLoading(false);
+            }
+        }
+
+        async function toggleFormActive() {
+            const formId = document.getElementById("form-id").value;
+            const toggleActiveButton = document.getElementById("toggle-active-button");
+            const activate = toggleActiveButton.textContent.trim() === "Ativar";
+            const confirmationMessage = activate
+                ? "Ativar este formulário novamente?"
+                : "Inativar este formulário? O link público deixará de aceitar novos envios.";
+            if (!formId || !confirm(confirmationMessage)) {
+                return;
+            }
+            const response = await fetch(`${detailsBase}${formId}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+                body: JSON.stringify({ action: activate ? "activate" : "inactivate" }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                showAlert(data.error || "Não foi possível alterar o status do formulário.");
+                return;
+            }
+            checklistModal.hide();
+            await loadForms();
+        }
+
+        async function deleteForm() {
+            const formId = document.getElementById("form-id").value;
+            if (!formId || !confirm("Excluir este formulário e todas as respostas vinculadas? Esta ação não poderá ser desfeita.")) {
+                return;
+            }
+            const response = await fetch(`${detailsBase}${formId}/`, {
+                method: "DELETE",
+                headers: { "X-CSRFToken": csrfToken() },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                showAlert(data.error || "Não foi possível excluir o formulário.");
+                return;
+            }
+            checklistModal.hide();
+            await loadForms();
+        }
+
+        document.getElementById("new-form-button").addEventListener("click", () => {
+            setModalMode("edit", "Novo formulário");
+            resetEditor();
+            checklistModal.show();
+        });
+        tableMachineFilter.on("change", loadForms);
+        document.getElementById("clear-table-filter").addEventListener("click", () => {
+            tableMachineFilter.val("").trigger("change");
+        });
+        document.getElementById("add-question-button").addEventListener("click", () => addQuestion());
+        document.getElementById("save-form-button").addEventListener("click", saveForm);
+        document.getElementById("toggle-active-button").addEventListener("click", toggleFormActive);
+        document.getElementById("delete-form-button").addEventListener("click", deleteForm);
+
+        setSaveLoading(false);
+        resetEditor();
+        loadForms();
+    })();
+</script>
+{% endblock %}

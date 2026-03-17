@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Excluir Checklist</title>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                Confirmar exclusao
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    Deseja excluir o formulario <strong>{{ formulario.titulo }}</strong>?
+                </p>
+                <p class="text-muted small">
+                    Esta acao remove o formulario e suas versoes.
+                </p>
+                <form method="post" class="d-flex justify-content-end gap-2">
+                    {% csrf_token %}
+                    <a href="{% url 'checklist_formulario_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

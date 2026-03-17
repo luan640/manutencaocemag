@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+<title>{% if is_edit_mode %}Editar{% else %}Novo{% endif %} Checklist</title>
+{% endblock %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static 'css/checklist.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="mb-1">{% if is_edit_mode %}Editar formulario{% else %}Novo formulario{% endif %}</h3>
+                <p class="text-muted mb-0">Ao salvar edicao, uma nova versao do formulario sera criada.</p>
+            </div>
+            <a href="{% url 'checklist_formulario_list' %}" class="btn btn-outline-secondary">Voltar</a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post" id="checklist-builder-form">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+                        {{ form.titulo }}
+                        {% if form.titulo.errors %}
+                        <div class="text-danger small mt-1">{{ form.titulo.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.maquina.id_for_label }}">{{ form.maquina.label }}</label>
+                        {{ form.maquina }}
+                        {% if form.maquina.errors %}
+                        <div class="text-danger small mt-1">{{ form.maquina.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    {{ form.perguntas_json }}
+                    {% if form.perguntas_json.errors %}
+                    <div class="alert alert-danger">{{ form.perguntas_json.errors|striptags }}</div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Perguntas</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-pergunta">
+                            Adicionar pergunta
+                        </button>
+                    </div>
+
+                    <div id="perguntas-container" class="d-grid gap-3"></div>
+
+                    <div class="checklist-note mt-3">
+                        <strong>Imagem obrigatoria:</strong> o upload de imagem e sempre exigido no formulario publico.
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'checklist_formulario_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Salvar formulario</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card">
+            <div class="card-header">
+                <strong>Versoes</strong>
+            </div>
+            <div class="card-body">
+                {% if versoes %}
+                <ul class="list-group list-group-flush">
+                    {% for versao in versoes %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <span>Versao #{{ versao.numero }}</span>
+                        <small class="text-muted">{{ versao.criado_em|date:"d/m/Y H:i"|default:"sem data" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">Sem versoes anteriores.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if formulario and formulario.token_publico %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <strong>Link publico</strong>
+            </div>
+            <div class="card-body">
+                <div class="input-group input-group-sm">
+                    <input type="text" readonly class="form-control" value="{{ request.scheme }}://{{ request.get_host }}{% url 'checklist_publico' formulario.token_publico %}" id="checklist-public-link">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-copy-public-link">Copiar</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/checklist-form-builder.js' %}"></script>
+<script>
+const copyButton = document.getElementById('btn-copy-public-link');
+if (copyButton) {
+    copyButton.addEventListener('click', () => {
+        const input = document.getElementById('checklist-public-link');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value);
+        copyButton.textContent = 'Copiado';
+        setTimeout(() => {
+            copyButton.textContent = 'Copiar';
+        }, 1500);
+    });
+}
+</script>
+{% endblock %}

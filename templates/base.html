@@ -178,6 +178,23 @@
                             </div>
                         {% endif %}
                         
+                        {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
+                                data-bs-target="#collapseAutonomas" aria-expanded="false" aria-controls="collapseAutonomas">
+                                <div class="sb-nav-link-icon"><i class="fas fa-list-check"></i></div>
+                                Autônomas
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapseAutonomas" aria-labelledby="headingOne"
+                                data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{% url 'checklists_manage_view' %}">Checklists</a>
+                                    <a class="nav-link" href="{% url 'checklists_history_view' %}">Respostas</a>
+                                    <a class="nav-link" href="{% url 'checklists_calendar_view' %}">Calendário</a>
+                                </nav>
+                            </div>
+                        {% endif %}
+                        
                         {% if request.user.is_staff %}
                             <!-- Apenas staff -->
                             <div class="collapse" id="collapseProgresso" aria-labelledby="headingOne"

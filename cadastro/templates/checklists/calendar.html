@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Calendário de Autônomas</title>
+{% endblock %}
+
+{% block links %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+    #autonomous-calendar {
+        min-height: 760px;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.35rem;
+        font-weight: 600;
+    }
+
+    .fc .fc-button {
+        text-transform: capitalize;
+    }
+
+    .fc .fc-daygrid-event,
+    .fc .fc-timegrid-event {
+        border-radius: 10px;
+        border: 0;
+        padding: 2px 4px;
+    }
+
+    .fc .fc-event-title {
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <div>
+        <h1 class="mb-1">Calendário de autônomas</h1>
+        <p class="text-muted mb-0">Visualize as manutenções autônomas realizadas em formato de agenda.</p>
+    </div>
+    <a href="{% url 'checklists_history_view' %}" class="btn btn-outline-secondary">Ver histórico</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form id="calendar-filters" class="row g-3 align-items-end">
+            <div class="col-md-5 col-lg-4">
+                <label class="form-label" for="calendar-machine-filter">Máquina</label>
+                <select class="form-select" id="calendar-machine-filter" name="maquina_id">
+                    <option value="">Todas</option>
+                    {% for maquina in maquinas %}
+                        <option value="{{ maquina.id }}">{{ maquina.codigo }}{% if maquina.descricao %} - {{ maquina.descricao }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button class="btn btn-primary" type="button" id="calendar-refresh-button">Atualizar</button>
+            </div>
+            <div class="col-md-auto">
+                <button class="btn btn-outline-secondary" type="button" id="calendar-clear-button">Limpar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div id="autonomous-calendar"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="calendarEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Autônoma realizada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase">Data</div>
+                        <div class="fw-semibold" id="event-date">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase">Registrado em</div>
+                        <div class="fw-semibold" id="event-created-at">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase">Máquina</div>
+                        <div class="fw-semibold" id="event-machine">-</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-muted small text-uppercase">Funcionário</div>
+                        <div class="fw-semibold" id="event-employee">-</div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="text-muted small text-uppercase">Checklist</div>
+                        <div class="fw-semibold" id="event-form">-</div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="text-muted small text-uppercase">Observações</div>
+                        <div class="fw-semibold" id="event-notes">-</div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="text-muted small text-uppercase">Imagem</div>
+                        <div id="event-image-wrapper">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-dark" href="#" target="_blank" id="event-pdf-link">Gerar PDF</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/locales-all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
+<script>
+    (function () {
+        const calendarEl = document.getElementById("autonomous-calendar");
+        const machineFilter = $("#calendar-machine-filter");
+        const eventModal = new bootstrap.Modal(document.getElementById("calendarEventModal"));
+        const apiEndpoint = "{% url 'api_checklist_calendar' %}";
+
+        machineFilter.select2({
+            width: "100%",
+            placeholder: "Todas",
+            allowClear: true,
+            language: "pt-BR"
+        });
+
+        function formatDatePtBr(value) {
+            if (!value) {
+                return "-";
+            }
+            const date = new Date(`${value}T00:00:00`);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleDateString("pt-BR");
+        }
+
+        function openEventModal(event) {
+            const props = event.extendedProps || {};
+            document.getElementById("event-date").textContent = formatDatePtBr(event.startStr);
+            document.getElementById("event-created-at").textContent = props.created_at || "-";
+            document.getElementById("event-machine").textContent = props.machine_label || "-";
+            document.getElementById("event-employee").textContent = props.employee_name
+                ? `${props.employee_name}${props.employee_badge ? ` - ${props.employee_badge}` : ""}`
+                : "-";
+            document.getElementById("event-form").textContent = props.form_title
+                ? `${props.form_title} (v${props.form_version})`
+                : "-";
+            document.getElementById("event-notes").textContent = props.notes || "-";
+            document.getElementById("event-pdf-link").href = event.url || "#";
+            document.getElementById("event-image-wrapper").innerHTML = props.image_url
+                ? `<a href="${props.image_url}" target="_blank">Abrir imagem anexada</a>`
+                : "-";
+            eventModal.show();
+        }
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: "pt-br",
+            initialView: "dayGridMonth",
+            height: "auto",
+            firstDay: 1,
+            headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+            },
+            buttonText: {
+                today: "Hoje",
+                month: "Mês",
+                week: "Semana",
+                day: "Dia",
+                list: "Agenda"
+            },
+            events: async function (info, successCallback, failureCallback) {
+                try {
+                    const params = new URLSearchParams({
+                        start: info.startStr.slice(0, 10),
+                        end: info.endStr.slice(0, 10)
+                    });
+                    if (machineFilter.val()) {
+                        params.set("maquina_id", machineFilter.val());
+                    }
+                    const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || "Não foi possível carregar o calendário.");
+                    }
+                    successCallback(data.events);
+                } catch (error) {
+                    failureCallback(error);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Erro ao carregar o calendário",
+                        text: error.message || "Não foi possível buscar as autônomas realizadas."
+                    });
+                }
+            },
+            eventClick: function (info) {
+                info.jsEvent.preventDefault();
+                openEventModal(info.event);
+            }
+        });
+
+        document.getElementById("calendar-refresh-button").addEventListener("click", function () {
+            calendar.refetchEvents();
+        });
+
+        document.getElementById("calendar-clear-button").addEventListener("click", function () {
+            machineFilter.val("").trigger("change");
+            calendar.refetchEvents();
+        });
+
+        machineFilter.on("change", function () {
+            calendar.refetchEvents();
+        });
+
+        calendar.render();
+    })();
+</script>
+{% endblock %}

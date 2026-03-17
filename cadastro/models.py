@@ -1,3 +1,6 @@
+import uuid
+from datetime import date
+
 from django.db import models
 
 class Setor(models.Model):
@@ -88,3 +91,164 @@ class ItensCheckList(models.Model):
 
     nome = models.CharField(max_length=100)
     checklist = models.ForeignKey(Checklist, on_delete=models.CASCADE, related_name='itens')
+
+
+class ChecklistFormulario(models.Model):
+    titulo = models.CharField(max_length=160)
+    maquina = models.ForeignKey(
+        Maquina,
+        on_delete=models.PROTECT,
+        related_name='checklist_formularios',
+    )
+    criado_por = models.ForeignKey(
+        'funcionario.Funcionario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='checklists_formulario_criados',
+    )
+    ativo = models.BooleanField(default=True)
+    token_publico = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    versao_atual = models.ForeignKey(
+        'ChecklistFormularioVersao',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+
+    class Meta:
+        ordering = ('-atualizado_em',)
+
+    def __str__(self):
+        return f'{self.titulo} - {self.maquina.codigo}'
+
+
+class ChecklistFormularioVersao(models.Model):
+    formulario = models.ForeignKey(
+        ChecklistFormulario,
+        on_delete=models.CASCADE,
+        related_name='versoes',
+    )
+    numero = models.PositiveIntegerField()
+    titulo = models.CharField(max_length=160)
+    maquina = models.ForeignKey(
+        Maquina,
+        on_delete=models.PROTECT,
+        related_name='checklist_versoes',
+    )
+    criado_por = models.ForeignKey(
+        'funcionario.Funcionario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='checklists_versao_criados',
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('formulario', 'numero')
+        ordering = ('-numero',)
+
+    def __str__(self):
+        return f'{self.formulario_id} v{self.numero}'
+
+
+class ChecklistPergunta(models.Model):
+    TIPO_INPUT = 'input'
+    TIPO_ESCOLHA_UNICA = 'single_choice'
+    TIPO_MULTIPLA_ESCOLHA = 'multiple_choice'
+
+    TIPO_CHOICES = (
+        (TIPO_INPUT, 'Input'),
+        (TIPO_ESCOLHA_UNICA, 'Escolha unica'),
+        (TIPO_MULTIPLA_ESCOLHA, 'Multipla escolha'),
+    )
+
+    versao = models.ForeignKey(
+        ChecklistFormularioVersao,
+        on_delete=models.CASCADE,
+        related_name='perguntas',
+    )
+    ordem = models.PositiveIntegerField(default=1)
+    texto = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    obrigatoria = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ('ordem', 'id')
+
+    def __str__(self):
+        return self.texto
+
+
+class ChecklistPerguntaOpcao(models.Model):
+    pergunta = models.ForeignKey(
+        ChecklistPergunta,
+        on_delete=models.CASCADE,
+        related_name='opcoes',
+    )
+    valor = models.CharField(max_length=255)
+    ordem = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ('ordem', 'id')
+
+    def __str__(self):
+        return self.valor
+
+
+class ChecklistResposta(models.Model):
+    formulario = models.ForeignKey(
+        ChecklistFormulario,
+        on_delete=models.PROTECT,
+        related_name='respostas',
+    )
+    versao = models.ForeignKey(
+        ChecklistFormularioVersao,
+        on_delete=models.PROTECT,
+        related_name='respostas',
+    )
+    maquina = models.ForeignKey(
+        Maquina,
+        on_delete=models.PROTECT,
+        related_name='checklist_respostas',
+    )
+    funcionario = models.ForeignKey(
+        'funcionario.Funcionario',
+        on_delete=models.PROTECT,
+        related_name='checklist_respostas',
+    )
+    data_referencia = models.DateField(default=date.today)
+    observacoes = models.TextField(blank=True, null=True)
+    imagem = models.ImageField(upload_to='checklists/respostas/', null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-criado_em',)
+
+    def __str__(self):
+        return f'Resposta {self.id} - Form {self.formulario_id}'
+
+
+class ChecklistRespostaItem(models.Model):
+    resposta = models.ForeignKey(
+        ChecklistResposta,
+        on_delete=models.CASCADE,
+        related_name='itens',
+    )
+    pergunta = models.ForeignKey(
+        ChecklistPergunta,
+        on_delete=models.PROTECT,
+        related_name='respostas_itens',
+    )
+    texto_resposta = models.TextField(blank=True, null=True)
+    opcoes_selecionadas = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        unique_together = ('resposta', 'pergunta')
+
+    def __str__(self):
+        return f'Resposta {self.resposta_id} / Pergunta {self.pergunta_id}'

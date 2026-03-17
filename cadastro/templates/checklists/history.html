@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Histórico de Checklists</title>
+{% endblock %}
+
+{% block links %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <div>
+        <h1 class="mb-1">Histórico de respostas</h1>
+        <p class="text-muted mb-0">Filtre por máquina ou formulário e consulte o que foi respondido em cada versão.</p>
+    </div>
+    <a href="{% url 'checklists_manage_view' %}" class="btn btn-outline-secondary">Gerenciar formulários</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Realizadas hoje</div>
+                <div class="display-6 fw-semibold">{{ indicadores.hoje }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Realizadas esta semana</div>
+                <div class="display-6 fw-semibold">{{ indicadores.semana }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Realizadas este mês</div>
+                <div class="display-6 fw-semibold">{{ indicadores.mes }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Realizadas no período selecionado</div>
+                <div class="display-6 fw-semibold" id="indicador-periodo">0</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form id="history-filters" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Máquina</label>
+                <select class="form-select" name="maquina_id">
+                    <option value="">Todas</option>
+                    {% for maquina in maquinas %}
+                        <option value="{{ maquina.id }}">{{ maquina.codigo }}{% if maquina.descricao %} - {{ maquina.descricao }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Formulário</label>
+                <select class="form-select" name="form_id">
+                    <option value="">Todos</option>
+                    {% for formulario in formularios %}
+                        <option value="{{ formulario.id }}">{{ formulario.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Início</label>
+                <input class="form-control" type="date" name="start_date">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fim</label>
+                <input class="form-control" type="date" name="end_date">
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Filtrar</button>
+                <button class="btn btn-outline-secondary" type="button" id="clear-history-filters">Limpar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <strong>Respostas encontradas</strong>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Máquina</th>
+                        <th>Formulário</th>
+                        <th>Funcionário</th>
+                        <th>Imagem</th>
+                        <th class="text-end">PDF</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <tr><td colspan="6" class="text-center text-muted">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/pt-BR.js"></script>
+<script>
+    (function () {
+        const filtersForm = document.getElementById("history-filters");
+        const tbody = document.getElementById("history-table-body");
+        const endpoint = "{% url 'api_checklist_responses' %}";
+
+        $("select[name='maquina_id']").select2({
+            width: "100%",
+            placeholder: "Todas",
+            allowClear: true,
+            language: "pt-BR"
+        });
+
+        $("select[name='form_id']").select2({
+            width: "100%",
+            placeholder: "Todos",
+            allowClear: true,
+            language: "pt-BR"
+        });
+
+        function queryString() {
+            const params = new URLSearchParams(new FormData(filtersForm));
+            for (const [key, value] of Array.from(params.entries())) {
+                if (!value) {
+                    params.delete(key);
+                }
+            }
+            return params.toString();
+        }
+
+        function formatDatePtBr(value) {
+            if (!value) {
+                return "-";
+            }
+            const [year, month, day] = String(value).split("-");
+            if (!year || !month || !day) {
+                return value;
+            }
+            return `${day}/${month}/${year}`;
+        }
+
+        async function loadResponses() {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Carregando...</td></tr>';
+            const response = await fetch(`${endpoint}?${queryString()}`);
+            const data = await response.json();
+            if (!response.ok) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${data.error || "Erro ao carregar respostas."}</td></tr>`;
+                return;
+            }
+            document.getElementById("indicador-periodo").textContent = data.responses.length;
+            if (!data.responses.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhuma resposta encontrada.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.responses.map((item) => `
+                <tr>
+                    <td>${formatDatePtBr(item.date)}</td>
+                    <td>${item.machine.codigo}</td>
+                    <td>${item.form.title}<br><small class="text-muted">Versão ${item.form.version}</small></td>
+                    <td>${item.employee.nome}</td>
+                    <td>${item.image_url ? `<a href="${item.image_url}" target="_blank">Abrir</a>` : "-"}</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-dark" href="/checklists/respostas/${item.id}/pdf/" target="_blank">Gerar PDF</a>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        filtersForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            loadResponses();
+        });
+
+        document.getElementById("clear-history-filters").addEventListener("click", () => {
+            filtersForm.reset();
+            loadResponses();
+        });
+
+        loadResponses();
+    })();
+</script>
+{% endblock %}

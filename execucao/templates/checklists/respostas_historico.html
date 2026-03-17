@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+<title>Historico de Checklists</title>
+{% endblock %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static 'css/checklist.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3 checklist-header">
+    <div>
+        <h3 class="mb-1">Historico de respostas</h3>
+        <p class="text-muted mb-0">Visualize todas as respostas dos checklists por maquina e formulario.</p>
+    </div>
+    <a href="{% url 'checklist_formulario_list' %}" class="btn btn-outline-secondary">Voltar para formularios</a>
+</div>
+
+{% if not backend_ready %}
+<div class="alert alert-warning">
+    Backend de checklist nao encontrado. Esta tela sera habilitada apos a disponibilizacao dos modelos.
+</div>
+{% else %}
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="filtro-maquina">Maquina</label>
+                <select name="maquina" id="filtro-maquina" class="form-select">
+                    <option value="">Todas</option>
+                    {% for maquina in maquinas %}
+                    <option value="{{ maquina.id }}" {% if filtro_maquina == maquina.id|stringformat:'s' %}selected{% endif %}>
+                        {{ maquina.codigo }} - {{ maquina.descricao|default:"Sem descricao" }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="filtro-formulario">Formulario</label>
+                <select name="formulario" id="filtro-formulario" class="form-select">
+                    <option value="">Todos</option>
+                    {% for formulario in formularios %}
+                    <option value="{{ formulario.id }}" {% if filtro_formulario == formulario.id|stringformat:'s' %}selected{% endif %}>
+                        {{ formulario.titulo }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'checklist_respostas_historico' %}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Data</th>
+                        <th>Formulario</th>
+                        <th>Versao</th>
+                        <th>Maquina</th>
+                        <th>Funcionario</th>
+                        <th>Observacoes</th>
+                        <th>Imagem</th>
+                        <th>Respostas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resposta in respostas %}
+                    <tr>
+                        <td>{{ resposta.data_registro|date:"d/m/Y" }}</td>
+                        <td>{{ resposta.formulario.titulo }}</td>
+                        <td>
+                            {% if resposta.versao %}
+                                #{{ resposta.versao.numero }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if resposta.maquina %}
+                                {{ resposta.maquina.codigo }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ resposta.funcionario.nome|default:resposta.funcionario }}</td>
+                        <td>{{ resposta.observacoes|default:"-" }}</td>
+                        <td>
+                            {% if resposta.imagem %}
+                                <a href="{{ resposta.imagem.url }}" target="_blank" rel="noopener">Abrir</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="min-width: 260px;">
+                            <details>
+                                <summary>Ver respostas</summary>
+                                <ul class="mb-0 mt-2 checklist-answer-list">
+                                    {% for item in resposta.respostas_render %}
+                                    <li>
+                                        <strong>{{ item.pergunta }}:</strong>
+                                        {{ item.resposta_texto }}
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-muted">Sem detalhes de resposta.</li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">Nenhuma resposta encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
