@@ -406,9 +406,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     manutencaoItem.innerHTML =
                         '<strong>' + (manutencao.maquina || '') + '</strong> - ' + (manutencao.plano || '') +
                         '<br><small>Planejada: ' + (manutencao.data_planejada || manutencao.data || '') + '</small>' +
-                        (manutencao.data_preventiva_real
-                            ? '<br><small class="' + (manutencao.divergencia_data ? 'data-divergente' : 'data-real') + '">Preventiva real: ' + manutencao.data_preventiva_real + '</small>'
-                            : '') +
                         (manutencao.data_abertura_real
                             ? '<br><small class="data-real">OS aberta em: ' + manutencao.data_abertura_real + '</small>'
                             : '') +
@@ -522,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function () {
         adicionarLinha(modalBody, 'Maquina', manutencao.maquina || '-');
         adicionarLinha(modalBody, 'Plano', manutencao.plano || '-');
         adicionarLinha(modalBody, 'Data planejada', manutencao.data_planejada || manutencao.data || '-');
-        adicionarLinha(modalBody, 'Data preventiva real', manutencao.data_preventiva_real || '-');
         adicionarLinha(modalBody, 'Data abertura OS', manutencao.data_abertura_real || '-');
         adicionarLinha(
             modalBody,
