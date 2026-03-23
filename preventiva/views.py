@@ -334,7 +334,9 @@ def calcular_manutencoes_semanais(request):
                 pp.id AS plano_id,
                 ss.status_andamento,
                 ss.status AS status_aprovacao,
-                ss.comentario_manutencao
+                ss.comentario_manutencao,
+                ss.data_abertura,
+                ps.data AS data_preventiva
             FROM manutencao_v3.solicitacao_solicitacao ss
             LEFT JOIN manutencao_v3.preventiva_solicitacaopreventiva ps 
                 ON ss.id = ps.ordem_id
@@ -408,16 +410,31 @@ def calcular_manutencoes_semanais(request):
                     status_aprovacao = ordem['status_aprovacao']
                     numero_ordem = ordem['id']
                     comentario_manutencao = ordem['comentario_manutencao']
+                    data_abertura_real = ordem['data_abertura']
+                    data_preventiva_real = ordem['data_preventiva']
                 else:
                     status = 'não encontrada'
                     status_aprovacao = None
                     numero_ordem = None
                     comentario_manutencao = None
+                    data_abertura_real = None
+                    data_preventiva_real = None
+
+                data_planejada = maintenance_date.date()
+                divergencia_data = bool(
+                    data_preventiva_real and data_preventiva_real != data_planejada
+                )
 
                 weeks[week_index]['manutencoes'].append({
                     'maquina': plano.maquina.codigo,
                     'plano': plano.nome,
-                    'data': maintenance_date.strftime('%d/%m/%Y'),
+                    'data': data_planejada.strftime('%d/%m/%Y'),
+                    'data_planejada': data_planejada.strftime('%d/%m/%Y'),
+                    'data_abertura_real': data_abertura_real.strftime('%d/%m/%Y %H:%M')
+                    if data_abertura_real else None,
+                    'data_preventiva_real': data_preventiva_real.strftime('%d/%m/%Y')
+                    if data_preventiva_real else None,
+                    'divergencia_data': divergencia_data,
                     'status_manutencao': status,
                     'status_aprovacao': status_aprovacao,
                     'ordem': numero_ordem,

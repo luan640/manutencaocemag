@@ -113,6 +113,19 @@ Manutenções Semanais
         background-color: #0369a1;
     }
 
+    .data-real {
+        display: block;
+        margin-top: 2px;
+        color: #0f766e;
+    }
+
+    .data-divergente {
+        display: block;
+        margin-top: 2px;
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
     .modal-backdrop {
         position: fixed;
         inset: 0;
@@ -272,6 +285,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                     maquina: ev.maquina,
                                     plano: ev.plano,
                                     data: ev.data,
+                                    data_planejada: ev.data_planejada,
+                                    data_abertura_real: ev.data_abertura_real,
+                                    data_preventiva_real: ev.data_preventiva_real,
+                                    divergencia_data: ev.divergencia_data,
                                     status_manutencao: ev.status_manutencao,
                                     status_aprovacao: ev.status_aprovacao,
                                     numero_ordem: ev.ordem,
@@ -388,7 +405,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     manutencaoItem.innerHTML =
                         '<strong>' + (manutencao.maquina || '') + '</strong> - ' + (manutencao.plano || '') +
-                        '<br><small>' + (manutencao.data || '') + '</small>' +
+                        '<br><small>Planejada: ' + (manutencao.data_planejada || manutencao.data || '') + '</small>' +
+                        (manutencao.data_preventiva_real
+                            ? '<br><small class="' + (manutencao.divergencia_data ? 'data-divergente' : 'data-real') + '">Preventiva real: ' + manutencao.data_preventiva_real + '</small>'
+                            : '') +
+                        (manutencao.data_abertura_real
+                            ? '<br><small class="data-real">OS aberta em: ' + manutencao.data_abertura_real + '</small>'
+                            : '') +
                         '<br><small>' + statusFormatado + '</small>' +
                         (manutencao.numero_ordem ? '<br><small>Ordem: ' + manutencao.numero_ordem + '</small>' : '');
 
@@ -498,7 +521,14 @@ document.addEventListener('DOMContentLoaded', function () {
         modalBody.innerHTML = '';
         adicionarLinha(modalBody, 'Maquina', manutencao.maquina || '-');
         adicionarLinha(modalBody, 'Plano', manutencao.plano || '-');
-        adicionarLinha(modalBody, 'Data prevista', manutencao.data || '-');
+        adicionarLinha(modalBody, 'Data planejada', manutencao.data_planejada || manutencao.data || '-');
+        adicionarLinha(modalBody, 'Data preventiva real', manutencao.data_preventiva_real || '-');
+        adicionarLinha(modalBody, 'Data abertura OS', manutencao.data_abertura_real || '-');
+        adicionarLinha(
+            modalBody,
+            'Divergencia de data',
+            manutencao.divergencia_data ? 'Sim' : 'Nao'
+        );
         adicionarLinha(modalBody, 'Status', statusFormatado || '-');
         adicionarLinha(modalBody, 'Aprovacao', formatarAprovacao(manutencao.status_aprovacao));
         adicionarLinha(modalBody, 'Ordem', manutencao.numero_ordem ? String(manutencao.numero_ordem) : '-');
