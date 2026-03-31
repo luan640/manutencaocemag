@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}
+<title>Criar Acesso de Operador</title>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h2 class="h4 mb-1">Novo acesso de operador</h2>
+              <p class="text-muted mb-0">Crie login para operadores usarem a plataforma.</p>
+            </div>
+            <span class="badge text-bg-dark">Operador</span>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.tipo_acesso }}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.matricula.id_for_label }}">Matricula</label>
+              {{ form.matricula }}
+              {% if form.matricula.errors %}
+                <div class="text-danger small mt-1">{{ form.matricula.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.nome.id_for_label }}">Nome</label>
+              {{ form.nome }}
+              {% if form.nome.errors %}
+                <div class="text-danger small mt-1">{{ form.nome.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.area.id_for_label }}">Area</label>
+              {{ form.area }}
+              {% if form.area.errors %}
+                <div class="text-danger small mt-1">{{ form.area.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.telefone.id_for_label }}">Telefone</label>
+              {{ form.telefone }}
+              {% if form.telefone.errors %}
+                <div class="text-danger small mt-1">{{ form.telefone.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.password1.id_for_label }}">Senha inicial</label>
+              {{ form.password1 }}
+              {% if form.password1.errors %}
+                <div class="text-danger small mt-1">{{ form.password1.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label" for="{{ form.password2.id_for_label }}">Confirmacao da senha</label>
+              {{ form.password2 }}
+              {% if form.password2.errors %}
+                <div class="text-danger small mt-1">{{ form.password2.errors|striptags }}</div>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100">Criar acesso</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h3 class="h5 mb-1">Acessos de operadores</h3>
+              <p class="text-muted mb-0">Usuarios ja cadastrados com perfil de operador.</p>
+            </div>
+            <span class="badge text-bg-secondary">{{ operadores|length }} cadastrados</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Matricula</th>
+                  <th>Nome</th>
+                  <th>Area</th>
+                  <th>Telefone</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for operador in operadores %}
+                  <tr>
+                    <td>{{ operador.matricula }}</td>
+                    <td>{{ operador.nome }}</td>
+                    <td>{{ operador.get_area_display|default:'-' }}</td>
+                    <td>{{ operador.telefone|default:'-' }}</td>
+                    <td>
+                      {% if operador.is_active %}
+                        <span class="badge text-bg-success">Ativo</span>
+                      {% else %}
+                        <span class="badge text-bg-secondary">Inativo</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                      Nenhum acesso de operador cadastrado ainda.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

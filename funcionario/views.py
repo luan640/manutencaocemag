@@ -1,15 +1,33 @@
-from django.shortcuts import render, redirect
+from functools import wraps
+
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.shortcuts import redirect, render
 
-from .forms import FuncionarioCreationForm, LoginForm#, CadastroUsuarioForm, 
+from .forms import FuncionarioCreationForm, LoginForm, OperadorAccessForm
+from .models import Funcionario
 from wpp.utils import OrdemServiceWpp
 
 from io import TextIOWrapper
 import csv
 
 ordem_service = OrdemServiceWpp()
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+
+        if not getattr(request.user, 'is_staff', False) and getattr(request.user, 'tipo_acesso', None) != Funcionario.ADMINISTRADOR:
+            messages.error(request, 'Apenas administradores podem acessar esta funcionalidade.')
+            return redirect('home_solicitante')
+
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped_view
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -25,10 +43,11 @@ def login_view(request):
                 if user.is_administrador():
                     if user.area == 'producao':
                         return redirect('home_producao')
-                    elif user.area == 'predial':
+                    if user.area == 'predial':
                         return redirect('home_predial')
-                else:
                     return redirect('home_solicitante')
+
+                return redirect('home_solicitante')
         else:
             print(form.errors)  # Depuração para verificar erros no formulário
 
@@ -45,11 +64,35 @@ def cadastrar_usuario(request):
         form = FuncionarioCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            redirect('login')
-            # Redirecionar ou retornar uma resposta
+            return redirect('login')
         else:
             form = FuncionarioCreationForm()
         return render(request, 'cadastro/acesso.html', {'form': form})
+
+
+@login_required
+@admin_required
+def cadastrar_acesso_operador(request):
+    operadores = Funcionario.objects.filter(tipo_acesso=Funcionario.OPERADOR).order_by('nome')
+
+    if request.method == 'POST':
+        form = OperadorAccessForm(request.POST)
+        if form.is_valid():
+            operador = form.save(commit=False)
+            operador.tipo_acesso = Funcionario.OPERADOR
+            operador.is_staff = False
+            operador.is_superuser = False
+            operador.save()
+            messages.success(request, f'Acesso de operador criado para {operador.nome}.')
+            return redirect('cadastrar_acesso_operador')
+    else:
+        form = OperadorAccessForm()
+
+    context = {
+        'form': form,
+        'operadores': operadores,
+    }
+    return render(request, 'cadastro/acesso-operador.html', context)
 
 @login_required
 def cadastrar_usuarios_csv(request):
