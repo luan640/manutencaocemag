@@ -1,0 +1,70 @@
+name: Enviar Panorama Autonomas
+
+on:
+  schedule:
+    # 23:00 America/Sao_Paulo = 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      report_date:
+        description: "Data no formato YYYY-MM-DD; deixe em branco para usar a data atual do servidor"
+        required: false
+        type: string
+      dry_run:
+        description: "Executar sem enviar e-mail"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: enviar-panorama-autonomas
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validar segredo obrigatorio
+        env:
+          JOB_TOKEN: ${{ secrets.INTERNAL_JOB_TOKEN }}
+        run: |
+          test -n "$JOB_TOKEN" || { echo "Secret INTERNAL_JOB_TOKEN nao configurado."; exit 1; }
+
+      - name: Montar URL da execucao
+        id: build_url
+        shell: bash
+        env:
+          REPORT_DATE: ${{ github.event.inputs.report_date }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          URL="https://manutencaocemag.com.br/internal/jobs/enviar-panorama-autonomas/"
+
+          if [ -n "$REPORT_DATE" ]; then
+            URL="${URL}?date=${REPORT_DATE}"
+            HAS_QUERY=1
+          else
+            HAS_QUERY=0
+          fi
+
+          if [ "$DRY_RUN" = "true" ]; then
+            if [ "$HAS_QUERY" = "1" ]; then
+              URL="${URL}&dry_run=true"
+            else
+              URL="${URL}?dry_run=true"
+            fi
+          fi
+
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Disparar job no Render
+        shell: bash
+        env:
+          JOB_URL: ${{ steps.build_url.outputs.url }}
+          JOB_TOKEN: ${{ secrets.INTERNAL_JOB_TOKEN }}
+        run: |
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "X-Job-Token: $JOB_TOKEN" \
+            --header "Accept: application/json" \
+            "$JOB_URL"

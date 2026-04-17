@@ -26,8 +26,11 @@ urlpatterns = [
     path('checklists/', checklist_views.checklists_manage_view, name='checklists_manage_view'),
     path('checklists/historico/', checklist_views.checklists_history_view, name='checklists_history_view'),
     path('checklists/calendario/', checklist_views.checklists_calendar_view, name='checklists_calendar_view'),
+    path('checklists/destinatarios/', checklist_views.checklists_report_recipients_view, name='checklists_report_recipients_view'),
     path('checklists/api/forms/', checklist_views.api_checklist_forms, name='api_checklist_forms'),
     path('checklists/api/calendar/', checklist_views.api_checklist_calendar, name='api_checklist_calendar'),
+    path('checklists/api/report-recipients/', checklist_views.api_checklist_report_recipients, name='api_checklist_report_recipients'),
+    path('checklists/api/report-recipients/<int:recipient_id>/', checklist_views.api_checklist_report_recipient_detail, name='api_checklist_report_recipient_detail'),
     path('checklists/api/reset/', checklist_views.api_checklist_reset, name='api_checklist_reset'),
     path('checklists/api/forms/<int:form_id>/', checklist_views.api_checklist_form_detail, name='api_checklist_form_detail'),
     path('checklists/api/forms/<int:form_id>/versions/', checklist_views.api_checklist_form_versions, name='api_checklist_form_versions'),
@@ -39,5 +42,6 @@ urlpatterns = [
     path('checklists/api/public/<uuid:token>/', checklist_views.api_checklist_public_form, name='api_checklist_public_form'),
     path('checklists/api/public/<uuid:token>/funcionarios/', checklist_views.api_checklist_public_funcionarios, name='api_checklist_public_funcionarios'),
     path('checklists/api/public/<uuid:token>/submit/', checklist_views.api_checklist_public_submit, name='api_checklist_public_submit'),
+    path('internal/jobs/enviar-panorama-autonomas/', checklist_views.internal_send_daily_autonomous_overview, name='internal_send_daily_autonomous_overview'),
 
 ]

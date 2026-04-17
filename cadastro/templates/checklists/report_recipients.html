@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Destinatários do Relatório</title>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <div>
+        <h1 class="mb-1">Destinatários do relatório diário</h1>
+        <p class="text-muted mb-0">Gerencie quem recebe o panorama diário das respostas de manutenções autônomas.</p>
+    </div>
+    <button class="btn btn-primary" type="button" id="new-recipient-button">Novo e-mail</button>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Destinatários cadastrados</div>
+                <div class="display-6 fw-semibold" id="total-recipients">{{ recipient_count }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Destinatários ativos</div>
+                <div class="display-6 fw-semibold" id="active-recipients">{{ active_recipient_count }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <strong>E-mails configurados</strong>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>E-mail</th>
+                        <th>Nome opcional</th>
+                        <th>Status</th>
+                        <th>Atualizado em</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="recipient-table-body">
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recipientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recipient-modal-title">Destinatário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="recipient-modal-alert" class="mb-3"></div>
+                <form id="recipient-form" class="d-grid gap-3">
+                    {% csrf_token %}
+                    <input type="hidden" id="recipient-id">
+                    <div>
+                        <label class="form-label" for="recipient-email">E-mail</label>
+                        <input type="email" class="form-control" id="recipient-email" maxlength="254" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="recipient-name">Nome opcional</label>
+                        <input type="text" class="form-control" id="recipient-name" maxlength="160">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="recipient-active" checked>
+                        <label class="form-check-label" for="recipient-active">Ativo</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-warning d-none" type="button" id="toggle-recipient-button">Inativar</button>
+                <button class="btn btn-outline-danger d-none" type="button" id="delete-recipient-button">Excluir</button>
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Fechar</button>
+                <button class="btn btn-primary" type="button" id="save-recipient-button">
+                    <span class="default-label">Salvar</span>
+                    <span class="loading-label d-none">Salvando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const endpoint = "{% url 'api_checklist_report_recipients' %}";
+        const detailBase = "/checklists/api/report-recipients/";
+        const tableBody = document.getElementById("recipient-table-body");
+        const modalEl = document.getElementById("recipientModal");
+        const modal = new bootstrap.Modal(modalEl);
+        const saveButton = document.getElementById("save-recipient-button");
+        const alertBox = document.getElementById("recipient-modal-alert");
+
+        function csrfToken() {
+            const input = document.querySelector("input[name=csrfmiddlewaretoken]");
+            return input ? input.value : "";
+        }
+
+        function showAlert(message, type = "danger") {
+            alertBox.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
+        }
+
+        function clearAlert() {
+            alertBox.innerHTML = "";
+        }
+
+        function setSaveLoading(isLoading) {
+            saveButton.disabled = isLoading;
+            saveButton.querySelector(".default-label").classList.toggle("d-none", isLoading);
+            saveButton.querySelector(".loading-label").classList.toggle("d-none", !isLoading);
+        }
+
+        function formatDateTime(value) {
+            if (!value) {
+                return "-";
+            }
+            return new Date(value).toLocaleString("pt-BR");
+        }
+
+        function resetForm() {
+            document.getElementById("recipient-id").value = "";
+            document.getElementById("recipient-email").value = "";
+            document.getElementById("recipient-name").value = "";
+            document.getElementById("recipient-active").checked = true;
+            document.getElementById("toggle-recipient-button").className = "btn btn-outline-warning d-none";
+            document.getElementById("toggle-recipient-button").textContent = "Inativar";
+            document.getElementById("delete-recipient-button").classList.add("d-none");
+            clearAlert();
+        }
+
+        function updateCounters(recipients) {
+            document.getElementById("total-recipients").textContent = recipients.length;
+            document.getElementById("active-recipients").textContent = recipients.filter((item) => item.active).length;
+        }
+
+        function openNewModal() {
+            resetForm();
+            document.getElementById("recipient-modal-title").textContent = "Novo destinatário";
+            modal.show();
+        }
+
+        function openEditModal(recipient) {
+            resetForm();
+            document.getElementById("recipient-modal-title").textContent = "Editar destinatário";
+            document.getElementById("recipient-id").value = recipient.id;
+            document.getElementById("recipient-email").value = recipient.email;
+            document.getElementById("recipient-name").value = recipient.name || "";
+            document.getElementById("recipient-active").checked = recipient.active;
+            const toggleButton = document.getElementById("toggle-recipient-button");
+            toggleButton.className = recipient.active ? "btn btn-outline-warning" : "btn btn-outline-success";
+            toggleButton.textContent = recipient.active ? "Inativar" : "Ativar";
+            document.getElementById("delete-recipient-button").classList.remove("d-none");
+            modal.show();
+        }
+
+        async function loadRecipients() {
+            const response = await fetch(endpoint);
+            const data = await response.json();
+            if (!response.ok) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${data.error || "Erro ao carregar destinatários."}</td></tr>`;
+                return;
+            }
+
+            updateCounters(data.recipients);
+
+            if (!data.recipients.length) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum destinatário cadastrado.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = data.recipients.map((recipient) => `
+                <tr>
+                    <td>${recipient.email}</td>
+                    <td>${recipient.name || "-"}</td>
+                    <td><span class="badge ${recipient.active ? "text-bg-success" : "text-bg-secondary"}">${recipient.active ? "Ativo" : "Inativo"}</span></td>
+                    <td>${formatDateTime(recipient.updated_at)}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary edit-recipient" data-id="${recipient.id}">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join("");
+
+            tableBody.querySelectorAll(".edit-recipient").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const recipient = data.recipients.find((item) => String(item.id) === button.dataset.id);
+                    if (recipient) {
+                        openEditModal(recipient);
+                    }
+                });
+            });
+        }
+
+        async function saveRecipient() {
+            const recipientId = document.getElementById("recipient-id").value;
+            const payload = {
+                email: document.getElementById("recipient-email").value.trim(),
+                name: document.getElementById("recipient-name").value.trim(),
+                active: document.getElementById("recipient-active").checked,
+            };
+
+            if (!payload.email) {
+                showAlert("Informe um e-mail válido.");
+                return;
+            }
+
+            setSaveLoading(true);
+            try {
+                const response = await fetch(recipientId ? `${detailBase}${recipientId}/` : endpoint, {
+                    method: recipientId ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showAlert(data.error || "Não foi possível salvar o destinatário.");
+                    return;
+                }
+                modal.hide();
+                await loadRecipients();
+            } finally {
+                setSaveLoading(false);
+            }
+        }
+
+        async function toggleRecipient() {
+            const recipientId = document.getElementById("recipient-id").value;
+            const toggleButton = document.getElementById("toggle-recipient-button");
+            const activate = toggleButton.textContent.trim() === "Ativar";
+
+            if (!recipientId) {
+                return;
+            }
+
+            const response = await fetch(`${detailBase}${recipientId}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken() },
+                body: JSON.stringify({ action: activate ? "activate" : "inactivate" }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                showAlert(data.error || "Não foi possível alterar o status.");
+                return;
+            }
+            modal.hide();
+            await loadRecipients();
+        }
+
+        async function deleteRecipient() {
+            const recipientId = document.getElementById("recipient-id").value;
+            if (!recipientId || !confirm("Excluir este destinatário?")) {
+                return;
+            }
+
+            const response = await fetch(`${detailBase}${recipientId}/`, {
+                method: "DELETE",
+                headers: { "X-CSRFToken": csrfToken() },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                showAlert(data.error || "Não foi possível excluir o destinatário.");
+                return;
+            }
+            modal.hide();
+            await loadRecipients();
+        }
+
+        document.getElementById("new-recipient-button").addEventListener("click", openNewModal);
+        document.getElementById("save-recipient-button").addEventListener("click", saveRecipient);
+        document.getElementById("toggle-recipient-button").addEventListener("click", toggleRecipient);
+        document.getElementById("delete-recipient-button").addEventListener("click", deleteRecipient);
+
+        setSaveLoading(false);
+        loadRecipients();
+    })();
+</script>
+{% endblock %}

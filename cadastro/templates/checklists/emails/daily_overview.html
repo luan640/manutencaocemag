@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Panorama de respostas das autonomas</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1f2937;">
+    <h2 style="margin-bottom: 8px;">Panorama de respostas das autonomas</h2>
+    <p style="margin-top: 0;"><strong>Data:</strong> {{ report_date_display }}</p>
+
+    <h3 style="margin: 20px 0 10px;">Autonomas realizadas - {{ response_count }}</h3>
+    {% if has_rows %}
+    <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Nome autonoma</th>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Data hora</th>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Quem respondeu</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.autonomous_name }}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.created_at|date:"d/m/Y H:i" }}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.employee_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nao teve respostas</p>
+    {% endif %}
+
+    <h3 style="margin: 20px 0 10px;">Autonomas nao realizadas - {{ missing_count }}</h3>
+    {% if has_missing_rows %}
+    <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Nome autonoma</th>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Maquina</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in missing_rows %}
+            <tr>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.autonomous_name }}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.machine_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Todas as autonomas ativas foram realizadas.</p>
+    {% endif %}
+</body>
+</html>

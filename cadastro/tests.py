@@ -1,6 +1,10 @@
 import json
+from datetime import timedelta
+from io import StringIO
 
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.utils import timezone
@@ -10,11 +14,13 @@ from cadastro.models import (
     ChecklistFormularioVersao,
     ChecklistPergunta,
     ChecklistPerguntaOpcao,
+    ChecklistRelatorioDestinatario,
     ChecklistResposta,
     ChecklistRespostaItem,
     Maquina,
     Setor,
 )
+from cadastro.services import build_daily_autonomous_overview
 
 
 def _one_pixel_png():
@@ -394,3 +400,247 @@ class TestChecklistDataIntegrity(TestCase):
         self.assertTrue(
             ChecklistFormulario.objects.filter(token_publico=self.formulario.token_publico).exists()
         )
+
+
+@override_settings(
+    DEFAULT_FILE_STORAGE="django.core.files.storage.FileSystemStorage",
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    },
+)
+class TestChecklistReportRecipients(TestCase):
+    def setUp(self):
+        self.client = Client()
+        user_model = get_user_model()
+        self.admin_user = user_model.objects.create_user(
+            matricula='9100',
+            nome='Admin Relatorio',
+            password='123456',
+            tipo_acesso='administrador',
+            area='producao',
+        )
+        self.operator_user = user_model.objects.create_user(
+            matricula='9101',
+            nome='Operador Relatorio',
+            password='123456',
+            tipo_acesso='operador',
+            area='producao',
+        )
+        self.requester_user = user_model.objects.create_user(
+            matricula='9102',
+            nome='Solicitante Relatorio',
+            password='123456',
+            tipo_acesso='solicitante',
+            area='producao',
+        )
+
+    def test_duplicate_emails_are_not_allowed(self):
+        ChecklistRelatorioDestinatario.objects.create(email='teste@empresa.com')
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            '/checklists/api/report-recipients/',
+            data=json.dumps({'email': 'teste@empresa.com', 'name': 'Duplicado'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Ja existe', response.json()['error'])
+
+    def test_report_recipient_status_can_toggle(self):
+        recipient = ChecklistRelatorioDestinatario.objects.create(email='ativo@empresa.com', ativo=True)
+        self.client.force_login(self.admin_user)
+        response = self.client.patch(
+            f'/checklists/api/report-recipients/{recipient.id}/',
+            data=json.dumps({'action': 'inactivate'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        recipient.refresh_from_db()
+        self.assertFalse(recipient.ativo)
+
+    def test_only_admin_or_staff_can_access_report_recipient_screen(self):
+        self.client.force_login(self.admin_user)
+        admin_response = self.client.get('/checklists/destinatarios/')
+        self.assertEqual(admin_response.status_code, 200)
+
+        self.client.force_login(self.operator_user)
+        operator_response = self.client.get('/checklists/destinatarios/')
+        self.assertEqual(operator_response.status_code, 404)
+
+        self.client.force_login(self.requester_user)
+        requester_response = self.client.get('/checklists/destinatarios/')
+        self.assertEqual(requester_response.status_code, 404)
+
+
+@override_settings(
+    DEFAULT_FILE_STORAGE="django.core.files.storage.FileSystemStorage",
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    },
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    DEFAULT_FROM_EMAIL='robot@empresa.com',
+    INTERNAL_JOB_TOKEN='secret-job-token',
+)
+class TestChecklistDailyOverview(TestCase):
+    def setUp(self):
+        self.client = Client()
+        user_model = get_user_model()
+        self.funcionario = user_model.objects.create_user(
+            matricula='9200',
+            nome='Funcionario Relatorio',
+            password='123456',
+            tipo_acesso='operador',
+            area='producao',
+        )
+        self.admin_user = user_model.objects.create_user(
+            matricula='9201',
+            nome='Admin Relatorio',
+            password='123456',
+            tipo_acesso='administrador',
+            area='producao',
+        )
+        self.setor = Setor.objects.create(nome='Setor Relatorio')
+        self.maquina = Maquina.objects.create(
+            codigo='MR-01',
+            descricao='Maquina Relatorio',
+            setor=self.setor,
+            area='producao',
+            criticidade='a',
+        )
+        self.formulario = ChecklistFormulario.objects.create(
+            titulo='Autonoma Diario',
+            maquina=self.maquina,
+            criado_por=self.admin_user,
+        )
+        self.versao = ChecklistFormularioVersao.objects.create(
+            formulario=self.formulario,
+            numero=1,
+            titulo='Autonoma Diario',
+            maquina=self.maquina,
+            criado_por=self.admin_user,
+        )
+        self.formulario.versao_atual = self.versao
+        self.formulario.save(update_fields=['versao_atual'])
+        self.maquina_2 = Maquina.objects.create(
+            codigo='MR-02',
+            descricao='Maquina Pendente',
+            setor=self.setor,
+            area='producao',
+            criticidade='b',
+        )
+        self.formulario_pendente = ChecklistFormulario.objects.create(
+            titulo='Autonoma Pendente',
+            maquina=self.maquina_2,
+            criado_por=self.admin_user,
+        )
+        self.versao_pendente = ChecklistFormularioVersao.objects.create(
+            formulario=self.formulario_pendente,
+            numero=1,
+            titulo='Autonoma Pendente',
+            maquina=self.maquina_2,
+            criado_por=self.admin_user,
+        )
+        self.formulario_pendente.versao_atual = self.versao_pendente
+        self.formulario_pendente.save(update_fields=['versao_atual'])
+
+    def _create_response(self, report_date, created_at=None):
+        image = SimpleUploadedFile('img.png', _one_pixel_png(), content_type='image/png')
+        response = ChecklistResposta.objects.create(
+            formulario=self.formulario,
+            versao=self.versao,
+            maquina=self.maquina,
+            funcionario=self.funcionario,
+            data_referencia=report_date,
+            imagem=image,
+        )
+        if created_at is not None:
+            ChecklistResposta.objects.filter(pk=response.pk).update(criado_em=created_at)
+            response.refresh_from_db()
+        return response
+
+    def test_build_overview_returns_rows_for_selected_day(self):
+        today = timezone.now().date()
+        now = timezone.now().replace(hour=10, minute=15, second=0, microsecond=0)
+        self._create_response(today, created_at=now)
+        self._create_response(today - timedelta(days=1))
+
+        overview = build_daily_autonomous_overview(today)
+
+        self.assertEqual(overview['response_count'], 1)
+        self.assertEqual(overview['context']['rows'][0]['autonomous_name'], 'Autonoma Diario')
+        self.assertEqual(overview['context']['rows'][0]['employee_name'], 'Funcionario Relatorio')
+        self.assertEqual(overview['context']['rows'][0]['created_at'], now)
+        self.assertTrue(overview['context']['has_missing_rows'])
+        self.assertEqual(overview['context']['missing_count'], 1)
+        self.assertEqual(overview['context']['missing_rows'][0]['autonomous_name'], 'Autonoma Pendente')
+
+    def test_build_overview_returns_empty_state_when_no_responses(self):
+        overview = build_daily_autonomous_overview(timezone.now().date())
+        self.assertEqual(overview['response_count'], 0)
+        self.assertFalse(overview['context']['has_rows'])
+        self.assertEqual(overview['context']['rows'], [])
+        self.assertTrue(overview['context']['has_missing_rows'])
+        self.assertEqual(overview['context']['missing_count'], 2)
+
+    def test_command_does_not_send_without_active_recipients(self):
+        output = StringIO()
+        call_command('enviar_panorama_autonomas', stdout=output)
+        self.assertEqual(len(getattr(mail, 'outbox', [])), 0)
+        self.assertIn('Nenhum destinatario ativo configurado', output.getvalue())
+
+    def test_command_sends_email_with_responses(self):
+        report_date = timezone.now().date()
+        created_at = timezone.now().replace(hour=22, minute=45, second=0, microsecond=0)
+        self._create_response(report_date, created_at=created_at)
+        ChecklistRelatorioDestinatario.objects.create(email='um@empresa.com')
+        ChecklistRelatorioDestinatario.objects.create(email='dois@empresa.com')
+
+        call_command('enviar_panorama_autonomas', report_date=report_date.isoformat())
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertIn('Panorama de respostas das autônomas', message.subject)
+        self.assertEqual(sorted(message.to), ['dois@empresa.com', 'um@empresa.com'])
+        self.assertIn('Autonoma Diario', message.body)
+        self.assertIn('Funcionario Relatorio', message.body)
+        self.assertIn('Autonomas nao realizadas', message.body)
+        self.assertIn('Autonoma Pendente', message.body)
+
+    def test_command_sends_empty_state_email_when_no_responses(self):
+        report_date = timezone.now().date()
+        ChecklistRelatorioDestinatario.objects.create(email='vazio@empresa.com')
+
+        call_command('enviar_panorama_autonomas', report_date=report_date.isoformat())
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Não teve respostas', mail.outbox[0].body)
+
+    def test_command_dry_run_does_not_send(self):
+        report_date = timezone.now().date()
+        ChecklistRelatorioDestinatario.objects.create(email='teste@empresa.com')
+        output = StringIO()
+
+        call_command('enviar_panorama_autonomas', report_date=report_date.isoformat(), dry_run=True, stdout=output)
+
+        self.assertEqual(len(getattr(mail, 'outbox', [])), 0)
+        self.assertIn('Dry-run concluido sem envio de e-mail.', output.getvalue())
+
+    def test_internal_job_url_requires_valid_token(self):
+        response = self.client.get('/internal/jobs/enviar-panorama-autonomas/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_internal_job_url_executes_dry_run(self):
+        report_date = timezone.now().date()
+        ChecklistRelatorioDestinatario.objects.create(email='teste@empresa.com')
+
+        response = self.client.get(
+            '/internal/jobs/enviar-panorama-autonomas/',
+            {'token': 'secret-job-token', 'date': report_date.isoformat(), 'dry_run': 'true'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['report_date'], report_date.isoformat())
+        self.assertTrue(data['dry_run'])
+        self.assertEqual(data['recipient_count'], 1)

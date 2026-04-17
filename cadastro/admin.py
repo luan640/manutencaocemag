@@ -5,6 +5,7 @@ from .models import (
     ChecklistFormularioVersao,
     ChecklistPergunta,
     ChecklistPerguntaOpcao,
+    ChecklistRelatorioDestinatario,
     ChecklistResposta,
     ChecklistRespostaItem,
     Maquina,
@@ -56,3 +57,10 @@ class ChecklistRespostaAdmin(admin.ModelAdmin):
     list_filter = ('maquina__area', 'data_referencia')
     search_fields = ('formulario__titulo', 'funcionario__nome', 'funcionario__matricula', 'maquina__codigo')
     inlines = [ChecklistRespostaItemInline]
+
+
+@admin.register(ChecklistRelatorioDestinatario)
+class ChecklistRelatorioDestinatarioAdmin(admin.ModelAdmin):
+    list_display = ('email', 'nome_opcional', 'ativo', 'criado_em', 'atualizado_em')
+    list_filter = ('ativo',)
+    search_fields = ('email', 'nome_opcional')

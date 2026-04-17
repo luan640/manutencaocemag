@@ -181,7 +181,7 @@
                     <td>${item.employee.nome}</td>
                     <td>${item.image_url ? `<a href="${item.image_url}" target="_blank">Abrir</a>` : "-"}</td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-outline-dark" href="/checklists/respostas/${item.id}/pdf/" target="_blank">Gerar PDF</a>
+                        <a class="btn btn-sm btn-outline-dark" href="/checklists/respostas/${item.id}/pdf/?download=1" target="_blank">Gerar PDF</a>
                     </td>
                 </tr>
             `).join("");

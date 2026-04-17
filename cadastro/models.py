@@ -252,3 +252,17 @@ class ChecklistRespostaItem(models.Model):
 
     def __str__(self):
         return f'Resposta {self.resposta_id} / Pergunta {self.pergunta_id}'
+
+
+class ChecklistRelatorioDestinatario(models.Model):
+    email = models.EmailField(unique=True)
+    nome_opcional = models.CharField(max_length=160, blank=True, null=True)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ('email',)
+
+    def __str__(self):
+        return self.nome_opcional or self.email

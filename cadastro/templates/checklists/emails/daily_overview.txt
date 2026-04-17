@@ -1,0 +1,20 @@
+Panorama de respostas das autonomas
+Data: {{ report_date_display }}
+
+Autonomas realizadas - {{ response_count }}:
+{% if has_rows %}
+{% for row in rows %}
+- {{ row.autonomous_name }} | {{ row.created_at|date:"d/m/Y H:i" }} | {{ row.employee_name }}
+{% endfor %}
+{% else %}
+Nao teve respostas
+{% endif %}
+
+Autonomas nao realizadas - {{ missing_count }}:
+{% if has_missing_rows %}
+{% for row in missing_rows %}
+- {{ row.autonomous_name }} | {{ row.machine_name }}
+{% endfor %}
+{% else %}
+Todas as autonomas ativas foram realizadas.
+{% endif %}

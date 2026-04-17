@@ -2,8 +2,9 @@ import json
 from datetime import date, datetime, timedelta
 from io import BytesIO
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -16,10 +17,12 @@ from cadastro.models import (
     ChecklistFormularioVersao,
     ChecklistPergunta,
     ChecklistPerguntaOpcao,
+    ChecklistRelatorioDestinatario,
     ChecklistResposta,
     ChecklistRespostaItem,
     Maquina,
 )
+from cadastro.services import execute_daily_autonomous_overview
 from funcionario.models import Funcionario
 
 
@@ -193,6 +196,16 @@ def _permission_denied():
     return JsonResponse({'error': 'Sem permissao para gerenciar checklists.'}, status=403)
 
 
+def _is_report_admin_user(user):
+    return user.is_authenticated and (
+        user.is_staff or getattr(user, 'tipo_acesso', None) == Funcionario.ADMINISTRADOR
+    )
+
+
+def _report_permission_denied():
+    return JsonResponse({'error': 'Sem permissao para gerenciar destinatarios do relatorio.'}, status=403)
+
+
 def _delete_response_files(queryset):
     for resposta in queryset.only('id', 'imagem'):
         if resposta.imagem:
@@ -221,6 +234,51 @@ def _normalize_question_type(raw_type):
         return None
     normalized = TIPO_PERGUNTA_ALIAS.get(str(raw_type).strip().lower())
     return normalized
+
+
+def _serialize_report_recipient(recipient):
+    return {
+        'id': recipient.id,
+        'email': recipient.email,
+        'name': recipient.nome_opcional,
+        'active': recipient.ativo,
+        'created_at': recipient.criado_em.isoformat(),
+        'updated_at': recipient.atualizado_em.isoformat(),
+    }
+
+
+def _normalize_report_recipient_payload(payload):
+    email = str(payload.get('email') or '').strip().lower()
+    name = str(payload.get('name') or payload.get('nome_opcional') or '').strip()
+    active = _to_bool(payload.get('active', payload.get('ativo', True)), default=True)
+
+    if not email:
+        raise ValueError('E-mail e obrigatorio.')
+
+    return {
+        'email': email,
+        'nome_opcional': name or None,
+        'ativo': active,
+    }
+
+
+def _parse_report_date(raw_value):
+    if not raw_value:
+        return timezone.now().date()
+    try:
+        return datetime.strptime(str(raw_value), '%Y-%m-%d').date()
+    except ValueError as exc:
+        raise ValueError('Use date no formato YYYY-MM-DD.') from exc
+
+
+def _extract_internal_job_token(request):
+    return (
+        request.headers.get('X-Job-Token')
+        or request.headers.get('Authorization', '').removeprefix('Bearer ').strip()
+        or request.GET.get('token')
+        or request.POST.get('token')
+        or ''
+    ).strip()
 
 
 def _to_bool(value, default=True):
@@ -457,6 +515,21 @@ def checklists_calendar_view(request):
 
 
 @login_required
+def checklists_report_recipients_view(request):
+    if not _is_report_admin_user(request.user):
+        raise Http404
+    recipients = ChecklistRelatorioDestinatario.objects.order_by('email')
+    return render(
+        request,
+        'checklists/report_recipients.html',
+        {
+            'recipient_count': recipients.count(),
+            'active_recipient_count': recipients.filter(ativo=True).count(),
+        },
+    )
+
+
+@login_required
 def api_checklist_forms(request):
     if not _is_management_user(request.user):
         return _permission_denied()
@@ -554,7 +627,7 @@ def api_checklist_calendar(request):
                 'title': f"{response.maquina.codigo} | {response.funcionario.nome}",
                 'start': response.data_referencia.isoformat(),
                 'allDay': True,
-                'url': reverse('checklist_response_pdf', kwargs={'response_id': response.id}),
+                'url': f"{reverse('checklist_response_pdf', kwargs={'response_id': response.id})}?download=1",
                 'extendedProps': {
                     'form_title': response.versao.titulo,
                     'form_version': response.versao.numero,
@@ -569,6 +642,112 @@ def api_checklist_calendar(request):
         )
 
     return JsonResponse({'events': events}, status=200)
+
+
+@login_required
+def api_checklist_report_recipients(request):
+    if not _is_report_admin_user(request.user):
+        return _report_permission_denied()
+
+    if request.method == 'GET':
+        recipients = ChecklistRelatorioDestinatario.objects.order_by('email')
+        return JsonResponse(
+            {'recipients': [_serialize_report_recipient(recipient) for recipient in recipients]},
+            status=200,
+        )
+
+    if request.method == 'POST':
+        try:
+            payload = _get_payload(request)
+            normalized = _normalize_report_recipient_payload(payload)
+            recipient = ChecklistRelatorioDestinatario.objects.create(**normalized)
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+        except IntegrityError:
+            return JsonResponse({'error': 'Ja existe um destinatario com este e-mail.'}, status=400)
+
+        return JsonResponse({'recipient': _serialize_report_recipient(recipient)}, status=201)
+
+    return JsonResponse({'error': 'Metodo nao permitido.'}, status=405)
+
+
+@login_required
+def api_checklist_report_recipient_detail(request, recipient_id):
+    if not _is_report_admin_user(request.user):
+        return _report_permission_denied()
+
+    recipient = get_object_or_404(ChecklistRelatorioDestinatario, pk=recipient_id)
+
+    if request.method == 'PUT':
+        try:
+            payload = _get_payload(request)
+            normalized = _normalize_report_recipient_payload(payload)
+            for field, value in normalized.items():
+                setattr(recipient, field, value)
+            recipient.save()
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+        except IntegrityError:
+            return JsonResponse({'error': 'Ja existe um destinatario com este e-mail.'}, status=400)
+
+        return JsonResponse({'recipient': _serialize_report_recipient(recipient)}, status=200)
+
+    if request.method == 'PATCH':
+        try:
+            payload = _get_payload(request)
+        except ValueError as exc:
+            return JsonResponse({'error': str(exc)}, status=400)
+
+        action = str(payload.get('action') or '').strip().lower()
+        if action not in {'activate', 'inactivate'}:
+            return JsonResponse({'error': 'Acao invalida.'}, status=400)
+
+        recipient.ativo = action == 'activate'
+        recipient.save(update_fields=['ativo', 'atualizado_em'])
+        return JsonResponse({'recipient': _serialize_report_recipient(recipient)}, status=200)
+
+    if request.method == 'DELETE':
+        recipient.delete()
+        return JsonResponse({'message': 'Destinatario excluido com sucesso.'}, status=200)
+
+    return JsonResponse({'error': 'Metodo nao permitido.'}, status=405)
+
+
+@csrf_exempt
+def internal_send_daily_autonomous_overview(request):
+    if request.method not in {'GET', 'POST'}:
+        return JsonResponse({'error': 'Metodo nao permitido.'}, status=405)
+
+    configured_token = (getattr(settings, 'INTERNAL_JOB_TOKEN', '') or '').strip()
+    if not configured_token:
+        return JsonResponse({'error': 'INTERNAL_JOB_TOKEN nao configurado.'}, status=503)
+
+    provided_token = _extract_internal_job_token(request)
+    if provided_token != configured_token:
+        return JsonResponse({'error': 'Token invalido.'}, status=403)
+
+    try:
+        report_date = _parse_report_date(request.GET.get('date') or request.POST.get('date'))
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+    dry_run = _to_bool(request.GET.get('dry_run') or request.POST.get('dry_run'), default=False)
+    result = execute_daily_autonomous_overview(report_date, dry_run=dry_run)
+
+    status_code = 200 if not result['skipped_reason'] else 202
+    return JsonResponse(
+        {
+            'message': 'Execucao concluida.',
+            'report_date': report_date.isoformat(),
+            'dry_run': dry_run,
+            'response_count': result['response_count'],
+            'missing_count': result['missing_count'],
+            'recipient_count': result['recipient_count'],
+            'sent_count': result['sent_count'],
+            'skipped_reason': result['skipped_reason'],
+        },
+        status=status_code,
+    )
 
 
 @login_required
@@ -859,6 +1038,8 @@ def api_checklist_public_submit(request, token):
                 return JsonResponse({'error': 'Data invalida. Use YYYY-MM-DD.'}, status=400)
 
         imagem = request.FILES.get('image') or request.FILES.get('imagem')
+        if not imagem:
+            return JsonResponse({'error': 'Imagem e obrigatoria.'}, status=400)
 
         answers_payload = _extract_answers(payload)
         perguntas = list(versao.perguntas.all())
@@ -1133,4 +1314,10 @@ def checklist_response_pdf(request, response_id):
         pdf.y -= 12
 
     filename = f"checklist-resposta-{response.id}.pdf"
-    return FileResponse(pdf.build(), as_attachment=True, filename=filename, content_type="application/pdf")
+    download = str(request.GET.get('download') or '').strip().lower() in {'1', 'true', 'sim', 'yes'}
+    return FileResponse(
+        pdf.build(),
+        as_attachment=download,
+        filename=filename,
+        content_type="application/pdf",
+    )
