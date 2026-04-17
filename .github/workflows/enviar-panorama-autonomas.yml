@@ -67,8 +67,9 @@ jobs:
           JOB_URL: ${{ steps.build_url.outputs.url }}
           JOB_TOKEN: ${{ secrets.INTERNAL_JOB_TOKEN }}
         run: |
-          curl --fail --show-error --silent \
+          RESPONSE=$(curl --fail --show-error --silent \
             --request POST \
             --header "X-Job-Token: $JOB_TOKEN" \
             --header "Accept: application/json" \
-            "$JOB_URL"
+            "$JOB_URL")
+          echo "$RESPONSE"

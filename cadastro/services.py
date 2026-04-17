@@ -1,10 +1,14 @@
 from datetime import datetime
+import logging
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
 from cadastro.models import ChecklistFormulario, ChecklistRelatorioDestinatario, ChecklistResposta
+
+
+logger = logging.getLogger(__name__)
 
 
 def build_daily_autonomous_overview(report_date):
@@ -85,13 +89,43 @@ def execute_daily_autonomous_overview(report_date, dry_run=False):
 
     if not recipients:
         result['skipped_reason'] = 'Nenhum destinatario ativo configurado.'
+        logger.info(
+            '[panorama_autonomas] date=%s dry_run=%s recipients=%s responses=%s missing=%s sent=%s skipped=%s',
+            report_date.isoformat(),
+            dry_run,
+            result['recipient_count'],
+            result['response_count'],
+            result['missing_count'],
+            result['sent_count'],
+            result['skipped_reason'],
+        )
         return result
 
     if dry_run:
+        logger.info(
+            '[panorama_autonomas] date=%s dry_run=%s recipients=%s responses=%s missing=%s sent=%s skipped=%s',
+            report_date.isoformat(),
+            dry_run,
+            result['recipient_count'],
+            result['response_count'],
+            result['missing_count'],
+            result['sent_count'],
+            result['skipped_reason'],
+        )
         return result
 
     mail_result = send_daily_autonomous_overview(report_date, recipients)
     result['sent_count'] = mail_result['sent_count']
+    logger.info(
+        '[panorama_autonomas] date=%s dry_run=%s recipients=%s responses=%s missing=%s sent=%s skipped=%s',
+        report_date.isoformat(),
+        dry_run,
+        result['recipient_count'],
+        result['response_count'],
+        result['missing_count'],
+        result['sent_count'],
+        result['skipped_reason'],
+    )
     return result
 
 

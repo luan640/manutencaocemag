@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date, datetime, timedelta
 from io import BytesIO
 
@@ -24,6 +25,9 @@ from cadastro.models import (
 )
 from cadastro.services import execute_daily_autonomous_overview
 from funcionario.models import Funcionario
+
+
+logger = logging.getLogger(__name__)
 
 
 TIPO_PERGUNTA_ALIAS = {
@@ -720,10 +724,12 @@ def internal_send_daily_autonomous_overview(request):
 
     configured_token = (getattr(settings, 'INTERNAL_JOB_TOKEN', '') or '').strip()
     if not configured_token:
+        logger.warning('[panorama_autonomas] internal job requested without INTERNAL_JOB_TOKEN configured')
         return JsonResponse({'error': 'INTERNAL_JOB_TOKEN nao configurado.'}, status=503)
 
     provided_token = _extract_internal_job_token(request)
     if provided_token != configured_token:
+        logger.warning('[panorama_autonomas] internal job requested with invalid token')
         return JsonResponse({'error': 'Token invalido.'}, status=403)
 
     try:
@@ -733,6 +739,16 @@ def internal_send_daily_autonomous_overview(request):
 
     dry_run = _to_bool(request.GET.get('dry_run') or request.POST.get('dry_run'), default=False)
     result = execute_daily_autonomous_overview(report_date, dry_run=dry_run)
+    logger.info(
+        '[panorama_autonomas] request complete date=%s dry_run=%s recipients=%s responses=%s missing=%s sent=%s skipped=%s',
+        report_date.isoformat(),
+        dry_run,
+        result['recipient_count'],
+        result['response_count'],
+        result['missing_count'],
+        result['sent_count'],
+        result['skipped_reason'],
+    )
 
     status_code = 200 if not result['skipped_reason'] else 202
     return JsonResponse(
