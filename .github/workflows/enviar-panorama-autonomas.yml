@@ -38,7 +38,7 @@ jobs:
           REPORT_DATE: ${{ github.event.inputs.report_date }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          URL="https://manutencaocemag.com.br/internal/jobs/enviar-panorama-autonomas/"
+          URL="https://www.manutencaocemag.com.br/internal/jobs/enviar-panorama-autonomas/"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
             REPORT_DATE="2026-04-16"
@@ -67,7 +67,7 @@ jobs:
           JOB_URL: ${{ steps.build_url.outputs.url }}
           JOB_TOKEN: ${{ secrets.INTERNAL_JOB_TOKEN }}
         run: |
-          RESPONSE=$(curl --fail --show-error --silent \
+          RESPONSE=$(curl --fail --show-error --silent --location \
             --request POST \
             --header "X-Job-Token: $JOB_TOKEN" \
             --header "Accept: application/json" \
