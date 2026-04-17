@@ -2,8 +2,8 @@ name: Enviar Panorama Autonomas
 
 on:
   schedule:
-    # 23:00 America/Sao_Paulo = 02:00 UTC
-    - cron: "0 2 * * *"
+    # 14:00 America/Sao_Paulo = 17:00 UTC
+    - cron: "0 17 * * *"
   workflow_dispatch:
     inputs:
       report_date:
@@ -39,6 +39,10 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
           URL="https://manutencaocemag.com.br/internal/jobs/enviar-panorama-autonomas/"
+
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            REPORT_DATE="2026-04-16"
+          fi
 
           if [ -n "$REPORT_DATE" ]; then
             URL="${URL}?date=${REPORT_DATE}"
