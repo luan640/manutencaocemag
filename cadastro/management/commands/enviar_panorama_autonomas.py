@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
     def _parse_date(self, raw_value):
         if not raw_value:
-            return timezone.now().date()
+            return timezone.now().date() - timedelta(days=1)
 
         try:
             return datetime.strptime(raw_value, '%Y-%m-%d').date()

@@ -589,6 +589,15 @@ class TestChecklistDailyOverview(TestCase):
         self.assertEqual(len(getattr(mail, 'outbox', [])), 0)
         self.assertIn('Nenhum destinatario ativo configurado', output.getvalue())
 
+    def test_command_defaults_to_previous_day_when_date_is_omitted(self):
+        yesterday = timezone.now().date() - timedelta(days=1)
+        ChecklistRelatorioDestinatario.objects.create(email='ontem@empresa.com')
+
+        call_command('enviar_panorama_autonomas')
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(yesterday.strftime('%d/%m/%Y'), mail.outbox[0].subject)
+
     def test_command_sends_email_with_responses(self):
         report_date = timezone.now().date()
         created_at = timezone.now().replace(hour=22, minute=45, second=0, microsecond=0)
@@ -644,3 +653,17 @@ class TestChecklistDailyOverview(TestCase):
         self.assertEqual(data['report_date'], report_date.isoformat())
         self.assertTrue(data['dry_run'])
         self.assertEqual(data['recipient_count'], 1)
+
+    def test_internal_job_url_defaults_to_previous_day_when_date_is_omitted(self):
+        yesterday = timezone.now().date() - timedelta(days=1)
+        ChecklistRelatorioDestinatario.objects.create(email='teste@empresa.com')
+
+        response = self.client.get(
+            '/internal/jobs/enviar-panorama-autonomas/',
+            {'token': 'secret-job-token', 'dry_run': 'true'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['report_date'], yesterday.isoformat())
+        self.assertTrue(data['dry_run'])

@@ -268,7 +268,7 @@ def _normalize_report_recipient_payload(payload):
 
 def _parse_report_date(raw_value):
     if not raw_value:
-        return timezone.now().date()
+        return timezone.now().date() - timedelta(days=1)
     try:
         return datetime.strptime(str(raw_value), '%Y-%m-%d').date()
     except ValueError as exc:

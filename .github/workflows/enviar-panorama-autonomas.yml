@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       report_date:
-        description: "Data no formato YYYY-MM-DD; deixe em branco para usar a data atual do servidor"
+        description: "Data no formato YYYY-MM-DD; deixe em branco para usar o dia anterior no servidor"
         required: false
         type: string
       dry_run:
