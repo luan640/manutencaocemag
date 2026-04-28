@@ -3,9 +3,17 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 
-from .forms import FuncionarioCreationForm, LoginForm, OperadorAccessForm
+from .forms import (
+    FuncionarioCreationForm,
+    LoginForm,
+    OperadorAccessForm,
+    SolicitanteManagementCreateForm,
+    SolicitanteManagementUpdateForm,
+)
 from .models import Funcionario
 from wpp.utils import OrdemServiceWpp
 
@@ -93,6 +101,145 @@ def cadastrar_acesso_operador(request):
         'operadores': operadores,
     }
     return render(request, 'cadastro/acesso-operador.html', context)
+
+
+@login_required
+@admin_required
+def gerenciar_funcionarios(request):
+    funcionarios = Funcionario.objects.filter(tipo_acesso=Funcionario.SOLICITANTE).order_by('nome', 'matricula')
+    edit_id = request.GET.get('edit')
+    funcionario_em_edicao = None
+
+    if edit_id:
+        funcionario_em_edicao = funcionarios.filter(pk=edit_id).first()
+
+    create_form = SolicitanteManagementCreateForm()
+    update_form = (
+        SolicitanteManagementUpdateForm(instance=funcionario_em_edicao)
+        if funcionario_em_edicao
+        else SolicitanteManagementUpdateForm()
+    )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        if action == 'create':
+            create_form = SolicitanteManagementCreateForm(request.POST)
+            if create_form.is_valid():
+                funcionario = create_form.save(commit=False)
+                funcionario.tipo_acesso = Funcionario.SOLICITANTE
+                funcionario.area = None
+                funcionario.is_staff = False
+                funcionario.is_superuser = False
+                funcionario.save()
+                success_message = f'Solicitante {funcionario.nome} cadastrado com sucesso.'
+                if is_ajax:
+                    refreshed_funcionarios = Funcionario.objects.filter(tipo_acesso=Funcionario.SOLICITANTE).order_by('nome', 'matricula')
+                    return JsonResponse(
+                        {
+                            'success': True,
+                            'message': success_message,
+                            'count': refreshed_funcionarios.count(),
+                            'table_html': render_to_string(
+                                'cadastro/partials/solicitantes_table.html',
+                                {'funcionarios': refreshed_funcionarios},
+                                request=request,
+                            ),
+                            'create_form_html': render_to_string(
+                                'cadastro/partials/solicitante_create_fields.html',
+                                {'create_form': SolicitanteManagementCreateForm()},
+                                request=request,
+                            ),
+                        }
+                    )
+                messages.success(request, success_message)
+                return redirect('gerenciar_funcionarios')
+            if is_ajax:
+                return JsonResponse(
+                    {
+                        'success': False,
+                        'form_html': render_to_string(
+                            'cadastro/partials/solicitante_create_fields.html',
+                            {'create_form': create_form},
+                            request=request,
+                        ),
+                    },
+                    status=400,
+                )
+        elif action == 'update':
+            funcionario_id = request.POST.get('funcionario_id')
+            funcionario_em_edicao = funcionarios.filter(pk=funcionario_id).first()
+            if not funcionario_em_edicao:
+                messages.error(request, 'Solicitante nao encontrado para edicao.')
+                return redirect('gerenciar_funcionarios')
+
+            update_form = SolicitanteManagementUpdateForm(request.POST, instance=funcionario_em_edicao)
+            if update_form.is_valid():
+                funcionario = update_form.save()
+                funcionario.area = None
+                funcionario.save(update_fields=['matricula', 'nome', 'telefone', 'area'])
+                success_message = f'Solicitante {funcionario.nome} atualizado com sucesso.'
+                if is_ajax:
+                    refreshed_funcionarios = Funcionario.objects.filter(tipo_acesso=Funcionario.SOLICITANTE).order_by('nome', 'matricula')
+                    funcionario.refresh_from_db()
+                    return JsonResponse(
+                        {
+                            'success': True,
+                            'message': success_message,
+                            'count': refreshed_funcionarios.count(),
+                            'table_html': render_to_string(
+                                'cadastro/partials/solicitantes_table.html',
+                                {'funcionarios': refreshed_funcionarios},
+                                request=request,
+                            ),
+                            'update_form_html': render_to_string(
+                                'cadastro/partials/solicitante_update_fields.html',
+                                {
+                                    'update_form': SolicitanteManagementUpdateForm(instance=funcionario),
+                                    'funcionario_em_edicao': funcionario,
+                                },
+                                request=request,
+                            ),
+                        }
+                    )
+                messages.success(request, success_message)
+                return redirect('gerenciar_funcionarios')
+            if is_ajax:
+                return JsonResponse(
+                    {
+                        'success': False,
+                        'form_html': render_to_string(
+                            'cadastro/partials/solicitante_update_fields.html',
+                            {
+                                'update_form': update_form,
+                                'funcionario_em_edicao': funcionario_em_edicao,
+                            },
+                            request=request,
+                        ),
+                    },
+                    status=400,
+                )
+        elif action == 'toggle_status':
+            funcionario_id = request.POST.get('funcionario_id')
+            funcionario = funcionarios.filter(pk=funcionario_id).first()
+            if not funcionario:
+                messages.error(request, 'Solicitante nao encontrado.')
+                return redirect('gerenciar_funcionarios')
+
+            funcionario.is_active = not funcionario.is_active
+            funcionario.save(update_fields=['is_active'])
+            status_label = 'ativado' if funcionario.is_active else 'inativado'
+            messages.success(request, f'Solicitante {funcionario.nome} {status_label} com sucesso.')
+            return redirect('gerenciar_funcionarios')
+
+    context = {
+        'funcionarios': funcionarios,
+        'create_form': create_form,
+        'update_form': update_form,
+        'funcionario_em_edicao': funcionario_em_edicao,
+    }
+    return render(request, 'cadastro/funcionarios.html', context)
 
 @login_required
 def cadastrar_usuarios_csv(request):

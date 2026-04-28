@@ -1,0 +1,45 @@
+{{ create_form.tipo_acesso }}
+{{ create_form.area }}
+
+{% if create_form.non_field_errors %}
+  <div class="alert alert-danger">{{ create_form.non_field_errors }}</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label" for="{{ create_form.matricula.id_for_label }}">Matricula</label>
+    {{ create_form.matricula }}
+    {% if create_form.matricula.errors %}
+      <div class="text-danger small mt-1">{{ create_form.matricula.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ create_form.nome.id_for_label }}">Nome</label>
+    {{ create_form.nome }}
+    {% if create_form.nome.errors %}
+      <div class="text-danger small mt-1">{{ create_form.nome.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ create_form.telefone.id_for_label }}">Telefone</label>
+    {{ create_form.telefone }}
+    {% if create_form.telefone.errors %}
+      <div class="text-danger small mt-1">{{ create_form.telefone.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ create_form.password1.id_for_label }}">Senha inicial</label>
+    {{ create_form.password1 }}
+    <div class="form-text">Opcional. Se ficar em branco, o usuario sera criado sem senha definida.</div>
+    {% if create_form.password1.errors %}
+      <div class="text-danger small mt-1">{{ create_form.password1.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ create_form.password2.id_for_label }}">Confirmacao da senha</label>
+    {{ create_form.password2 }}
+    {% if create_form.password2.errors %}
+      <div class="text-danger small mt-1">{{ create_form.password2.errors|striptags }}</div>
+    {% endif %}
+  </div>
+</div>

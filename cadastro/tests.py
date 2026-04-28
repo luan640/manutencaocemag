@@ -135,7 +135,7 @@ class TestChecklistBackend(TestCase):
         pergunta_v1.refresh_from_db()
         self.assertEqual(pergunta_v1.texto, 'Nivel de oleo')
 
-    def test_public_submit_requires_image(self):
+    def test_public_submit_allows_missing_image(self):
         form_id = self._create_form()
         formulario = ChecklistFormulario.objects.get(pk=form_id)
         pergunta = formulario.versao_atual.perguntas.order_by('ordem').first()
@@ -150,8 +150,9 @@ class TestChecklistBackend(TestCase):
             f'/checklists/api/public/{formulario.token_publico}/submit/',
             data=payload,
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Imagem e obrigatoria', response.json()['error'])
+        self.assertEqual(response.status_code, 201)
+        resposta = ChecklistResposta.objects.get(pk=response.json()['response_id'])
+        self.assertFalse(bool(resposta.imagem))
 
     def test_public_submit_persists_response_with_today_date(self):
         form_id = self._create_form()

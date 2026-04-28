@@ -1,0 +1,29 @@
+{% if update_form.non_field_errors %}
+  <div class="alert alert-danger">{{ update_form.non_field_errors }}</div>
+{% endif %}
+
+<input type="hidden" name="funcionario_id" id="edit-funcionario-id" value="{{ funcionario_em_edicao.id|default:'' }}">
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label" for="{{ update_form.matricula.id_for_label }}">Matricula</label>
+    {{ update_form.matricula }}
+    {% if update_form.matricula.errors %}
+      <div class="text-danger small mt-1">{{ update_form.matricula.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ update_form.nome.id_for_label }}">Nome</label>
+    {{ update_form.nome }}
+    {% if update_form.nome.errors %}
+      <div class="text-danger small mt-1">{{ update_form.nome.errors|striptags }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="{{ update_form.telefone.id_for_label }}">Telefone</label>
+    {{ update_form.telefone }}
+    {% if update_form.telefone.errors %}
+      <div class="text-danger small mt-1">{{ update_form.telefone.errors|striptags }}</div>
+    {% endif %}
+  </div>
+</div>

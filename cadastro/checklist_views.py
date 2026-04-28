@@ -1054,8 +1054,6 @@ def api_checklist_public_submit(request, token):
                 return JsonResponse({'error': 'Data invalida. Use YYYY-MM-DD.'}, status=400)
 
         imagem = request.FILES.get('image') or request.FILES.get('imagem')
-        if not imagem:
-            return JsonResponse({'error': 'Imagem e obrigatoria.'}, status=400)
 
         answers_payload = _extract_answers(payload)
         perguntas = list(versao.perguntas.all())

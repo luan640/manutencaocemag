@@ -22,11 +22,11 @@ class BaseFuncionarioValidationMixin:
 class FuncionarioCreationForm(BaseFuncionarioValidationMixin, forms.ModelForm):
     password1 = forms.CharField(
         label='Senha',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'}),
     )
     password2 = forms.CharField(
         label='Confirmacao de senha',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'autocomplete': 'new-password'}),
     )
 
     class Meta:
@@ -37,7 +37,7 @@ class FuncionarioCreationForm(BaseFuncionarioValidationMixin, forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_acesso': forms.HiddenInput(),
             'area': forms.Select(attrs={'class': 'form-select'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -70,6 +70,64 @@ class OperadorAccessForm(FuncionarioCreationForm):
         self.fields['tipo_acesso'].widget = forms.HiddenInput()
         self.fields['area'].required = True
         self.fields['telefone'].required = False
+
+
+class SolicitanteManagementCreateForm(FuncionarioCreationForm):
+    class Meta(FuncionarioCreationForm.Meta):
+        widgets = {
+            'matricula': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_acesso': forms.HiddenInput(),
+            'area': forms.HiddenInput(),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_acesso'].initial = Funcionario.SOLICITANTE
+        self.fields['tipo_acesso'].widget = forms.HiddenInput()
+        self.fields['area'].widget = forms.HiddenInput()
+        self.fields['area'].required = False
+        self.fields['area'].initial = ''
+        self.fields['password1'].required = False
+        self.fields['password2'].required = False
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 or password2:
+            if password1 != password2:
+                raise forms.ValidationError('As senhas nao coincidem.')
+        return password2
+
+    def save(self, commit=True):
+        user = super(FuncionarioCreationForm, self).save(commit=False)
+        password = self.cleaned_data.get('password1')
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        if commit:
+            user.save()
+        return user
+
+
+class SolicitanteManagementUpdateForm(BaseFuncionarioValidationMixin, forms.ModelForm):
+    class Meta:
+        model = Funcionario
+        fields = ('matricula', 'nome', 'telefone')
+        widgets = {
+            'matricula': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['matricula'].widget.attrs['id'] = 'edit-matricula'
+        self.fields['nome'].widget.attrs['id'] = 'edit-nome'
+        self.fields['telefone'].widget.attrs['id'] = 'edit-telefone'
+        self.fields['telefone'].widget.attrs['autocomplete'] = 'off'
 
 
 class FuncionarioChangeForm(BaseFuncionarioValidationMixin, forms.ModelForm):

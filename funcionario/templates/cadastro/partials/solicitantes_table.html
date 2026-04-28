@@ -1,0 +1,72 @@
+<div class="table-responsive">
+  <table class="table table-striped align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Matricula</th>
+        <th>Nome</th>
+        <th>Telefone</th>
+        <th>Status</th>
+        <th class="text-end">Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for funcionario in funcionarios %}
+        <tr>
+          <td>{{ funcionario.matricula }}</td>
+          <td>{{ funcionario.nome }}</td>
+          <td>{{ funcionario.telefone|default:'-' }}</td>
+          <td>
+            {% if funcionario.is_active %}
+              <span class="badge text-bg-success">Ativo</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Inativo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#editSolicitanteModal"
+                data-funcionario-id="{{ funcionario.id }}"
+                data-funcionario-matricula="{{ funcionario.matricula }}"
+                data-funcionario-nome="{{ funcionario.nome }}"
+                data-funcionario-telefone="{{ funcionario.telefone|default:'' }}"
+              >
+                Editar
+              </button>
+              {% if funcionario.is_active %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmInactivateModal"
+                  data-funcionario-id="{{ funcionario.id }}"
+                  data-funcionario-nome="{{ funcionario.nome }}"
+                >
+                  Inativar
+                </button>
+              {% else %}
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="toggle_status">
+                  <input type="hidden" name="funcionario_id" value="{{ funcionario.id }}">
+                  <button type="submit" class="btn btn-sm btn-outline-success">
+                    Ativar
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            Nenhum solicitante cadastrado ainda.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
