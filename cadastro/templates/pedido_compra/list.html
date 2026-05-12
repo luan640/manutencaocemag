@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}<title>Pedidos de Compra</title>{% endblock %}
+
+{% block links %}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="{% static 'css/pedido-compra-list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 mt-4">
+
+    <div class="page-header mb-3">
+        <h2><i class="bi bi-cart3 me-2"></i>Pedidos de Compra</h2>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card mb-4">
+        <div class="filters-grid">
+            <div class="filter-field">
+                <label class="form-label">Data início</label>
+                <input type="date" id="filterDataInicio" class="form-control">
+            </div>
+            <div class="filter-field">
+                <label class="form-label">Data fim</label>
+                <input type="date" id="filterDataFim" class="form-control">
+            </div>
+            <div class="filter-field">
+                <label class="form-label">Fornecedor</label>
+                <select id="filterFornecedor" class="form-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label class="form-label">Responsável</label>
+                <select id="filterResponsavel" class="form-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label class="form-label">Status</label>
+                <select id="filterStatus" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="aprovado">Aprovado</option>
+                    <option value="baixado">Baixado</option>
+                </select>
+            </div>
+            <div class="filter-field filter-actions">
+                <button type="button" id="btnAplicarFiltros" class="btn btn-dark w-100">
+                    <i class="bi bi-funnel-fill me-1"></i> Aplicar
+                </button>
+                <button type="button" id="btnLimparFiltros" class="btn btn-outline-secondary w-100 mt-2">
+                    Limpar filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Big Numbers -->
+    <div class="row g-3 mb-4" id="bigNumbers">
+        <div class="col-6 col-md-4">
+            <div class="bignumber-card bignumber-valor">
+                <div class="bignumber-icon"><i class="bi bi-cash-stack"></i></div>
+                <div class="bignumber-body">
+                    <span class="bignumber-label">Valor Total</span>
+                    <span class="bignumber-value" id="bnTotalValor">R$ 0,00</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bignumber-card bignumber-pedidos">
+                <div class="bignumber-icon"><i class="bi bi-receipt"></i></div>
+                <div class="bignumber-body">
+                    <span class="bignumber-label">Qtd. Pedidos</span>
+                    <span class="bignumber-value" id="bnTotalPedidos">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="bignumber-card bignumber-fornecedores">
+                <div class="bignumber-icon"><i class="bi bi-building"></i></div>
+                <div class="bignumber-body">
+                    <span class="bignumber-label">Fornecedores</span>
+                    <span class="bignumber-value" id="bnFornecedores">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking + Tabela -->
+    <div class="row g-3">
+
+        <!-- Ranking de Fornecedores -->
+        <div class="col-12 col-xl-4">
+            <div class="table-card h-100">
+                <div class="ranking-header">
+                    <i class="bi bi-trophy-fill me-2 text-warning"></i>
+                    <span>Ranking de Fornecedores</span>
+                    <small class="text-muted ms-auto">por valor total</small>
+                </div>
+                <div id="rankingList" class="ranking-list">
+                    <div class="ranking-empty">Nenhum dado disponível</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DataTable -->
+        <div class="col-12 col-xl-8">
+            <div class="table-card">
+                <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                    <div class="search-wrapper" style="max-width:340px;">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchPedidos" class="form-control" placeholder="Buscar pedido, fornecedor, produto...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="tabelaPedidos" class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Nº Pedido</th>
+                                <th>Responsável</th>
+                                <th>Fornecedor</th>
+                                <th>Cód. Produto</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Dt. Aprovação</th>
+                                <th>Dt. Baixa</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div id="overlayLoading" style="display:none;">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span>Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="{% static 'js/datatable-list-pedido-compra.js' %}"></script>
+{% endblock %}

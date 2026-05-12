@@ -266,3 +266,24 @@ class ChecklistRelatorioDestinatario(models.Model):
 
     def __str__(self):
         return self.nome_opcional or self.email
+
+
+class PedidoCompra(models.Model):
+    numero_pedido = models.CharField(max_length=20)
+    responsavel = models.CharField(max_length=200, blank=True, null=True)
+    data_criacao = models.DateField()
+    hora_criacao = models.TimeField()
+    data_baixa = models.DateField(blank=True, null=True)
+    fornecedor_codigo = models.CharField(max_length=200, blank=True, null=True)
+    fornecedor_documento = models.CharField(max_length=20, blank=True, null=True)
+    codigo_produto = models.CharField(max_length=200, blank=True, null=True)
+    descricao_produto = models.CharField(max_length=500, blank=True, null=True)
+    data_aprovacao = models.DateField(blank=True, null=True)
+    valor = models.DecimalField(max_digits=15, decimal_places=2)
+    importado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-data_criacao', 'numero_pedido')
+
+    def __str__(self):
+        return f'{self.numero_pedido} - {self.descricao_produto}'

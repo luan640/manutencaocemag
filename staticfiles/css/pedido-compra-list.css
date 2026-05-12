@@ -1,0 +1,280 @@
+/* ===== Cabeçalho ===== */
+.page-header h2 {
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ===== Card de filtros ===== */
+.filters-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.filters-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.filter-field {
+    flex: 1 1 160px;
+    min-width: 140px;
+}
+
+.filter-field.filter-actions {
+    flex: 0 1 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.filters-card .form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+/* ===== Big Numbers ===== */
+.bignumber-card {
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,.12);
+    min-height: 90px;
+}
+
+.bignumber-icon {
+    font-size: 2rem;
+    opacity: .85;
+}
+
+.bignumber-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.bignumber-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: .88;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.bignumber-value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.bignumber-valor      { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+.bignumber-pedidos    { background: linear-gradient(135deg, #134e5e, #71b280); }
+.bignumber-ticket     { background: linear-gradient(135deg, #7b4397, #dc2430); }
+.bignumber-fornecedores { background: linear-gradient(135deg, #c94b4b, #4b134f); }
+
+/* ===== Card da tabela e ranking ===== */
+.table-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    overflow: hidden;
+    position: relative;
+}
+
+/* ===== Tabela ===== */
+.table thead {
+    background-color: rgb(33 37 41);
+    color: #fff;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.table td, .table th {
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: .875rem;
+}
+
+/* ===== Search wrapper ===== */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.search-wrapper i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 1rem;
+}
+
+.search-wrapper input.form-control {
+    padding-left: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+}
+
+/* ===== Overlay de loading ===== */
+#overlayLoading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: #555;
+    background: rgba(255,255,255,.85);
+    border-radius: 10px;
+    padding: 2rem;
+    z-index: 10;
+}
+
+/* ===== Ranking de Fornecedores ===== */
+.ranking-header {
+    display: flex;
+    align-items: center;
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600;
+    font-size: .95rem;
+}
+
+.ranking-list {
+    padding: .5rem .75rem 1rem;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.ranking-empty {
+    color: #aaa;
+    font-size: .85rem;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .45rem 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+.ranking-pos {
+    font-size: .72rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgb(33 37 41);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ranking-pos.top1 { background: #d4af37; }
+.ranking-pos.top2 { background: #9e9e9e; }
+.ranking-pos.top3 { background: #cd7f32; }
+
+.ranking-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ranking-name {
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-bar-wrap {
+    background: #f0f0f0;
+    border-radius: 4px;
+    height: 5px;
+    margin-top: 3px;
+    overflow: hidden;
+}
+
+.ranking-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1e3c72, #2a5298);
+    transition: width .4s ease;
+}
+
+.ranking-values {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.ranking-valor {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1e3c72;
+}
+
+.ranking-qtd {
+    font-size: .72rem;
+    color: #999;
+}
+
+/* ===== Badge de status ===== */
+.badge-status {
+    font-size: .72rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.badge-pendente  { background: #fff3cd; color: #856404; }
+.badge-aprovado  { background: #cfe2ff; color: #084298; }
+.badge-baixado   { background: #d1e7dd; color: #0a3622; }
+
+/* ===== DataTables length/pagination ===== */
+#tabelaPedidos_length {
+    padding: .5rem 1rem;
+}
+
+#tabelaPedidos_paginate {
+    padding: .5rem 1rem;
+}
+
+/* ===== Responsividade ===== */
+@media (max-width: 768px) {
+    .bignumber-value {
+        font-size: 1.1rem;
+    }
+    .bignumber-card {
+        min-height: 75px;
+        padding: .85rem 1rem;
+    }
+    .bignumber-icon {
+        font-size: 1.5rem;
+    }
+}

@@ -4,11 +4,11 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, Http404
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Q, Sum, Count, Avg
 
 
 from .forms import MaquinaForm, AddOperadorForm
-from .models import Maquina, Operador, Setor
+from .models import Maquina, Operador, Setor, PedidoCompra
 from execucao.models import InfoSolicitacao, Execucao
 from cadastro.models import TipoTarefas
 import psycopg2
@@ -398,3 +398,183 @@ def api_tarefa_rotina(request):
     tarefas_rotina = list(qs)   
 
     return JsonResponse({'message':'success','tarefasRotina': tarefas_rotina})
+
+
+# ─── Pedidos de Compra ────────────────────────────────────────────────────────
+
+def list_pedido_compra(request):
+    return render(request, 'pedido_compra/list.html')
+
+
+@csrf_exempt
+def processar_pedido_compra(request):
+    draw = int(request.POST.get('draw', 0))
+    start = int(request.POST.get('start', 0))
+    length = int(request.POST.get('length', 10))
+
+    order_column_index = int(request.POST.get('order[0][column]', 0))
+    order_dir = request.POST.get('order[0][dir]', 'desc')
+
+    columns = [
+        'data_criacao', 'numero_pedido', 'responsavel',
+        'fornecedor_codigo', 'codigo_produto', 'descricao_produto',
+        'valor', 'data_aprovacao', 'data_baixa',
+    ]
+    order_column = columns[min(order_column_index, len(columns) - 1)]
+    if order_dir == 'desc':
+        order_column = '-' + order_column
+
+    search_value = request.POST.get('search[value]', '')
+    data_inicio = request.POST.get('data_inicio', '')
+    data_fim = request.POST.get('data_fim', '')
+    fornecedor = request.POST.get('fornecedor', '')
+    responsavel = request.POST.get('responsavel', '')
+    status = request.POST.get('status', '')
+
+    pedidos = PedidoCompra.objects.all()
+
+    if data_inicio:
+        pedidos = pedidos.filter(data_criacao__gte=data_inicio)
+    if data_fim:
+        pedidos = pedidos.filter(data_criacao__lte=data_fim)
+    if fornecedor:
+        pedidos = pedidos.filter(fornecedor_codigo=fornecedor)
+    if responsavel:
+        pedidos = pedidos.filter(responsavel=responsavel)
+    if status == 'baixado':
+        pedidos = pedidos.filter(data_baixa__isnull=False)
+    elif status == 'aprovado':
+        pedidos = pedidos.filter(data_aprovacao__isnull=False, data_baixa__isnull=True)
+    elif status == 'pendente':
+        pedidos = pedidos.filter(data_aprovacao__isnull=True, data_baixa__isnull=True)
+
+    if search_value:
+        pedidos = pedidos.filter(
+            Q(numero_pedido__icontains=search_value) |
+            Q(descricao_produto__icontains=search_value) |
+            Q(fornecedor_codigo__icontains=search_value) |
+            Q(responsavel__icontains=search_value) |
+            Q(codigo_produto__icontains=search_value)
+        )
+
+    total_records = PedidoCompra.objects.count()
+    filtered_records = pedidos.count()
+
+    pedidos = pedidos.order_by(order_column)
+
+    paginator = Paginator(pedidos, length)
+    pedidos_page = paginator.get_page(start // length + 1)
+
+    data = []
+    for p in pedidos_page:
+        if p.data_baixa:
+            status_display = 'Baixado'
+            status_class = 'success'
+        elif p.data_aprovacao:
+            status_display = 'Aprovado'
+            status_class = 'primary'
+        else:
+            status_display = 'Pendente'
+            status_class = 'warning'
+
+        data.append({
+            'data_criacao': p.data_criacao.strftime('%d/%m/%Y') if p.data_criacao else '',
+            'numero_pedido': p.numero_pedido,
+            'responsavel': p.responsavel or '',
+            'fornecedor_codigo': p.fornecedor_codigo or '',
+            'codigo_produto': p.codigo_produto or '',
+            'descricao_produto': p.descricao_produto or '',
+            'valor': float(p.valor),
+            'data_aprovacao': p.data_aprovacao.strftime('%d/%m/%Y') if p.data_aprovacao else '',
+            'data_baixa': p.data_baixa.strftime('%d/%m/%Y') if p.data_baixa else '',
+            'status': status_display,
+            'status_class': status_class,
+        })
+
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': filtered_records,
+        'data': data,
+    })
+
+
+@csrf_exempt
+def api_big_numbers_pedido_compra(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método não permitido'}, status=405)
+
+    data_inicio = request.POST.get('data_inicio', '')
+    data_fim = request.POST.get('data_fim', '')
+    fornecedor = request.POST.get('fornecedor', '')
+    responsavel = request.POST.get('responsavel', '')
+    status = request.POST.get('status', '')
+
+    pedidos = PedidoCompra.objects.all()
+
+    if data_inicio:
+        pedidos = pedidos.filter(data_criacao__gte=data_inicio)
+    if data_fim:
+        pedidos = pedidos.filter(data_criacao__lte=data_fim)
+    if fornecedor:
+        pedidos = pedidos.filter(fornecedor_codigo=fornecedor)
+    if responsavel:
+        pedidos = pedidos.filter(responsavel=responsavel)
+    if status == 'baixado':
+        pedidos = pedidos.filter(data_baixa__isnull=False)
+    elif status == 'aprovado':
+        pedidos = pedidos.filter(data_aprovacao__isnull=False, data_baixa__isnull=True)
+    elif status == 'pendente':
+        pedidos = pedidos.filter(data_aprovacao__isnull=True, data_baixa__isnull=True)
+
+    agg = pedidos.aggregate(
+        total_valor=Sum('valor'),
+        total_pedidos=Count('id'),
+        ticket_medio=Avg('valor'),
+    )
+
+    fornecedores_unicos = (
+        pedidos
+        .exclude(fornecedor_codigo__isnull=True)
+        .exclude(fornecedor_codigo='')
+        .values('fornecedor_codigo')
+        .distinct()
+        .count()
+    )
+
+    ranking_qs = (
+        pedidos
+        .exclude(fornecedor_codigo__isnull=True)
+        .exclude(fornecedor_codigo='')
+        .values('fornecedor_codigo')
+        .annotate(total=Sum('valor'), qtd=Count('id'))
+        .order_by('-total')[:10]
+    )
+
+    return JsonResponse({
+        'total_valor': float(agg['total_valor'] or 0),
+        'total_pedidos': agg['total_pedidos'] or 0,
+        'ticket_medio': float(agg['ticket_medio'] or 0),
+        'fornecedores_unicos': fornecedores_unicos,
+        'ranking': list(ranking_qs),
+    })
+
+
+def api_filtros_pedido_compra(request):
+    fornecedores = list(
+        PedidoCompra.objects
+        .exclude(fornecedor_codigo__isnull=True)
+        .exclude(fornecedor_codigo='')
+        .values_list('fornecedor_codigo', flat=True)
+        .distinct()
+        .order_by('fornecedor_codigo')
+    )
+    responsaveis = list(
+        PedidoCompra.objects
+        .exclude(responsavel__isnull=True)
+        .exclude(responsavel='')
+        .values_list('responsavel', flat=True)
+        .distinct()
+        .order_by('responsavel')
+    )
+    return JsonResponse({'fornecedores': fornecedores, 'responsaveis': responsaveis})

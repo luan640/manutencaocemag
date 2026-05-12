@@ -14,6 +14,12 @@ urlpatterns = [
     path('operador/edit/<int:pk>', edit_operador, name='edit_operador'),
     path('api/operadores/', api_operadores, name='api_operadores'),
 
+    # Pedidos de Compra
+    path('pedido-compra/list', list_pedido_compra, name='list_pedido_compra'),
+    path('pedido-compra/processar', processar_pedido_compra, name='processar_pedido_compra'),
+    path('pedido-compra/big-numbers', api_big_numbers_pedido_compra, name='api_big_numbers_pedido_compra'),
+    path('pedido-compra/filtros', api_filtros_pedido_compra, name='api_filtros_pedido_compra'),
+
     # APIS
     path('api/maquinas/', api_maquinas, name='api_maquinas'),
     path('api/maquinas-list/', api_maquinas_list, name='api_maquinas_list'),
