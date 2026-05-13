@@ -7,7 +7,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\pcp2\\\\manutencao\\\\manutencao_v2\\\\projeto_exec\" -Force)",
       "Bash(Select-Object Name, Mode)",
       "Bash(python -m py_compile cadastro/views.py)",
-      "Bash(python manage.py collectstatic --noinput --settings=manutencao_project.settings.dev)"
+      "Bash(python manage.py collectstatic --noinput --settings=manutencao_project.settings.dev)",
+      "Bash(python -m py_compile cadastro/checklist_views.py)"
     ]
   }
 }

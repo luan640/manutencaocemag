@@ -47,143 +47,317 @@ TIPO_PERGUNTA_ALIAS = {
 
 
 class SimplePDF:
-    PAGE_WIDTH = 595
+    PAGE_WIDTH  = 595
     PAGE_HEIGHT = 842
-    MARGIN_X = 40
-    MARGIN_TOP = 40
-    MARGIN_BOTTOM = 40
+    MARGIN_X    = 40
+    CONTENT_W   = 515   # PAGE_WIDTH - 2 * MARGIN_X
+    MARGIN_BOT  = 52
+    HEADER_H    = 54
 
-    def __init__(self, title):
-        self.title = title
-        self.pages = []
-        self.current = []
-        self.y = self.PAGE_HEIGHT - self.MARGIN_TOP
-        self.page_number = 0
-        self.new_page()
+    def __init__(self, report_id, generated_at=""):
+        self.report_id    = report_id
+        self.generated_at = generated_at
+        self.pages        = []
+        self.current      = []
+        self.y            = 0
+        self.page_number  = 0
+        self._new_page()
+
+    # ── primitives ────────────────────────────────────────────────────────
 
     def _escape(self, text):
         text = str(text or "")
         text = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
         return text.encode("cp1252", errors="replace").decode("latin-1")
 
-    def new_page(self):
-        if self.current:
-            self.pages.append("\n".join(self.current))
-        self.page_number += 1
-        self.current = []
-        self.y = self.PAGE_HEIGHT - self.MARGIN_TOP
-        self.text(self.MARGIN_X, self.y, self.title, size=15)
-        self.y -= 18
-        self.text(self.MARGIN_X, self.y, f"Pagina {self.page_number}", size=9)
-        self.y -= 18
-        self.line(self.MARGIN_X, self.y, self.PAGE_WIDTH - self.MARGIN_X, self.y)
-        self.y -= 14
+    def _op(self, cmd):
+        self.current.append(cmd)
 
-    def ensure_space(self, height):
-        if self.y - height < self.MARGIN_BOTTOM:
-            self.new_page()
+    def _txt(self, x, y, text, size=10, bold=False):
+        f = "/F2" if bold else "/F1"
+        self._op(f"BT {f} {size} Tf 1 0 0 1 {x:.1f} {y:.1f} Tm ({self._escape(text)}) Tj ET")
 
-    def text(self, x, y, text, size=10):
-        safe = self._escape(text)
-        self.current.append(f"BT /F1 {size} Tf 1 0 0 1 {x:.2f} {y:.2f} Tm ({safe}) Tj ET")
+    def _line(self, x1, y1, x2, y2, w=0.5):
+        self._op(f"q {w:.2f} w {x1:.1f} {y1:.1f} m {x2:.1f} {y2:.1f} l S Q")
 
-    def wrap_text(self, text, max_chars):
+    def _frect(self, x, y, w, h, r=0.0, g=0.0, b=0.0):
+        self._op(f"q {r:.3f} {g:.3f} {b:.3f} rg {x:.1f} {y:.1f} {w:.1f} {h:.1f} re f Q")
+
+    def _srect(self, x, y, w, h, lw=0.5, r=0.7, g=0.7, b=0.7):
+        self._op(f"q {lw:.2f} w {r:.2f} {g:.2f} {b:.2f} RG {x:.1f} {y:.1f} {w:.1f} {h:.1f} re S Q")
+
+    def _wrap(self, text, maxc):
         text = str(text or "").strip()
         if not text:
             return [""]
         words = text.split()
-        lines = []
-        current = words[0]
+        lines, cur = [], words[0]
         for word in words[1:]:
-            candidate = f"{current} {word}"
-            if len(candidate) <= max_chars:
-                current = candidate
+            cand = f"{cur} {word}"
+            if len(cand) <= maxc:
+                cur = cand
             else:
-                lines.append(current)
-                current = word
-        lines.append(current)
+                lines.append(cur)
+                cur = word
+        lines.append(cur)
         return lines
 
-    def write_paragraph(self, x, text, size=10, max_chars=85, line_height=13):
-        lines = self.wrap_text(text, max_chars)
-        self.ensure_space(len(lines) * line_height)
-        for line in lines:
-            self.text(x, self.y, line, size=size)
-            self.y -= line_height
-        return lines
+    # ── page lifecycle ─────────────────────────────────────────────────────
 
-    def line(self, x1, y1, x2, y2):
-        self.current.append(f"{x1:.2f} {y1:.2f} m {x2:.2f} {y2:.2f} l S")
+    def _new_page(self):
+        if self.current:
+            self._render_footer()
+            self.pages.append("\n".join(self.current))
+        self.page_number += 1
+        self.current = []
+        self._render_header()
+        self.y = self.PAGE_HEIGHT - self.HEADER_H - 6
 
-    def rect(self, x, y, width, height):
-        self.current.append(f"{x:.2f} {y:.2f} {width:.2f} {height:.2f} re S")
+    def _render_header(self):
+        # Dark top bar
+        self._frect(self.MARGIN_X, self.PAGE_HEIGHT - 44,
+                    self.CONTENT_W, 38, r=0.13, g=0.16, b=0.20)
+        # White text
+        self._op("q 1 1 1 rg")
+        self._txt(self.MARGIN_X + 10, self.PAGE_HEIGHT - 22, "CEMAG", size=15, bold=True)
+        self._txt(self.MARGIN_X + 10, self.PAGE_HEIGHT - 36, "Gestão de Manutenção", size=7.5)
+        self._txt(self.PAGE_WIDTH - 230, self.PAGE_HEIGHT - 24,
+                  "Relatório de Manutenção Autônoma", size=9)
+        self._op("Q")
+        # Blue accent line below bar
+        self._frect(self.MARGIN_X, self.PAGE_HEIGHT - 46, self.CONTENT_W, 2,
+                    r=0.16, g=0.45, b=0.80)
 
-    def draw_table(self, headers, rows, widths, row_height=18, header_height=20):
-        table_width = sum(widths)
+    def _render_footer(self):
+        fy = self.MARGIN_BOT - 4
+        self._line(self.MARGIN_X, fy + 8, self.MARGIN_X + self.CONTENT_W, fy + 8, w=0.3)
+        self._op("q 0.45 0.45 0.45 rg")
+        self._txt(self.MARGIN_X, fy - 4,
+                  f"Documento #{self.report_id}   |   Gerado em: {self.generated_at}   |   CEMAG - Gestão de Manutenção",
+                  size=7)
+        self._txt(self.MARGIN_X + self.CONTENT_W - 55, fy - 4,
+                  f"Pag. {self.page_number}", size=7)
+        self._op("Q")
+
+    def ensure_space(self, h):
+        if self.y - h < self.MARGIN_BOT:
+            self._new_page()
+
+    # ── high-level blocks ──────────────────────────────────────────────────
+
+    def title_block(self, main_title, subtitle=""):
+        self.ensure_space(58)
+        bh = 52
+        self._frect(self.MARGIN_X, self.y - bh, self.CONTENT_W, bh,
+                    r=0.95, g=0.97, b=1.00)
+        self._srect(self.MARGIN_X, self.y - bh, self.CONTENT_W, bh,
+                    lw=0.8, r=0.65, g=0.76, b=0.90)
+        self._frect(self.MARGIN_X, self.y - bh, 4, bh, r=0.13, g=0.41, b=0.74)
+        self._txt(self.MARGIN_X + 14, self.y - 20, main_title, size=14, bold=True)
+        if subtitle:
+            self._op("q 0.38 0.38 0.38 rg")
+            self._txt(self.MARGIN_X + 14, self.y - 36, subtitle, size=9)
+            self._op("Q")
+        self.y -= bh + 10
+
+    def section_header(self, title):
+        self.ensure_space(26)
+        self._frect(self.MARGIN_X, self.y - 20, self.CONTENT_W, 20,
+                    r=0.20, g=0.24, b=0.29)
+        self._op("q 1 1 1 rg")
+        self._txt(self.MARGIN_X + 10, self.y - 14, title.upper(), size=8.5, bold=True)
+        self._op("Q")
+        self.y -= 26
+
+    def info_grid(self, rows):
+        col_lbl = 140
+        col_val = self.CONTENT_W - col_lbl
+        rh = 19
         x = self.MARGIN_X
-        self.ensure_space(header_height)
-        header_y = self.y
-        self.rect(x, header_y - header_height, table_width, header_height)
-        cursor = x
-        for index, header in enumerate(headers):
-            if index:
-                self.line(cursor, header_y, cursor, header_y - header_height)
-            self.text(cursor + 4, header_y - 14, header, size=9)
-            cursor += widths[index]
-        self.y -= header_height
+        for i, (label, value) in enumerate(rows):
+            self.ensure_space(rh)
+            ry = self.y
+            bg = 0.97 if i % 2 == 0 else 1.0
+            self._frect(x, ry - rh, self.CONTENT_W, rh, r=bg, g=bg, b=bg)
+            self._frect(x, ry - rh, col_lbl, rh, r=0.92, g=0.93, b=0.95)
+            self._srect(x, ry - rh, self.CONTENT_W, rh, lw=0.3, r=0.82, g=0.82, b=0.82)
+            self._line(x + col_lbl, ry, x + col_lbl, ry - rh, w=0.3)
+            self._txt(x + 8, ry - 13, str(label), size=8.5, bold=True)
+            val = str(value or "-")
+            if len(val) > 62:
+                val = val[:60] + "..."
+            self._txt(x + col_lbl + 8, ry - 13, val, size=8.5)
+            self.y -= rh
 
-        for row in rows:
-            self.ensure_space(row_height)
-            row_y = self.y
-            self.rect(x, row_y - row_height, table_width, row_height)
-            cursor = x
-            for index, value in enumerate(row):
-                if index:
-                    self.line(cursor, row_y, cursor, row_y - row_height)
-                self.text(cursor + 4, row_y - 13, value, size=9)
-                cursor += widths[index]
-            self.y -= row_height
+    def checklist_item(self, number, question, items):
+        """
+        items: list of (label, checked)
+          checked=True  → realizado   (caixa verde)
+          checked=False → não realizado (caixa vermelha)
+          checked=None  → resposta de texto livre
+        """
+        LH = 13  # line height
+
+        # Normaliza e pré-calcula linhas de cada item
+        processed = []
+        for row in items:
+            if isinstance(row, (list, tuple)) and len(row) >= 2:
+                label, checked = str(row[0]), row[1]
+            elif isinstance(row, str):
+                label, checked = row, None
+            else:
+                continue
+            max_c = 60 if checked is not None else 68
+            lines = self._wrap(label, max_c)
+            processed.append((label, checked, lines))
+
+        q_lines = self._wrap(question, 70)
+        total_lines = sum(len(lns) for _, _, lns in processed)
+        item_h = len(q_lines) * LH + total_lines * LH + 26
+        self.ensure_space(item_h)
+        iy = self.y
+        x  = self.MARGIN_X
+
+        # Fundo alternado
+        bg = 0.975 if number % 2 == 0 else 1.0
+        self._frect(x, iy - item_h, self.CONTENT_W, item_h, r=bg, g=bg, b=bg)
+        ar, ag, ab = (0.13, 0.41, 0.74) if number % 2 == 0 else (0.07, 0.29, 0.55)
+        self._frect(x, iy - item_h, 4, item_h, r=ar, g=ag, b=ab)
+
+        # Badge numérico
+        self._frect(x + 8, iy - 16, 18, 14, r=0.13, g=0.41, b=0.74)
+        self._op("q 1 1 1 rg")
+        nx = x + 11 if number < 10 else x + 9
+        self._txt(nx, iy - 12, str(number), size=8, bold=True)
+        self._op("Q")
+
+        # Pergunta em negrito
+        self.y = iy - 13
+        for qline in q_lines:
+            self._txt(x + 30, self.y, qline, size=9, bold=True)
+            self.y -= LH
+
+        self.y -= 5
+
+        # Itens com checkbox e texto completo (sem truncagem)
+        for label, checked, lines in processed:
+            cy  = self.y
+            cx  = x + 30
+            bs  = 9
+
+            if checked is None:
+                self._op("q 0.22 0.22 0.22 rg")
+                for line in lines:
+                    self._txt(cx, self.y, line, size=8.5)
+                    self.y -= LH
+                self._op("Q")
+            else:
+                # Caixa colorida + ícone vetorial, alinhados ao baseline do texto
+                bx = cx
+                by = cy - 2   # fundo da caixa ligeiramente abaixo do baseline
+                bs = 9        # tamanho da caixa
+
+                if checked:
+                    self._frect(bx, by, bs, bs, r=0.08, g=0.56, b=0.20)
+                    # Checkmark branco (✓)
+                    self._op(
+                        f"q 1.4 w 1 1 1 RG "
+                        f"{bx+1.5:.1f} {cy+1.5:.1f} m "
+                        f"{bx+3.5:.1f} {cy-0.5:.1f} l "
+                        f"{bx+7.5:.1f} {cy+5.5:.1f} l S Q"
+                    )
+                else:
+                    self._frect(bx, by, bs, bs, r=0.82, g=0.14, b=0.14)
+                    # X branco (✗)
+                    self._op(
+                        f"q 1.3 w 1 1 1 RG "
+                        f"{bx+1.5:.1f} {cy-0.5:.1f} m {bx+7.5:.1f} {cy+5.5:.1f} l S "
+                        f"{bx+7.5:.1f} {cy-0.5:.1f} m {bx+1.5:.1f} {cy+5.5:.1f} l S Q"
+                    )
+
+                self._op("q 0.08 0.08 0.08 rg" if checked else "q 0.40 0.40 0.40 rg")
+                for line in lines:
+                    self._txt(cx + 13, self.y, line, size=8.5)
+                    self.y -= LH
+                self._op("Q")
+
+        self.y -= 4
+        self._line(x + 4, self.y, x + self.CONTENT_W, self.y, w=0.25)
+        self.y -= 4
+
+    def signature_section(self):
+        self.ensure_space(92)
+        self.y -= 10
+        box_w = (self.CONTENT_W - 16) // 2
+        labels = [
+            ("Responsável pela Execução", "Operador / Técnico"),
+            ("Auditor / Supervisor",      "Gestão de Manutenção"),
+        ]
+        for i, (label, sub) in enumerate(labels):
+            x  = self.MARGIN_X + i * (box_w + 16)
+            bh = 74
+            self._frect(x, self.y - bh, box_w, bh, r=0.97, g=0.97, b=0.97)
+            self._srect(x, self.y - bh, box_w, bh, lw=0.5, r=0.72, g=0.72, b=0.72)
+            self._frect(x, self.y - bh, box_w, 16, r=0.22, g=0.25, b=0.29)
+            self._op("q 1 1 1 rg")
+            self._txt(x + 8, self.y - bh + 5, label, size=7.5, bold=True)
+            self._op("Q")
+            self._op("q 0.5 0.5 0.5 rg")
+            self._txt(x + 8, self.y - bh + 17, sub, size=7)
+            self._op("Q")
+            self._line(x + 10, self.y - 32, x + box_w - 10, self.y - 32, w=0.6)
+            self._txt(x + 10, self.y - 46, "Nome:  _______________________________", size=8)
+            self._txt(x + 10, self.y - 60, "Data:  _____ / _____ / _______", size=8)
+        self.y -= 86
+
+    # ── build ──────────────────────────────────────────────────────────────
 
     def build(self):
         if self.current:
+            self._render_footer()
             self.pages.append("\n".join(self.current))
 
         objects = []
         objects.append("<< /Type /Catalog /Pages 2 0 R >>")
         kids = " ".join(f"{3 + i * 2} 0 R" for i in range(len(self.pages)))
         objects.append(f"<< /Type /Pages /Count {len(self.pages)} /Kids [{kids}] >>")
-        font_id = 3 + len(self.pages) * 2
+        f1_id = 3 + len(self.pages) * 2
+        f2_id = f1_id + 1
 
         for index, content in enumerate(self.pages):
-            page_id = 3 + index * 2
+            page_id    = 3 + index * 2
             content_id = page_id + 1
             objects.append(
-                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {self.PAGE_WIDTH} {self.PAGE_HEIGHT}] "
-                f"/Resources << /Font << /F1 {font_id} 0 R >> >> /Contents {content_id} 0 R >>"
+                f"<< /Type /Page /Parent 2 0 R "
+                f"/MediaBox [0 0 {self.PAGE_WIDTH} {self.PAGE_HEIGHT}] "
+                f"/Resources << /Font << /F1 {f1_id} 0 R /F2 {f2_id} 0 R >> >> "
+                f"/Contents {content_id} 0 R >>"
             )
             stream = f"q 0.2 w\n{content}\nQ".encode("latin-1")
-            objects.append(f"<< /Length {len(stream)} >>\nstream\n{stream.decode('latin-1')}\nendstream")
+            objects.append(
+                f"<< /Length {len(stream)} >>\nstream\n{stream.decode('latin-1')}\nendstream"
+            )
 
-        objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+        objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+        objects.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>")
 
-        buffer = BytesIO()
-        buffer.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+        buf = BytesIO()
+        buf.write(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
         offsets = [0]
         for idx, obj in enumerate(objects, start=1):
-            offsets.append(buffer.tell())
-            buffer.write(f"{idx} 0 obj\n{obj}\nendobj\n".encode("latin-1"))
-        xref_pos = buffer.tell()
-        buffer.write(f"xref\n0 {len(objects) + 1}\n".encode("latin-1"))
-        buffer.write(b"0000000000 65535 f \n")
+            offsets.append(buf.tell())
+            buf.write(f"{idx} 0 obj\n{obj}\nendobj\n".encode("latin-1"))
+        xref_pos = buf.tell()
+        buf.write(f"xref\n0 {len(objects) + 1}\n".encode("latin-1"))
+        buf.write(b"0000000000 65535 f \n")
         for offset in offsets[1:]:
-            buffer.write(f"{offset:010d} 00000 n \n".encode("latin-1"))
-        buffer.write(
-            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF".encode(
-                "latin-1"
-            )
+            buf.write(f"{offset:010d} 00000 n \n".encode("latin-1"))
+        buf.write(
+            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_pos}\n%%EOF".encode("latin-1")
         )
-        buffer.seek(0)
-        return buffer
+        buf.seek(0)
+        return buf
 
 
 def _is_management_user(user):
@@ -1271,61 +1445,61 @@ def checklist_response_pdf(request, response_id):
         raise Http404
 
     response = get_object_or_404(
-        ChecklistResposta.objects.select_related('formulario', 'versao', 'maquina', 'funcionario').prefetch_related(
-            'itens__pergunta__opcoes'
-        ),
+        ChecklistResposta.objects.select_related(
+            'formulario', 'versao', 'maquina', 'funcionario'
+        ).prefetch_related('itens__pergunta__opcoes'),
         pk=response_id,
     )
 
-    pdf = SimplePDF(f"Relatório de Checklist Autônomo #{response.id}")
+    generated_at  = datetime.now().strftime("%d/%m/%Y %H:%M")
+    registrado_em = response.criado_em.strftime("%d/%m/%Y %H:%M")
 
-    pdf.text(40, pdf.y, "Identificação", size=12)
-    pdf.y -= 14
-    pdf.draw_table(
-        ["Campo", "Valor"],
-        [
-            ["Formulário", f"{response.versao.titulo} (v{response.versao.numero})"],
-            ["Máquina", f"{response.maquina.codigo} - {response.maquina.descricao or '-'}"],
-            ["Funcionário", f"{response.funcionario.nome} - {response.funcionario.matricula}"],
-            ["Data de referência", response.data_referencia.strftime("%d/%m/%Y")],
-            ["Registrado em", response.criado_em.strftime("%d/%m/%Y %H:%M")],
-            ["Observações", (response.observacoes or "-")[:80]],
-            ["Imagem", response.imagem.url if response.imagem else "Não anexada"],
-        ],
-        [150, 365],
+    pdf = SimplePDF(report_id=response.id, generated_at=generated_at)
+
+    # ── Bloco de título ────────────────────────────────────────────────────
+    pdf.title_block(
+        "Checklist de Manutenção Autônoma",
+        (
+            f"Registro #{response.id}   |   "
+            f"Versão {response.versao.numero}   |   "
+            f"{response.data_referencia.strftime('%d/%m/%Y')}"
+        ),
     )
-    pdf.y -= 18
-    pdf.text(40, pdf.y, "Itens do Checklist", size=12)
-    pdf.y -= 18
 
+    # ── Identificação ──────────────────────────────────────────────────────
+    pdf.section_header("Identificação")
+    pdf.info_grid([
+        ("Formulário",         f"{response.versao.titulo} (v{response.versao.numero})"),
+        ("Máquina",            f"{response.maquina.codigo} - {response.maquina.descricao or '-'}"),
+        ("Funcionário",        response.funcionario.nome),
+        ("Matrícula",          response.funcionario.matricula),
+        ("Data de referência", response.data_referencia.strftime("%d/%m/%Y")),
+        ("Registrado em",      registrado_em),
+        ("Observações",        (response.observacoes or "-")[:120]),
+        ("Imagem",             "Anexada" if response.imagem else "Não anexada"),
+    ])
+    pdf.y -= 8
+
+    # ── Itens do checklist ─────────────────────────────────────────────────
+    pdf.section_header("Itens do Checklist")
     for index, item in enumerate(response.itens.all(), start=1):
-        if item.texto_resposta:
-            detalhe = item.texto_resposta
-        elif item.opcoes_selecionadas:
-            opcoes = {str(opcao.id): opcao.valor for opcao in item.pergunta.opcoes.all()}
-            detalhe = ", ".join(opcoes.get(str(valor), str(valor)) for valor in item.opcoes_selecionadas)
-        else:
-            detalhe = "-"
-        subitens = [
-            trecho.strip(" -")
-            for trecho in detalhe.replace("\r", "\n").replace(";", "\n").split("\n")
-            for trecho in trecho.split(",")
-            if trecho.strip(" -")
-        ]
-        if not subitens or detalhe == "-":
-            subitens = ["Item registrado pelo operador."]
+        pergunta = item.pergunta
 
-        estimated_lines = 2 + len(subitens) * 2
-        pdf.ensure_space(estimated_lines * 13)
-        pdf.text(40, pdf.y, f"{index}. {item.pergunta.texto}", size=10)
-        pdf.y -= 13
-        # pdf.write_paragraph(58, item.pergunta.texto, size=11, max_chars=72, line_height=13)
-        pdf.y -= 2
-        for subitem in subitens:
-            pdf.write_paragraph(58, f"[X] {subitem}", size=10, max_chars=74, line_height=13)
-        pdf.y -= 8
-        pdf.line(40, pdf.y, 555, pdf.y)
-        pdf.y -= 12
+        if pergunta.tipo in (
+            ChecklistPergunta.TIPO_ESCOLHA_UNICA,
+            ChecklistPergunta.TIPO_MULTIPLA_ESCOLHA,
+        ):
+            selected_values = set(item.opcoes_selecionadas or [])
+            structured = [
+                (opcao.valor, opcao.valor in selected_values)
+                for opcao in pergunta.opcoes.all()
+            ]
+        else:
+            structured = [(item.texto_resposta or "Sem resposta registrada.", None)]
+
+        pdf.checklist_item(index, pergunta.texto, structured)
+
+    pdf.y -= 12
 
     filename = f"checklist-resposta-{response.id}.pdf"
     download = str(request.GET.get('download') or '').strip().lower() in {'1', 'true', 'sim', 'yes'}

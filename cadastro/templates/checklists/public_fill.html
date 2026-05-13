@@ -76,7 +76,7 @@
                             </div>
 
                             <div class="d-flex justify-content-end">
-                                <button class="btn btn-primary" type="submit">Enviar checklist</button>
+                                <button class="btn btn-primary" type="submit" id="submit-btn">Enviar checklist</button>
                             </div>
                         </form>
                     </div>
@@ -127,6 +127,10 @@
                 event.preventDefault();
                 alertBox.innerHTML = "";
 
+                const submitBtn = document.getElementById("submit-btn");
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Enviando...";
+
                 const payload = new FormData();
                 payload.append("funcionario_id", document.getElementById("employee-id").value);
                 payload.append("data_referencia", document.getElementById("reference-date").value);
@@ -138,17 +142,24 @@
                     payload.append("imagem", imageInput.files[0]);
                 }
 
-                const response = await fetch(submitEndpoint, {
-                    method: "POST",
-                    body: payload,
-                });
-                const data = await response.json();
-                if (!response.ok) {
-                    showAlert(data.error || "Nao foi possivel enviar o checklist.");
-                    return;
+                try {
+                    const response = await fetch(submitEndpoint, {
+                        method: "POST",
+                        body: payload,
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        showAlert(data.error || "Nao foi possivel enviar o checklist.");
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Enviar checklist";
+                        return;
+                    }
+                    form.innerHTML = `<div class="alert alert-success mb-0">Checklist enviado com sucesso em ${data.date}.</div>`;
+                } catch (err) {
+                    showAlert("Erro de conexao. Tente novamente.");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Enviar checklist";
                 }
-
-                form.innerHTML = `<div class="alert alert-success mb-0">Checklist enviado com sucesso em ${data.date}.</div>`;
             });
         })();
     </script>
