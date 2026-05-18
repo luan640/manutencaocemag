@@ -74,6 +74,7 @@ class Solicitacao(models.Model):
     programacao = models.DateField(null=True, blank=True)
     atribuido = models.ForeignKey(Operador, on_delete=models.CASCADE, related_name='operador_atribuido', null=True, blank=True)
     motivo_atraso = models.CharField(max_length=255,blank=True,null=True)
+    rejeitado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_rejeitadas')
 
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'

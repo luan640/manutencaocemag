@@ -620,17 +620,19 @@ def dados_editar_execucao(request, pk):
 def mais_detalhes_ordem(request, pk):
     # Consulta para buscar execuções com operadores relacionados
     solicitacoes = Solicitacao.objects.filter(pk=pk).select_related(
-        'atribuido',  # Relacionamento com Operador
-        'maquina',    # Relacionamento com Maquina
-        'setor',      # Relacionamento com Setor
-        'solicitante', # Relacionamento com Funcionario
-        'tarefa'      # Relacionamento com TipoTarefa
+        'atribuido',
+        'maquina',
+        'setor',
+        'solicitante',
+        'tarefa',
+        'rejeitado_por',
     ).annotate(
         nome_solicitante=F('solicitante__nome'),
         setor_nome=F('setor__nome'),
         operador_responsavel=F('atribuido__nome'),
         nome_maquina=Concat(F('maquina__codigo'), Value(' - '), F('maquina__descricao')),
-        nome_tarefa=F('tarefa__nome')
+        nome_tarefa=F('tarefa__nome'),
+        nome_rejeitado_por=F('rejeitado_por__nome'),
     ).values(
         'nome_solicitante',
         'setor_nome',
@@ -645,7 +647,9 @@ def mais_detalhes_ordem(request, pk):
         'programacao',
         'operador_responsavel',
         'nome_maquina',
-        'nome_tarefa'
+        'nome_tarefa',
+        'nome_rejeitado_por',
+        'comentario_manutencao',
     )
 
     return JsonResponse({'solicitacoes': list(solicitacoes)})

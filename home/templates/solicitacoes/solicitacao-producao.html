@@ -2055,6 +2055,15 @@
                                                             <strong>Motivo:</strong> ${item.descricao || 'N/A'}
                                                         </div>
                                                     </div>
+                                                    ${item.status_andamento === 'rejeitado' ? `
+                                                    <div class="row mt-2">
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong class="text-danger">Rejeitado por:</strong> ${item.nome_rejeitado_por || 'N/A'}
+                                                        </div>
+                                                        <div class="col-md-6 mb-2">
+                                                            <strong class="text-danger">Motivo da rejeição:</strong> ${item.comentario_manutencao || 'N/A'}
+                                                        </div>
+                                                    </div>` : ''}
                                                 </div>
                                             </div>
                                         </div>

@@ -393,15 +393,28 @@ def calcular_manutencoes_semanais(request):
                 'manutencoes': []
             })
 
+        def _naive(dt):
+            """Remove tzinfo para comparação com datetimes naive."""
+            if dt is not None and hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+                return dt.replace(tzinfo=None)
+            return dt
+
         maintenance_date = plano_data_base + timedelta(days=plano.periodicidade)
         while maintenance_date <= global_end:
             offset_days = (maintenance_date - global_start).days
             week_index = offset_days // 7
             if 0 <= week_index < 52:
-                # Procura a primeira ordem real para essa máquina/plano
+                # Só aceita ordens abertas antes da próxima data planejada,
+                # evitando que uma OS futura seja casada com um slot passado.
+                next_maintenance_date = maintenance_date + timedelta(days=plano.periodicidade)
                 ordem_index = next((
                     i for i, ordem in enumerate(ordens_realizadas)
-                    if ordem['maquina_id'] == plano.maquina.id and ordem['plano_id'] == plano.id
+                    if ordem['maquina_id'] == plano.maquina.id
+                    and ordem['plano_id'] == plano.id
+                    and (
+                        ordem['data_abertura'] is None
+                        or _naive(ordem['data_abertura']) < next_maintenance_date
+                    )
                 ), None)
 
                 if ordem_index is not None:

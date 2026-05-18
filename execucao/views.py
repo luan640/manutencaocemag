@@ -232,6 +232,7 @@ def editar_solicitacao(request, solicitacao_id):
             with transaction.atomic():
                 if status_inicial == 'rejeitar':
                     solicitacao.status_andamento = 'rejeitado'
+                    solicitacao.rejeitado_por = request.user
                 else:
                     InfoSolicitacao.objects.update_or_create(
                         solicitacao=solicitacao,
