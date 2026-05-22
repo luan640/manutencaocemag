@@ -16,7 +16,7 @@ from .models import Foto, Solicitacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
 from execucao.models import Execucao, MaquinaParada
 from preventiva.models import PlanoPreventiva
-from datetime import datetime
+from datetime import datetime, time
 
 import json
 import requests
@@ -425,7 +425,10 @@ def reprogramar_ordem(request, solicitacao_id):
     print(data_atual)
     if request.method == 'POST':
         data_programacao = request.POST.get('data_programacao')
-        data_prog_obj = datetime.strptime(data_programacao,"%Y-%m-%d")
+        data_prog_obj = datetime.combine(
+            datetime.strptime(data_programacao, "%Y-%m-%d").date(),
+            time(23, 59, 59),
+        )
 
         if data_prog_obj < solicitacao.data_abertura:
             return JsonResponse({
