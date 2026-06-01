@@ -911,6 +911,13 @@ def internal_send_daily_autonomous_overview(request):
     except ValueError as exc:
         return JsonResponse({'error': str(exc)}, status=400)
 
+    if report_date.weekday() == 6:
+        logger.info('[panorama_autonomas] report_date=%s e domingo, envio ignorado.', report_date.isoformat())
+        return JsonResponse(
+            {'message': 'Data de domingo ignorada. Nenhum envio necessario.', 'report_date': report_date.isoformat(), 'skipped_reason': 'sunday'},
+            status=200,
+        )
+
     dry_run = _to_bool(request.GET.get('dry_run') or request.POST.get('dry_run'), default=False)
     result = execute_daily_autonomous_overview(report_date, dry_run=dry_run)
     logger.info(
