@@ -65,6 +65,10 @@ class Execucao(models.Model):
 
         super().save(*args, **kwargs)
 
+        maquina = self.ordem.maquina
+        if maquina and maquina.nao_considerar_parada:
+            return
+
         # Se a execução é nova (número de execução é 1) ou se há uma condição para atualizar MaquinaParada
         if creating:
             if self.n_execucao == 0:

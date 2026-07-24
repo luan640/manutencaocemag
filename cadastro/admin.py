@@ -14,7 +14,14 @@ from .models import (
     TipoTarefas,
 )
 
-admin.site.register(Maquina)
+@admin.register(Maquina)
+class MaquinaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'codigo', 'descricao', 'setor', 'area', 'nao_considerar_parada')
+    list_filter = ('area', 'setor', 'nao_considerar_parada')
+    list_editable = ('nao_considerar_parada',)
+    search_fields = ('codigo', 'descricao', 'apelido')
+
+
 admin.site.register(Setor)
 admin.site.register(Operador)
 admin.site.register(TipoTarefas)

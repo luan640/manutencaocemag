@@ -18,6 +18,7 @@ def maquinas_paradas():
     maquinas_paradas = (
         MaquinaParada.objects
         .filter(data_fim=None)
+        .exclude(ordem__maquina__nao_considerar_parada=True)
         .select_related('ordem__maquina')
     )
     

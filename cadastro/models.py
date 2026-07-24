@@ -31,6 +31,11 @@ class Maquina(models.Model):
     foto = models.ImageField(upload_to='fotos/', null=True, blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, blank=True, null=True)
     maquina_critica = models.BooleanField(default=False)
+    nao_considerar_parada = models.BooleanField(
+        default=False,
+        verbose_name='Não considerar parada (exceção)',
+        help_text='Se marcado, esta máquina nunca é registrada como parada (MaquinaParada), mesmo que uma execução indique parada.'
+    )
 
     class Meta:
         constraints = [

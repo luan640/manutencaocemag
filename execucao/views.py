@@ -89,11 +89,13 @@ def criar_execucao(request, solicitacao_id):
                         'error': 'A data de fim deve ser posterior à data de início.'
                     }, status=400)
 
-            if not apos_exec_maq_parada:
+            maquina_excecao_parada = bool(solicitacao.maquina and solicitacao.maquina.nao_considerar_parada)
+
+            if not apos_exec_maq_parada or maquina_excecao_parada:
                 solicitacao.maq_parada = False
 
             if solicitacao.maq_parada == False:
-                if apos_exec_maq_parada:
+                if apos_exec_maq_parada and not maquina_excecao_parada:
                     solicitacao.maq_parada = True
                 
             solicitacao.status_andamento = status
@@ -262,7 +264,10 @@ def editar_solicitacao(request, solicitacao_id):
                     solicitacao.tipo_ferramenta = tipo_ferramenta
                     solicitacao.codigo_ferramenta = codigo_ferramenta
 
-                    solicitacao.maq_parada = True if request.POST.get('flagMaqParada') == 'on' else False
+                    maquina_excecao_parada = bool(solicitacao.maquina and solicitacao.maquina.nao_considerar_parada)
+                    solicitacao.maq_parada = (
+                        True if request.POST.get('flagMaqParada') == 'on' and not maquina_excecao_parada else False
+                    )
 
                     if tipo_manutencao == 'preventiva_programada':
                         solicitacao.planejada = True
