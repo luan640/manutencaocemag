@@ -114,6 +114,11 @@ class Execucao(models.Model):
                         defaults={'data_inicio': self.data_inicio, 'data_fim': self.data_fim}
                     )
 
+        # Nenhuma ordem é finalizada com a máquina ainda parada: ao finalizar,
+        # qualquer parada em aberto dessa ordem é encerrada automaticamente.
+        if self.status == 'finalizada':
+            MaquinaParada.objects.filter(ordem=self.ordem, data_fim__isnull=True).update(data_fim=self.data_fim)
+
     def duracao_servico(self):
         """Calcula a duração da execução em horas"""
         if self.data_fim and self.data_inicio:

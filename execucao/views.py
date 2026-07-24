@@ -90,12 +90,13 @@ def criar_execucao(request, solicitacao_id):
                     }, status=400)
 
             maquina_excecao_parada = bool(solicitacao.maquina and solicitacao.maquina.nao_considerar_parada)
+            ordem_finalizada = status == 'finalizada'
 
-            if not apos_exec_maq_parada or maquina_excecao_parada:
+            if not apos_exec_maq_parada or maquina_excecao_parada or ordem_finalizada:
                 solicitacao.maq_parada = False
 
             if solicitacao.maq_parada == False:
-                if apos_exec_maq_parada and not maquina_excecao_parada:
+                if apos_exec_maq_parada and not maquina_excecao_parada and not ordem_finalizada:
                     solicitacao.maq_parada = True
                 
             solicitacao.status_andamento = status
