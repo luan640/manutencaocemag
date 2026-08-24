@@ -1,89 +1,94 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
-<div class="col-md-12">
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>#{{ solicitacao.pk }}</span>
-            <div class="text-end ms-auto">
-                {% if solicitacao.status_andamento %}
-                    {% if solicitacao.status_andamento == 'finalizada' %}
-                    <span class="badge text-bg-success">Finalizado</span>
-                    {% elif solicitacao.status_andamento == 'em_execucao' %}
-                    <span class="badge text-bg-info">Em execução</span>
-                    {% elif solicitacao.status_andamento == 'aguardando_material' %}
-                    <span class="badge text-bg-secondary">Aguardando material</span>
-                    {% elif solicitacao.status_andamento == 'aguardando_atendimento' %}
-                    <span class="badge text-bg-primary"><small>Aguardando programação</small></span>
-                    {% endif %}
+<div class="col-md-6">
+    <div class="os-card
+        {% if solicitacao.status_andamento == 'finalizada' %}os-card-accent-success
+        {% elif solicitacao.status_andamento == 'em_execucao' %}os-card-accent-info
+        {% elif solicitacao.status_andamento == 'aguardando_material' %}os-card-accent-secondary
+        {% elif solicitacao.status_andamento == 'aguardando_atendimento' %}os-card-accent-warning
+        {% endif %}">
+        <div class="os-card-header os-card-header-stack">
+            <div class="os-card-header-row">
+                <span class="os-card-id">OS #{{ solicitacao.pk }}</span>
+                {% if solicitacao.status_andamento == 'finalizada' %}
+                    <span class="pill pill-success">Finalizado</span>
+                {% elif solicitacao.status_andamento == 'em_execucao' %}
+                    <span class="pill pill-info">Em execução</span>
+                {% elif solicitacao.status_andamento == 'aguardando_material' %}
+                    <span class="pill pill-secondary">Aguardando material</span>
+                {% endif %}
+                <span class="pill pill-info">{{ solicitacao.data_abertura|days_since }}</span>
+                {% if solicitacao.impacto_producao == 'alto' %}
+                    <span class="pill pill-danger"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+                {% elif solicitacao.impacto_producao == 'medio' %}
+                    <span class="pill pill-warning"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+                {% elif solicitacao.impacto_producao == 'baixo' %}
+                    <span class="pill pill-success"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+                {% endif %}
+                {% if solicitacao.maq_parada %}
+                    <span class="pill pill-danger"><i class="bi bi-exclamation-triangle-fill"></i> Parada</span>
+                {% endif %}
+                <div class="dropdown os-card-menu">
+                    <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
+                        aria-expanded="false" style="background: none; border: none; padding: 0;">
+                        &#x22EE;
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        {% if not solicitacao.status_andamento == 'finalizada' %}
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal"
+                            data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}" onclick="toggleMaqParada('{{ solicitacao.id }}')">
+                            {% if request.user.tipo_acesso == 'solicitante' %}
+                            Visualizar
+                            {% else %}
+                            Programar
+                            {% endif %}
+                        </a>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            <div class="os-card-header-row">
+                {% if solicitacao.planejada %}
+                    <span class="pill pill-purple">Preventiva</span>
+                {% else %}
+                    <span class="pill pill-dark">Corretiva</span>
                 {% endif %}
             </div>
         </div>
-        <div class="card-body">
-            <h6 class="card-title d-flex justify-content-between align-items-center">
-                <!-- <div class="d-flex flex-column">
-                    <span class="fw-bold">{{ solicitacao.setor.nome }}</span>
-                    <span class="fw-bold">{{ solicitacao.solicitante.nome }}</span>
-                    <span class="text-secondary">{{ solicitacao.get_impacto_producao_display }} impacto na produção</span>
-                    <small><span title="{{ solicitacao.maquina.descricao }}" class="fw-bold">{{ solicitacao.maquina.descricao|truncatechars:20 }}</span></small>
-                    <span title="{{ solicitacao.descricao }}" class="text-secondary" style="text-align: justify; font-size: 0.9rem; margin-top: 8px;">
-                        <strong>Motivo:</strong> {{ solicitacao.descricao }}
-                    </span>
-                </div> -->
-                <div class="d-flex flex-row flex-wrap gap-4"> 
-                    <!-- <div class="d-flex flex-column flex-wrap gap-4 "> -->
-                        <span title="{{ solicitacao.setor.nome }}" class="flags fw-bold badge bg-success">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
-                        
-                    <!-- </div> -->
-                    <!-- <div class="d-flex flex-column flex-wrap gap-4"> -->
-                        {% if solicitacao.get_impacto_producao_display %}
-                            {% if solicitacao.get_impacto_producao_display == 'Alto'%}
-                                <span class="flags badge bg-danger">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% elif solicitacao.get_impacto_producao_display == 'Médio'%}
-                                <span class="flags badge text-bg-warning">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% elif solicitacao.get_impacto_producao_display == 'Baixo'%}
-                                <span class="flags badge bg-info">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% endif %}
-                        {% endif %}
-
-                        {% if solicitacao.maquina.descricao %}
-                            <span title="{{ solicitacao.maquina.descricao }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span>
+        <div class="os-card-body">
+            <div class="os-field-grid">
+                <div class="os-field">
+                    <div class="os-field-label"><i class="bi bi-diagram-3"></i> Setor</div>
+                    <div class="os-field-value" title="{{ solicitacao.setor.nome }}">{{ solicitacao.setor.nome|truncatechars:20 }}</div>
+                </div>
+                <div class="os-field">
+                    <div class="os-field-label"><i class="bi bi-cpu"></i> Equipamento</div>
+                    {% if solicitacao.maquina.descricao %}
+                        <div class="os-field-value" title="{{ solicitacao.maquina.descricao }}">{{ solicitacao.maquina.descricao|truncatechars:22 }}</div>
+                    {% else %}
+                        <div class="os-field-value" title="{{ solicitacao.maquina.codigo }}">{{ solicitacao.maquina.codigo }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="os-field-grid mb-0">
+                <div class="os-field">
+                    <div class="os-field-label"><i class="bi bi-person"></i> Solicitante</div>
+                    <div class="os-field-value" title="{{ solicitacao.solicitante.nome }}">{{ solicitacao.solicitante.nome|truncatechars:20 }}</div>
+                </div>
+                <div class="os-field" style="flex: 1 1 240px;">
+                    <div class="os-field-label"><i class="bi bi-chat-left-text"></i> Motivo</div>
+                    {% with plano_preventiva=solicitacao.preventiva_solicitacao.first.plano %}
+                        {% if solicitacao.planejada and plano_preventiva %}
+                            <div class="os-field-value" title="Preventiva: {{ plano_preventiva.nome }}">Preventiva: {{ plano_preventiva.nome }}</div>
                         {% else %}
-                            <span title="{{ solicitacao.maquina.codigo }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.codigo }}</span>
+                            <div class="os-field-value" title="{{ solicitacao.descricao }}">{{ solicitacao.descricao }}</div>
                         {% endif %}
-                        <!-- </div> -->
-
-                    <div class="gap-4" style="width: 100%;">
-                        <span title="{{ solicitacao.solicitante.nome }}" class="flags fw-bold badge text-bg-light">{{ solicitacao.solicitante.nome}}</span><br><br>
-                        <span title="{{ solicitacao.descricao }}" class="text-secondary"  style="text-align: justify; font-size: 0.9rem;">
-                            <strong>Motivo:</strong> {{ solicitacao.descricao }}
-                        </span>
-                    </div>
-                    
+                    {% endwith %}
                 </div>
-                <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
-                    {% if solicitacao.maq_parada %}
-                        <div class="d-flex align-items-center text-danger mb-1">
-                            <!-- Ícone SVG de Exclamação -->
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                class="bi bi-exclamation-triangle-fill me-1" viewBox="0 0 16 16">
-                                <path
-                                    d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-                            </svg>
-                            <small>Parada</small>
-                        </div>
-                    {% endif %}
-            
-                    <div class="text-muted">
-                        <small>{{ solicitacao.data_abertura|days_since }}</small>
-                    </div>
-                    {% if solicitacao.planejada %}
-                        <small><span class="badge text-bg-dark ms-2">Preventiva</span></small>
-                    {% endif %}
-                </div>
-            </h6>
+            </div>
         </div>
-        <div class="card-footer d-flex justify-content-between">
+        <div class="os-card-footer">
             <div>
                 {% if solicitacao.fotos.exists %}
                 <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
@@ -101,24 +106,6 @@
                 {% else %}
                 <span class="badge bg-secondary">Sem Vídeos</span>
                 {% endif %}
-            </div>
-            <div class="dropdown">
-                <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
-                    aria-expanded="false" style="background: none; border: none; padding: 0;">
-                    &#x22EE;
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    {% if not solicitacao.status_andamento == 'finalizada' %}
-                    <a class="dropdown-item" href="#" data-bs-toggle="modal"
-                        data-bs-target="#editarOrdemInicialModal{{ solicitacao.pk }}" onclick="toggleMaqParada('{{ solicitacao.id }}')">
-                        {% if request.user.tipo_acesso == 'solicitante' %}
-                        Visualizar
-                        {% else %}
-                        Programar
-                        {% endif %}
-                    </a>
-                    {% endif %}
-                </ul>
             </div>
         </div>
     </div>

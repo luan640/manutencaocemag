@@ -1,140 +1,56 @@
 {% load custom_filters %}
 
 {% for solicitacao in page_obj %}
-<style>
-    .flags{
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-</style>
 <div class="col-md-12">
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>#{{ solicitacao.pk }}</span>
-            <div class="text-center ms-auto">
-                <a href="#" data-bs-toggle="modal" data-bs-target="#alterarReponsavel{{ solicitacao.pk }}" class="text-decoration-none">
-                    <span id="responsavelAtual_{{ solicitacao.pk }}">{{ solicitacao.atribuido.nome }}</span>
-                </a>
-            </div>
-            <div class="text-end ms-auto">
-                {% if solicitacao.status_andamento %}
-                    {% if solicitacao.status_andamento == 'finalizada' %}
-                        <span class="badge text-bg-success">Finalizado</span>
-                    {% elif solicitacao.status_andamento == 'em_execucao' %}
-                        <span class="badge text-bg-info">Em execução</span>
-                    {% elif solicitacao.status_andamento == 'aguardando_material' %}
-                        <span class="badge text-bg-secondary">Aguardando material</span>
-                    {% elif solicitacao.status_andamento == 'em_espera' %}
-                        <span class="badge text-bg-warning">Em espera</span>
-                    {% endif %}
+    <div class="os-card
+        {% if solicitacao.status_andamento == 'finalizada' %}os-card-accent-success
+        {% elif solicitacao.status_andamento == 'em_execucao' %}os-card-accent-info
+        {% elif solicitacao.status_andamento == 'aguardando_material' %}os-card-accent-secondary
+        {% elif solicitacao.status_andamento == 'em_espera' %}os-card-accent-warning
+        {% endif %}">
+        <div class="os-card-header">
+            <span class="os-card-id">OS #{{ solicitacao.pk }}</span>
+            {% if solicitacao.status_andamento == 'finalizada' %}
+                <span class="pill pill-success">Finalizado</span>
+            {% elif solicitacao.status_andamento == 'em_execucao' %}
+                <span class="pill pill-info">Em execução</span>
+            {% elif solicitacao.status_andamento == 'aguardando_material' %}
+                <span class="pill pill-secondary">Aguardando material</span>
+            {% elif solicitacao.status_andamento == 'em_espera' %}
+                <span class="pill pill-warning">Em espera</span>
+            {% endif %}
+
+            {% if solicitacao.impacto_producao == 'alto' %}
+                <span class="pill pill-danger"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+            {% elif solicitacao.impacto_producao == 'medio' %}
+                <span class="pill pill-warning"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+            {% elif solicitacao.impacto_producao == 'baixo' %}
+                <span class="pill pill-success"><i class="bi bi-flag-fill"></i> {{ solicitacao.get_impacto_producao_display }}</span>
+            {% endif %}
+
+            {% if solicitacao.planejada %}
+                <span class="pill pill-purple">Preventiva</span>
+            {% else %}
+                <span class="pill pill-dark">Corretiva</span>
+            {% endif %}
+
+            {% if solicitacao.status_andamento != 'finalizada' %}
+                {% if solicitacao.maq_parada %}
+                    <span class="pill pill-danger"><i class="bi bi-exclamation-triangle-fill"></i> Parada</span>
                 {% endif %}
-            </div>
-        </div>
-        <div class="card-body">
-            <h6 class="card-title d-flex justify-content-between align-items-center">
-                <div class="d-flex flex-row flex-wrap gap-4"> 
-                    <!-- <div class="d-flex flex-column flex-wrap gap-4 "> -->
-                        <span title="{{ solicitacao.setor.nome }}" class="flags fw-bold badge bg-success">{{ solicitacao.setor.nome|truncatechars:15 }}</span>
-                        
-                    <!-- </div> -->
-                    <!-- <div class="d-flex flex-column flex-wrap gap-4"> -->
-                        {% if solicitacao.get_impacto_producao_display %}
-                            {% if solicitacao.get_impacto_producao_display == 'Alto'%}
-                                <span class="flags badge bg-danger">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% elif solicitacao.get_impacto_producao_display == 'Médio'%}
-                                <span class="flags badge text-bg-warning">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% elif solicitacao.get_impacto_producao_display == 'Baixo'%}
-                                <span class="flags badge bg-info">Impacto: {{ solicitacao.get_impacto_producao_display }}</span>
-                            {% endif %}
-                        {% endif %}
-
-                        {% if solicitacao.maquina.descricao %}
-                            <span title="{{ solicitacao.maquina.descricao }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.descricao|truncatechars:15 }}</span>
-                        {% else %}
-                            <span title="{{ solicitacao.maquina.codigo }}" class="flags fw-bold badge bg-dark">{{ solicitacao.maquina.codigo }}</span>
-                        {% endif %}
-                        <!-- </div> -->
-
-                    <div class="gap-4" style="width: 100%;">
-                        <span title="{{ solicitacao.solicitante.nome }}" class="flags fw-bold badge text-bg-light">{{ solicitacao.solicitante.nome}}</span><br><br>
-                        <span title="{{ solicitacao.descricao }}" class="text-secondary"  style="text-align: justify; font-size: 0.9rem;">
-                            <strong>Motivo:</strong> {{ solicitacao.descricao }}
-                        </span>
-                    </div>
-                    
-                </div>
-                
-                {% if solicitacao.status_andamento != 'finalizada' %}
-                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
-                        {% if solicitacao.maq_parada %}
-                            <div class="d-flex align-items-center text-danger mb-1">
-                                <!-- Ícone SVG de Exclamação -->
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                    class="bi bi-exclamation-triangle-fill me-1" viewBox="0 0 16 16">
-                                    <path
-                                        d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-                                </svg>
-                                <small>Parada</small>
-                            </div>
-                        {% endif %}
-                
-                        <div class="text-muted">
-                            <small>{{ solicitacao.ultima_atualizacao|days_since }}</small>
-                        </div>
-                        {% if solicitacao.planejada %}
-                            <small><span class="badge text-bg-dark ms-2">Preventiva</span></small>
-                        {% endif %}
-                            {% if solicitacao.programacao < today %}
-                                <small class="text-danger ms-2">
-                                    <i class="bi bi-exclamation-circle-fill"></i> Atrasada
-                                </small>
-                            {% else %}
-                                <small class="text-success ms-2">
-                                    <i class="bi bi-check-circle-fill"></i> Em dia
-                                </small>
-                            {% endif %}
-                    </div>
+                <span class="pill pill-muted">{{ solicitacao.ultima_atualizacao|days_since }}</span>
+                {% if solicitacao.programacao < today %}
+                    <span class="pill pill-danger"><i class="bi bi-exclamation-circle-fill"></i> Atrasada</span>
                 {% else %}
-                    <div class="d-flex flex-column align-items-end" style="flex: 0 0 100px;">
-                        {% if solicitacao.satisfacao_registrada %}
-                            <small title="Respondido pelo solicitante" class="text-success ms-2">
-                                <i class="bi bi-check-circle-fill"></i>Respondido
-                            </small>
-                        {% else %}
-                            <small title="Aguardando resposta do solicitante" class="text-warning ms-2">
-                                <i class="bi bi-clock-fill"></i> Aguardando
-                                <a id="btnReenviarWpp_{{solicitacao.pk}}" href="#" title="Reenviar">
-                                    <i class="bi bi-arrow-repeat"></i> <!-- Ícone de reenvio -->
-                                </a>
-                            </small>
-                        {% endif %}
-                    </div>
+                    <span class="pill pill-success"><i class="bi bi-check-circle-fill"></i> Em dia</span>
                 {% endif %}
+            {% else %}
+                {% if solicitacao.satisfacao_registrada %}
+                    <span class="pill pill-success" title="Respondido pelo solicitante"><i class="bi bi-check-circle-fill"></i> Respondido</span>
+                {% endif %}
+            {% endif %}
 
-            </h6>
-
-        </div>
-        <div class="card-footer d-flex justify-content-between">
-            <div>
-                {% if solicitacao.fotos.exists %}
-                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
-                        data-bs-target="#fotosModal{{ solicitacao.pk }}">
-                        Fotos
-                    </button>
-                {% else %}
-                    <span class="badge bg-secondary">Sem Fotos</span>
-                {% endif %}
-                {% if solicitacao.video %}
-                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
-                        data-bs-target="#videosModal{{ solicitacao.pk }}">
-                        Vídeos
-                    </button>
-                {% else %}
-                    <span class="badge bg-secondary">Sem Vídeos</span>
-                {% endif %}
-            </div>
-            
-            <div class="dropdown">
+            <div class="dropdown os-card-menu">
                 <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown"
                     aria-expanded="false" style="background: none; border: none; padding: 0;">
                     &#x22EE;
@@ -168,6 +84,67 @@
                         {% endif %}
                     {% endif %}
                 </ul>
+            </div>
+        </div>
+        <div class="os-card-body">
+            <div class="os-field-grid">
+                <div class="os-field">
+                    <div class="os-field-label">Programador</div>
+                    <div class="os-field-value">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#alterarReponsavel{{ solicitacao.pk }}" class="text-reset text-decoration-none">
+                            <span id="responsavelAtual_{{ solicitacao.pk }}">{{ solicitacao.atribuido.nome|default:"-" }}</span>
+                            <i class="bi bi-pencil-square text-muted ms-1" style="font-size:.7rem;"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="os-field">
+                    <div class="os-field-label">Executor</div>
+                    <div class="os-field-value" title="{{ solicitacao.executor_nomes }}">{{ solicitacao.executor_nomes|default:"-" }}</div>
+                </div>
+                <div class="os-field">
+                    <div class="os-field-label">Equipamento</div>
+                    {% if solicitacao.maquina.descricao %}
+                        <div class="os-field-value" title="{{ solicitacao.maquina.descricao }}">{{ solicitacao.maquina.descricao|truncatechars:22 }}</div>
+                    {% else %}
+                        <div class="os-field-value" title="{{ solicitacao.maquina.codigo }}">{{ solicitacao.maquina.codigo }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="os-field-grid">
+                <div class="os-field">
+                    <div class="os-field-label">Setor</div>
+                    <div class="os-field-value" title="{{ solicitacao.setor.nome }}">{{ solicitacao.setor.nome|truncatechars:20 }}</div>
+                </div>
+                <div class="os-field">
+                    <div class="os-field-label">Solicitante</div>
+                    <div class="os-field-value" title="{{ solicitacao.solicitante.nome }}">{{ solicitacao.solicitante.nome|truncatechars:20 }}</div>
+                </div>
+            </div>
+            <div class="os-field-grid mb-0">
+                <div class="os-field" style="flex: 1 1 100%;">
+                    <div class="os-field-label">Motivo</div>
+                    <div class="os-field-value" title="{{ solicitacao.descricao }}">{{ solicitacao.descricao }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="os-card-footer">
+            <div>
+                {% if solicitacao.fotos.exists %}
+                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#fotosModal{{ solicitacao.pk }}">
+                        Fotos
+                    </button>
+                {% else %}
+                    <span class="badge bg-secondary">Sem Fotos</span>
+                {% endif %}
+                {% if solicitacao.video %}
+                    <button type="button" class="badge btn btn-sm btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#videosModal{{ solicitacao.pk }}">
+                        Vídeos
+                    </button>
+                {% else %}
+                    <span class="badge bg-secondary">Sem Vídeos</span>
+                {% endif %}
             </div>
         </div>
     </div>

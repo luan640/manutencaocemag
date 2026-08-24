@@ -8,7 +8,14 @@
       "Bash(Select-Object Name, Mode)",
       "Bash(python -m py_compile cadastro/views.py)",
       "Bash(python manage.py collectstatic --noinput --settings=manutencao_project.settings.dev)",
-      "Bash(python -m py_compile cadastro/checklist_views.py)"
+      "Bash(python -m py_compile cadastro/checklist_views.py)",
+      "Bash(python manage.py makemigrations cadastro)",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(python manage.py migrate cadastro 0027)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
-from django.db.models import OuterRef, Subquery, Value, Q, Count, F
+from django.db.models import OuterRef, Subquery, Value, Q, Count, F, CharField
 from django.db.models.functions import Concat
+from django.contrib.postgres.aggregates import StringAgg
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -68,9 +69,15 @@ def home_producao(request):
 
     # Adicionar os setores ao contexto
     context['setores'] = Setor.objects.all()
-    
+
     context['quantidade_atrasada'] = quantidade_atrasada(filtros)
     context['operadores'] = operadores_all('producao')
+    context['quantidade_programadas'] = (
+        context['quantidade_em_aberto']
+        + context['quantidade_em_execucao']
+        + context['aguardando_material']
+        + context['quantidade_finalizada']
+    )
 
     return render(request, 'solicitacoes/solicitacao-producao.html', context)
 
@@ -143,7 +150,8 @@ def solicitacoes_producao(request):
     solicitante = request.GET.get('solicitante')
     setor_id = request.GET.get('setor')
     maq_parada = request.GET.get('maq_parada')
-    data_abertura = request.GET.get('data_abertura')
+    data_abertura_inicio = request.GET.get('data_abertura_inicio')
+    data_abertura_fim = request.GET.get('data_abertura_fim')
     status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
@@ -169,10 +177,18 @@ def solicitacoes_producao(request):
         ordem=OuterRef('pk')
     ).order_by('-n_execucao')
 
+    ultima_execucao_operadores_subquery = (
+        Execucao.objects.filter(ordem=OuterRef('pk'))
+        .annotate(operadores_nomes=StringAgg('operador__nome', delimiter=', ', distinct=True))
+        .order_by('-n_execucao')
+        .values('operadores_nomes')[:1]
+    )
+
     # Anotar a consulta de Solicitacao com o valor de n_execucao da última execução
     solicitacoes = solicitacoes.annotate(
         ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1]),
-        ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1])
+        ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1]),
+        executor_nomes=Subquery(ultima_execucao_operadores_subquery, output_field=CharField())
     ).order_by('-ultima_atualizacao')
 
     if numero_ordem:
@@ -187,8 +203,11 @@ def solicitacoes_producao(request):
     if maq_parada:
         solicitacoes = solicitacoes.filter(maq_parada=(maq_parada == 'sim'))
 
-    if data_abertura:
-        solicitacoes = solicitacoes.filter(data_abertura__date=data_abertura)
+    if data_abertura_inicio:
+        solicitacoes = solicitacoes.filter(data_abertura__date__gte=data_abertura_inicio)
+
+    if data_abertura_fim:
+        solicitacoes = solicitacoes.filter(data_abertura__date__lte=data_abertura_fim)
 
     if planejada:
         solicitacoes = solicitacoes.filter(planejada=True)
@@ -258,7 +277,8 @@ def aguardando_primeiro_atendimento_producao(request):
     solicitante = request.GET.get('solicitante')
     setor_id = request.GET.get('setor')
     maq_parada = request.GET.get('maq_parada')
-    data_abertura = request.GET.get('data_abertura')
+    data_abertura_inicio = request.GET.get('data_abertura_inicio')
+    data_abertura_fim = request.GET.get('data_abertura_fim')
     status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     maquina = request.GET.get('maquina')
@@ -267,10 +287,12 @@ def aguardando_primeiro_atendimento_producao(request):
 
     # Inicia o queryset base
     aguardando_primeiro_atendimento = Solicitacao.objects.filter(
-        Q(status__isnull=True) | Q(status='aprovar'), 
+        Q(status__isnull=True) | Q(status='aprovar'),
         area='producao',
         status_andamento='aguardando_atendimento'
-    ).select_related('solicitante', 'setor').prefetch_related('fotos', 'info_solicitacao').order_by('-data_abertura')
+    ).select_related('solicitante', 'setor').prefetch_related(
+        'fotos', 'info_solicitacao', 'preventiva_solicitacao__plano'
+    ).order_by('-data_abertura')
 
     if request.user.tipo_acesso == 'solicitante':
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(solicitante=request.user)
@@ -287,8 +309,11 @@ def aguardando_primeiro_atendimento_producao(request):
     if maq_parada:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(maq_parada=(maq_parada == 'sim'))
 
-    if data_abertura:
-        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura__date=data_abertura)
+    if data_abertura_inicio:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura__date__gte=data_abertura_inicio)
+
+    if data_abertura_fim:
+        aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(data_abertura__date__lte=data_abertura_fim)
 
     if planejada:
         aguardando_primeiro_atendimento = aguardando_primeiro_atendimento.filter(planejada=True)

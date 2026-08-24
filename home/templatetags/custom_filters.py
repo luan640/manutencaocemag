@@ -12,3 +12,11 @@ def days_since(value):
     if delta.days == 1:
         return "há 1 dia"
     return f"há {delta.days} dias"
+
+@register.filter
+def milhar(value):
+    """Formata um número inteiro com ponto como separador de milhar (padrão BR)."""
+    try:
+        return f"{int(value):,}".replace(",", ".")
+    except (TypeError, ValueError):
+        return value

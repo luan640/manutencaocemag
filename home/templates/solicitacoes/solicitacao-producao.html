@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block links %}
 <link rel="stylesheet" href="{% static 'css/cards/cards_home.css' %}">
@@ -41,13 +42,6 @@
 
     .required {
         color: red;  /* Tornando o asterisco vermelho */
-    }
-
-    .maquina-parada-badge {
-        background: #f8d7da;
-        color: #842029;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
     }
 
 </style>
@@ -108,8 +102,12 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="data_abertura" class="form-label">Data de Abertura</label>
-                    <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
+                    <label for="data_abertura_inicio" class="form-label">Data de Abertura (De)</label>
+                    <input type="date" class="form-control" id="data_abertura_inicio" name="data_abertura_inicio" value="{{ data_abertura_inicio|default_if_none:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="data_abertura_fim" class="form-label">Data de Abertura (Até)</label>
+                    <input type="date" class="form-control" id="data_abertura_fim" name="data_abertura_fim" value="{{ data_abertura_fim|default_if_none:'' }}">
                 </div>
                 <div class="col-md-3">
                     <label for="responsavel" class="form-label">Responsável</label>
@@ -149,96 +147,77 @@
     </div>
 
     <div>
-        <div class="row row-cols-1 row-cols-md-4">
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3">
             <div class="col">
-                <div class="card custom-card custom-border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Aguardando programação</p>
-                                <h4 class="my-1 text-primary">{{ aguardando_primeiro_atendimento_card }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-primary"><i class="bi bi-calendar2-check"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Aguardando programação</p>
+                        <h4 class="stat-tile-value mb-0">{{ aguardando_primeiro_atendimento_card|milhar }}</h4>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="card custom-card custom-border-warning">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Em espera</p>
-                                <h4 class="my-1 text-warning">{{ quantidade_em_aberto }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-warning"><i class="bi bi-hourglass-split"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Em espera</p>
+                        <h4 class="stat-tile-value mb-0">{{ quantidade_em_aberto|milhar }}</h4>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="card custom-card custom-border-info">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Em andamento</p>
-                                <h4 class="my-1 text-info">{{ quantidade_em_execucao }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-info"><i class="bi bi-tools"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Em andamento</p>
+                        <h4 class="stat-tile-value mb-0">{{ quantidade_em_execucao|milhar }}</h4>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="card custom-card custom-border-secondary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Aguardando material</p>
-                                <h4 class="my-1 text-secondary">{{ aguardando_material }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-purple"><i class="bi bi-box-seam"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Aguardando material</p>
+                        <h4 class="stat-tile-value mb-0">{{ aguardando_material|milhar }}</h4>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="card custom-card custom-border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Finalizada</p>
-                                <h4 class="my-1 text-success">{{ quantidade_finalizada }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-success"><i class="bi bi-check-circle-fill"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Finalizadas</p>
+                        <h4 class="stat-tile-value mb-0">{{ quantidade_finalizada|milhar }}</h4>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="card custom-card custom-border-danger">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div>
-                                <p class="mb-0 text-secondary">Atrasada</p>
-                                <h4 class="my-1 text-danger">{{ quantidade_atrasada }}</h4>
-                            </div>
-                        </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-danger"><i class="bi bi-alarm-fill"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Atrasadas</p>
+                        <h4 class="stat-tile-value mb-0">{{ quantidade_atrasada|milhar }}</h4>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="row my-4 d-flex justify-content-around">
+
+    <div class="row my-4 g-3">
         <!-- Aguardando primeiro atendimento -->
         {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'solicitante' %}
-        <div class="col-sm-6 mb-3">
-            <div class="card">
-                <div class="card-header" id="headingAguardandoPrimeiroAtendimento">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAguardandoPrimeiroAtendimento" aria-expanded="true" aria-controls="collapseAguardandoPrimeiroAtendimento">
-                            A programar
-                        </button>
-                    </h5>
+        <div class="col-lg-6">
+            <div class="section-panel">
+                <div class="section-panel-header" id="headingAguardandoPrimeiroAtendimento">
+                    <p class="section-panel-title">
+                        <span class="icon-badge bg-soft-primary"><i class="bi bi-calendar2-check"></i></span>
+                        A programar
+                    </p>
                 </div>
-                <div id="collapseAguardandoPrimeiroAtendimento" class="collapse show" aria-labelledby="headingAguardandoPrimeiroAtendimento">
-                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                <div id="collapseAguardandoPrimeiroAtendimento" aria-labelledby="headingAguardandoPrimeiroAtendimento">
+                    <div class="section-panel-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="aguardando-primeiro-atendimento-container">
                             <p>Carregando...</p>
                         </div>
@@ -256,17 +235,16 @@
             </div>
         </div>
         <!-- Solicitações -->
-        <div class="col-sm-6">
-            <div class="card">
-                <div class="card-header" id="headingSolicitacoes">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
-                            Programadas
-                        </button>
-                    </h5>
+        <div class="col-lg-6">
+            <div class="section-panel">
+                <div class="section-panel-header" id="headingSolicitacoes">
+                    <p class="section-panel-title">
+                        <span class="icon-badge bg-soft-success"><i class="bi bi-clipboard2-check"></i></span>
+                        Programadas
+                    </p>
                 </div>
-                <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
-                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                <div id="collapseSolicitacoes" aria-labelledby="headingSolicitacoes">
+                    <div class="section-panel-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="solicitacoes-container">
                             <p>Carregando...</p>
                         </div>
@@ -285,17 +263,16 @@
         </div>
         {% else %}
         <!-- Solicitações -->
-        <div class="col-sm-12">
-            <div class="card">
-                <div class="card-header" id="headingSolicitacoes">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitacoes" aria-expanded="true" aria-controls="collapseSolicitacoes">
-                            Programadas
-                        </button>
-                    </h5>
+        <div class="col-12">
+            <div class="section-panel">
+                <div class="section-panel-header" id="headingSolicitacoes">
+                    <p class="section-panel-title">
+                        <span class="icon-badge bg-soft-success"><i class="bi bi-clipboard2-check"></i></span>
+                        Programadas
+                    </p>
                 </div>
-                <div id="collapseSolicitacoes" class="collapse show" aria-labelledby="headingSolicitacoes">
-                    <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
+                <div id="collapseSolicitacoes" aria-labelledby="headingSolicitacoes">
+                    <div class="section-panel-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
                         <div class="row" id="solicitacoes-container">
                             <p>Carregando...</p>
                         </div>
@@ -316,15 +293,16 @@
     <!-- Máquinas paradas -->
     {% if request.user.tipo_acesso == 'administrador' %}
     <div class="row my-4">
-        <div class="col-sm-12">
-            <div class="card mb-3">
-                <div class="card-header" id="headingMaquinasParadas">
-                    <h5 class="mb-0">
+        <div class="col-12">
+            <div class="section-panel mb-3">
+                <div class="section-panel-header" id="headingMaquinasParadas">
+                    <p class="section-panel-title">
+                        <span class="icon-badge bg-soft-danger"><i class="bi bi-exclamation-triangle-fill"></i></span>
                         Máquinas paradas
-                    </h5>
+                    </p>
                 </div>
-                <div class="card-body" style="min-height: 500px; max-height: 500px; overflow-y: auto;">
-                    <div class="row" id="maquinas-paradas-container">
+                <div class="section-panel-body" style="min-height: 200px; max-height: 500px; overflow-y: auto;">
+                    <div class="row g-3" id="maquinas-paradas-container">
                         <p>Carregando...</p>
                     </div>
                 </div>

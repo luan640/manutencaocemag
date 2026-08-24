@@ -1,23 +1,30 @@
 {% for maquina, info in maquinas.items %}
 <div class="col-md-4">
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span data-bs-toggle="tooltip" title="{{ maquina.codigo }} - {{ maquina.descricao }}"
-                  style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
-                {{ maquina.codigo }} - {{ maquina.descricao }}
-            </span>
-            <span class="badge maquina-parada-badge" data-parada-inicio="{{ info.data_inicio|date:'c' }}">00:00:00</span>
-        </div>
-        <div class="card-body">
-            <h5 class="card-title d-flex justify-content-between align-items-center">
-                {% for ordem in info.ordens %}
-                    #{{ ordem.pk }}
-                    {% if ordem.tipo_ferramenta and ordem.codigo_ferramenta %}
-                        ({{ ordem.tipo_ferramenta }} {{ ordem.codigo_ferramenta }})
+    <div class="maq-parada-card">
+        <div class="maq-parada-icon"><i class="bi bi-building"></i></div>
+        <div class="maq-parada-body">
+            <div class="maq-parada-top">
+                <span class="maq-nome" data-bs-toggle="tooltip" title="{{ maquina.codigo }} - {{ maquina.descricao }}">
+                    {{ maquina.codigo }} - {{ maquina.descricao }}
+                </span>
+                <span>
+                    {% for ordem in info.ordens %}
+                        OS #{{ ordem.pk }}{% if ordem.tipo_ferramenta and ordem.codigo_ferramenta %} ({{ ordem.tipo_ferramenta }} {{ ordem.codigo_ferramenta }}){% endif %}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            </div>
+            <div class="maq-parada-label">Tempo parado</div>
+            <div class="maq-parada-timer maquina-parada-badge" data-parada-inicio="{{ info.data_inicio|date:'c' }}">00:00:00</div>
+            <div class="maq-parada-meta">
+                <span>Iniciada em {{ info.data_inicio|date:'d/m/Y H:i' }}</span>
+                {% with ordem=info.ordens.0 %}
+                    {% if ordem.get_impacto_producao_display %}
+                        <span class="pill {% if ordem.impacto_producao == 'alto' %}pill-danger{% elif ordem.impacto_producao == 'medio' %}pill-warning{% else %}pill-info{% endif %}">
+                            {{ ordem.get_impacto_producao_display }}
+                        </span>
                     {% endif %}
-                    {% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </h5>
+                {% endwith %}
+            </div>
         </div>
     </div>
 </div>

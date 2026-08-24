@@ -49,3 +49,288 @@
     border-radius: 50%;
     color: #fff !important;
 }
+
+/* ==== Painel "home" (produção) ==== */
+
+.stat-tile {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #eef0f4;
+    box-shadow: 0 1px 3px 0 rgb(16 24 40 / 6%);
+    padding: 1rem 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    height: 100%;
+}
+
+.stat-tile-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.stat-tile-label {
+    font-size: .78rem;
+    color: #667085;
+    margin-bottom: .15rem;
+}
+
+.stat-tile-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1d2433;
+    line-height: 1;
+}
+
+.bg-soft-primary { background: #e7ecff; color: #4353ff; }
+.bg-soft-warning { background: #fff3d6; color: #b3790a; }
+.bg-soft-info    { background: #dff5fb; color: #0aa3c2; }
+.bg-soft-purple  { background: #efe7fd; color: #7b3fe4; }
+.bg-soft-success { background: #e0f9e6; color: #12a150; }
+.bg-soft-danger  { background: #fde3e3; color: #e0392f; }
+
+.section-panel {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #eef0f4;
+    box-shadow: 0 1px 3px 0 rgb(16 24 40 / 6%);
+    height: 100%;
+}
+
+.section-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .9rem 1.1rem;
+    border-bottom: 1px solid #f0f1f5;
+}
+
+.section-panel-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-weight: 700;
+    font-size: .98rem;
+    color: #1d2433;
+    margin: 0;
+}
+
+.section-panel-title .icon-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+
+.section-panel-count {
+    font-size: .8rem;
+    color: #0d6efd;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.section-panel-body {
+    padding: 1rem;
+}
+
+.os-card {
+    position: relative;
+    border: 1px solid #eef0f4;
+    border-left-width: 5px;
+    border-left-style: solid;
+    border-left-color: #eef0f4;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    background: #fff;
+}
+
+.os-card-accent-primary   { border-left-color: #4353ff; }
+.os-card-accent-warning   { border-left-color: #f5b301; }
+.os-card-accent-info      { border-left-color: #0aa3c2; }
+.os-card-accent-secondary { border-left-color: #98a2b3; }
+.os-card-accent-success   { border-left-color: #12a150; }
+.os-card-accent-danger    { border-left-color: #e0392f; }
+
+.os-card-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem .5rem;
+    padding: .65rem 2.5rem .65rem .9rem;
+    border-bottom: 1px solid #f2f3f7;
+}
+
+.os-card-menu {
+    position: absolute;
+    top: .6rem;
+    right: .75rem;
+}
+
+.os-card-header-stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+}
+
+.os-card-header-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.os-card-id {
+    font-weight: 700;
+    color: #1d2433;
+    margin-right: .1rem;
+}
+
+.os-card-body {
+    padding: .8rem .9rem;
+}
+
+.os-field-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .85rem 1.75rem;
+    margin-bottom: .7rem;
+}
+
+.os-field {
+    min-width: 100px;
+}
+
+.os-field-label {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #98a2b3;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.os-field-label i {
+    font-size: .8rem;
+}
+
+.os-field-value {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #344054;
+    word-break: break-word;
+}
+
+.os-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .55rem .9rem;
+    border-top: 1px solid #f2f3f7;
+    background: #fafbfc;
+}
+
+.pill {
+    border-radius: 999px;
+    padding: .28rem .65rem;
+    font-size: .72rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.pill-warning   { background: #fff3d6; color: #a5710a; }
+.pill-info      { background: #dff5fb; color: #0aa3c2; }
+.pill-secondary { background: #eef0f4; color: #667085; }
+.pill-success   { background: #e0f9e6; color: #12a150; }
+.pill-danger    { background: #fde3e3; color: #e0392f; }
+.pill-dark      { background: #e7e9ee; color: #344054; }
+.pill-purple    { background: #efe7fd; color: #7b3fe4; }
+.pill-muted     { background: #f2f3f7; color: #667085; font-weight: 600; }
+
+.maq-parada-card {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    background: #fff5f5;
+    border: 1px solid #ffd9d9;
+    border-radius: 14px;
+    padding: .9rem 1rem;
+    height: 100%;
+}
+
+.maq-parada-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    background: #ffe1e1;
+    color: #e0392f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.maq-parada-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.maq-parada-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: .5rem;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1d2433;
+}
+
+.maq-parada-top .maq-nome {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maq-parada-label {
+    font-size: .68rem;
+    color: #98a2b3;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: .4rem;
+}
+
+.maq-parada-timer {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #e0392f;
+    font-variant-numeric: tabular-nums;
+}
+
+.maq-parada-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: .3rem;
+    font-size: .72rem;
+    color: #98a2b3;
+}
