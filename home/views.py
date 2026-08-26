@@ -155,6 +155,7 @@ def solicitacoes_producao(request):
     status = request.GET.getlist('ultimo_status')
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
+    reprogramada = request.GET.get('reprogramada')
     responsavel = request.GET.get('responsavel')
     maquina = request.GET.get('maquina')
 
@@ -220,6 +221,9 @@ def solicitacoes_producao(request):
         solicitacoes = solicitacoes.filter(
             programacao__lt= now().date(),
         ).exclude(status_andamento='finalizada')
+
+    if reprogramada:
+        solicitacoes = solicitacoes.filter(foi_reprogramada=True)
 
     if responsavel:
         solicitacoes = solicitacoes.filter(atribuido_id=responsavel)
