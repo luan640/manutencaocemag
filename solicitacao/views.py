@@ -12,7 +12,7 @@ from django.db import IntegrityError
 
 from .utils import criar_solicitacoes_aleatorias
 from .forms import SolicitacaoForm, FotoForm, SolicitacaoPredialForm
-from .models import Foto, Solicitacao
+from .models import Foto, Solicitacao, Reprogramacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
 from execucao.models import Execucao, MaquinaParada
 from preventiva.models import PlanoPreventiva
@@ -440,9 +440,18 @@ def reprogramar_ordem(request, solicitacao_id):
                 'success': False,
                 'error':'A Data de Programação não pode ser menor que a Data Atual.'
             },status=400)
-        
+
+        data_anterior = solicitacao.programacao
+
         solicitacao.programacao = data_programacao
         solicitacao.save()
+
+        Reprogramacao.objects.create(
+            solicitacao=solicitacao,
+            data_anterior=data_anterior,
+            data_nova=data_programacao,
+            usuario=request.user if request.user.is_authenticated else None,
+        )
 
 
     return JsonResponse({

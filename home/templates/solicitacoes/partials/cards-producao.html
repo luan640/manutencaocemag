@@ -34,6 +34,10 @@
                 <span class="pill pill-dark">Corretiva</span>
             {% endif %}
 
+            {% if solicitacao.foi_reprogramada %}
+                <span class="pill pill-teal"><i class="bi bi-arrow-repeat"></i> Reprogramada</span>
+            {% endif %}
+
             {% if solicitacao.status_andamento != 'finalizada' %}
                 {% if solicitacao.maq_parada %}
                     <span class="pill pill-danger"><i class="bi bi-exclamation-triangle-fill"></i> Parada</span>
@@ -74,14 +78,10 @@
                         data-bs-target="#maisDetalhesModal{{ solicitacao.pk }}">
                         Detalhes
                     </a>
-                    {% if solicitacao.planejada %}
-                        {% if not solicitacao.status_andamento == 'finalizada' %}
-                            {% if solicitacao.programacao < today %}
-                                <a id="btnReprogramarOrdem_{{ solicitacao.pk }}" class="dropdown-item" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
-                                data-bs-target="#reprogramarModal{{ solicitacao.pk }}">
-                                Reprogramar</a>
-                            {% endif %}
-                        {% endif %}
+                    {% if not solicitacao.status_andamento == 'finalizada' %}
+                        <a id="btnReprogramarOrdem_{{ solicitacao.pk }}" class="dropdown-item" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
+                        data-bs-target="#reprogramarModal{{ solicitacao.pk }}">
+                        Reprogramar</a>
                     {% endif %}
                 </ul>
             </div>

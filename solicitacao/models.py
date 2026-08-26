@@ -79,6 +79,19 @@ class Solicitacao(models.Model):
     def __str__(self):
         return f'{self.pk} {self.setor} {self.data_abertura} {self.maq_parada}'
     
+class Reprogramacao(models.Model):
+    solicitacao = models.ForeignKey(Solicitacao, on_delete=models.CASCADE, related_name='reprogramacoes')
+    data_anterior = models.DateField(null=True, blank=True)
+    data_nova = models.DateField()
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f'Reprogramação {self.pk} da ordem {self.solicitacao_id}'
+
 class Foto(models.Model):
     solicitacao = models.ForeignKey(Solicitacao, on_delete=models.CASCADE, related_name='fotos')
     imagem = models.ImageField(upload_to='fotos/')

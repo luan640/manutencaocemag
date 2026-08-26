@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.db.models import OuterRef, Subquery, Value, Q, Count, F, CharField
+from django.db.models import OuterRef, Subquery, Exists, Value, Q, Count, F, CharField
 from django.db.models.functions import Concat
 from django.contrib.postgres.aggregates import StringAgg
 from django.core.paginator import Paginator
@@ -13,7 +13,7 @@ from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 
-from solicitacao.models import Solicitacao
+from solicitacao.models import Solicitacao, Reprogramacao
 from execucao.models import Execucao, InfoSolicitacao
 from cadastro.models import Setor, Operador
 from wpp.utils import OrdemServiceWpp
@@ -188,7 +188,8 @@ def solicitacoes_producao(request):
     solicitacoes = solicitacoes.annotate(
         ultima_execucao_n=Subquery(ultima_execucao_subquery.values('n_execucao')[:1]),
         ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1]),
-        executor_nomes=Subquery(ultima_execucao_operadores_subquery, output_field=CharField())
+        executor_nomes=Subquery(ultima_execucao_operadores_subquery, output_field=CharField()),
+        foi_reprogramada=Exists(Reprogramacao.objects.filter(solicitacao=OuterRef('pk')))
     ).order_by('-ultima_atualizacao')
 
     if numero_ordem:
@@ -607,7 +608,7 @@ def historico_ordem(request, pk):
         Execucao.objects
         .filter(ordem_id=pk)
         .prefetch_related('operador')  # Carrega operadores relacionados
-        .values('id','n_execucao', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao', 
+        .values('id','n_execucao', 'data_inicio', 'data_fim', 'observacao', 'ultima_atualizacao',
                 'che_maq_parada', 'exec_maq_parada', 'apos_exec_maq_parada', 'status')
     ).order_by('n_execucao')
 
@@ -618,7 +619,25 @@ def historico_ordem(request, pk):
         execucao_dict['operadores'] = list(operadores)
         data_list.append(execucao_dict)
 
-    return JsonResponse({'historico': data_list})
+    reprogramacoes = (
+        Reprogramacao.objects
+        .filter(solicitacao_id=pk)
+        .select_related('usuario')
+        .order_by('-criado_em')
+    )
+
+    reprogramacoes_list = [
+        {
+            'id': reprogramacao.id,
+            'data_anterior': reprogramacao.data_anterior,
+            'data_nova': reprogramacao.data_nova,
+            'usuario': reprogramacao.usuario.nome if reprogramacao.usuario else None,
+            'criado_em': reprogramacao.criado_em,
+        }
+        for reprogramacao in reprogramacoes
+    ]
+
+    return JsonResponse({'historico': data_list, 'reprogramacoes': reprogramacoes_list})
 
 def dados_editar_execucao(request, pk):
     # Consulta para buscar execuções com operadores relacionados

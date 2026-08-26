@@ -1915,8 +1915,45 @@
                             return response.json(); // Converte a resposta em JSON
                         })
                         .then(data => {
-                            if (data && data.historico.length > 0) {
+                            const temExecucoes = data && data.historico && data.historico.length > 0;
+                            const temReprogramacoes = data && data.reprogramacoes && data.reprogramacoes.length > 0;
+
+                            if (temExecucoes || temReprogramacoes) {
                                 bodyHistorico.innerHTML = '';
+
+                                if (temReprogramacoes) {
+                                    let reprogramacoesHtml = `
+                                    <h6 class="mb-2"><i class="bi bi-arrow-repeat"></i> Reprogramações</h6>
+                                    <div class="table-responsive mb-4">
+                                        <table class="table table-sm align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Data anterior</th>
+                                                    <th>Nova data</th>
+                                                    <th>Usuário</th>
+                                                    <th>Quando</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                    `;
+                                    data.reprogramacoes.forEach(item => {
+                                        reprogramacoesHtml += `
+                                                <tr>
+                                                    <td>${item.data_anterior ? new Date(item.data_anterior + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
+                                                    <td>${item.data_nova ? new Date(item.data_nova + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A'}</td>
+                                                    <td>${item.usuario ? item.usuario : 'N/A'}</td>
+                                                    <td>${new Date(item.criado_em).toLocaleString('pt-BR')}</td>
+                                                </tr>
+                                        `;
+                                    });
+                                    reprogramacoesHtml += `
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    `;
+                                    bodyHistorico.innerHTML += reprogramacoesHtml;
+                                }
+
                                 data.historico.forEach(item => {
                                     // Cria um card para cada item do histórico
 
@@ -1941,7 +1978,7 @@
                                     `;
                                     bodyHistorico.innerHTML += card;
                                 });
-                                
+
                                 // Após carregar o histórico, anexe eventos aos botões "Editar"
                                 attachEditButtons();
 
