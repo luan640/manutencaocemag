@@ -141,6 +141,7 @@
 }
 
 .section-panel-body {
+    position: relative;
     padding: 1rem;
 }
 

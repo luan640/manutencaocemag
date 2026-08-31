@@ -15,7 +15,12 @@
       "Bash(python manage.py migrate cadastro 0027)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(DJANGO_ENV=prod python manage.py shell -c ' *)",
+      "Bash(DJANGO_ENV=prod python manage.py showmigrations solicitacao)",
+      "Bash(python manage.py collectstatic --noinput)",
+      "Bash(python -c ' *)",
+      "Bash(git rm *)"
     ]
   }
 }
