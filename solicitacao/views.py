@@ -16,6 +16,7 @@ from .models import Foto, Solicitacao, Reprogramacao
 from cadastro.models import Maquina, Setor, Operador, TipoTarefas
 from execucao.models import Execucao, MaquinaParada
 from preventiva.models import PlanoPreventiva
+from funcionario.decorators import operador_required, admin_required
 from datetime import datetime, time
 
 import json
@@ -108,7 +109,7 @@ def criar_solicitacao_predial(request):
         'maquinas_predial': maquinas_predial
     })
 
-@login_required
+@operador_required
 def criar_execucao_rotina(request):
     # maquinas_predial = Maquina.objects.filter(area='predial')
     operadores = Operador.objects.filter(area='predial', status='ativo')
@@ -376,6 +377,7 @@ def gerar_solicitacoes(request, qtd=10):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@admin_required
 @csrf_exempt
 def criar_tarefa_rotina(request):
     

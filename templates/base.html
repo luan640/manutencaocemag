@@ -40,6 +40,20 @@
                         class="fas fa-search"></i></button> -->
             </div>
         </form>
+        {% if pode_alternar_area %}
+        <div class="d-flex align-items-center me-3">
+            <a href="{% url 'alternar_area' %}"
+               class="btn btn-sm btn-outline-light d-flex align-items-center gap-2"
+               title="Alternar entre os painéis de Produção e Predial">
+                <i class="bi bi-arrow-left-right"></i>
+                {% if area_ativa == 'producao' %}
+                    Painel: Produção
+                {% else %}
+                    Painel: Predial
+                {% endif %}
+            </a>
+        </div>
+        {% endif %}
         <!-- Navbar-->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
             <!-- <li class="nav-item dropdown">
@@ -74,12 +88,12 @@
                             <nav class="sb-sidenav-menu-nested nav">
                                 <!-- Se o usuário for staff, exibe todas as opções -->
                                 {% if request.user.is_staff %}
-                                    {% if request.user.area == 'producao' %}
+                                    {% if area_ativa == 'producao' %}
                                     <a class="nav-link" href="{% url 'home_producao' %}">Solicitações Produção</a>
                                     <a class="nav-link" href="{% url 'criar_solicitacao' %}">Abrir os p/ Produção</a>
                                     <a class="nav-link" href="{% url 'programacao' 'producao' %}">Programação Produção</a>
                                     {% endif %}
-                                    {% if request.user.area == 'predial' %}
+                                    {% if area_ativa == 'predial' %}
                                     <a class="nav-link" href="{% url 'home_predial' %}">Solicitações Predial</a>
                                     <a class="nav-link" href="{% url 'criar_solicitacao_predial' %}">Abrir os p/ Predial</a>
                                     <a class="nav-link" href="{% url 'programacao' 'predial' %}">Programação Predial</a>
@@ -90,7 +104,7 @@
                                 {% else %}
                                     <!-- Para não-staff, verifique o tipo de acesso -->
                                     {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
-                                        {% if request.user.area == 'producao' %}
+                                        {% if area_ativa == 'producao' %}
                                             <a class="nav-link" href="{% url 'home_producao' %}">Solicitações</a>
                                             <a class="nav-link" href="{% url 'criar_solicitacao' %}">Abrir os p/ Produção</a>
                                             <a class="nav-link" href="{% url 'criar_solicitacao_predial' %}">Abrir os p/ Predial</a>
@@ -120,7 +134,7 @@
                         
                         {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
                             <!-- Apenas administradores e staff -->
-                            {% if request.user.area == 'producao' %}
+                            {% if area_ativa == 'producao' %}
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
                                 data-bs-target="#collpasePreventivas" aria-expanded="false" aria-controls="collpasePreventivas">
                                 <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
@@ -140,19 +154,19 @@
                                 </nav>
                             </div>
                             {% endif %}
-                            {% if request.user.area == 'predial' %}
+                            {% if area_ativa == 'predial' %}
                             {% endif %}
 
                         {% endif %}
                         
                         {% if request.user.is_staff or request.user.tipo_acesso == 'administrador' %}
-                            {% if request.user.area == 'producao' %}
+                            {% if area_ativa == 'producao' %}
                             <a class="nav-link" href="{% url 'dashboard' %}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
                                 Dashboard Produção
                             </a>
                             {% endif %}
-                            {% if request.user.area == 'predial' %}
+                            {% if area_ativa == 'predial' %}
                             <a class="nav-link" href="{% url 'dashboard-predial' %}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
                                 Dashboard Predial

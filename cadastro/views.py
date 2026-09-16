@@ -11,6 +11,7 @@ from .forms import MaquinaForm, AddOperadorForm
 from .models import Maquina, Operador, Setor, PedidoCompra
 from execucao.models import InfoSolicitacao, Execucao
 from cadastro.models import TipoTarefas
+from funcionario.decorators import admin_required
 import psycopg2
 from psycopg2 import errors
 
@@ -84,6 +85,7 @@ def edit_maquina(request, pk):
 
     return HttpResponse(form)
 
+@admin_required
 def list_maquina(request):
     return render(request,'maquina/list.html')
 
@@ -178,6 +180,7 @@ def processar_maquina(request):
         'data': data,
     })
 
+@admin_required
 def list_operador(request):
 
     return render(request,'operador/list.html')
@@ -402,6 +405,7 @@ def api_tarefa_rotina(request):
 
 # ─── Pedidos de Compra ────────────────────────────────────────────────────────
 
+@admin_required
 def list_pedido_compra(request):
     return render(request, 'pedido_compra/list.html')
 

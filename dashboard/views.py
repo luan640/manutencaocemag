@@ -12,6 +12,7 @@ from solicitacao.models import Solicitacao
 from execucao.models import Execucao, MaquinaParada, InfoSolicitacao
 from cadastro.models import Maquina, Setor
 from preventiva.models import PlanoPreventiva
+from funcionario.decorators import admin_required
 
 from collections import defaultdict
 from io import BytesIO
@@ -21,12 +22,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+@admin_required
 def dashboard(request):
 
     setores = Setor.objects.all()
 
     return render(request, 'dashboard.html', {'setores':setores})
 
+@admin_required
 def dashboard_predial(request):
 
     setores = Setor.objects.all()

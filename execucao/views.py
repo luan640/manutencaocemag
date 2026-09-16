@@ -18,6 +18,7 @@ from execucao.models import Execucao, InfoSolicitacao, MaquinaParada
 from .forms import MaquinaParadaForm
 from cadastro.models import Maquina, Setor, Operador
 from preventiva.models import SolicitacaoPreventiva, PlanoPreventiva
+from funcionario.decorators import operador_required
 
 from wpp.utils import OrdemServiceWpp
 from home.utils import buscar_telefone
@@ -398,13 +399,13 @@ def criar_execucao_predial(request, solicitacao_id):
 
     return redirect('home_predial')
 
-@login_required
+@operador_required
 def historico_execucao(request):
 
     return render(request, 'execucao/historico.html')
 
 
-@login_required
+@operador_required
 def base_maquina_parada(request):
     termo = (request.GET.get("q") or "").strip()
 

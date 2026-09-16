@@ -14,6 +14,7 @@ from .forms import (
     SolicitanteManagementCreateForm,
     SolicitanteManagementUpdateForm,
 )
+from .decorators import admin_required
 from .models import Funcionario
 from wpp.utils import OrdemServiceWpp
 
@@ -21,21 +22,6 @@ from io import TextIOWrapper
 import csv
 
 ordem_service = OrdemServiceWpp()
-
-
-def admin_required(view_func):
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('login')
-
-        if not getattr(request.user, 'is_staff', False) and getattr(request.user, 'tipo_acesso', None) != Funcionario.ADMINISTRADOR:
-            messages.error(request, 'Apenas administradores podem acessar esta funcionalidade.')
-            return redirect('home_solicitante')
-
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped_view
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -65,6 +51,23 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+@login_required
+def alternar_area(request):
+    user = request.user
+    pode_alternar = getattr(user, 'is_staff', False) or getattr(user, 'tipo_acesso', None) == Funcionario.ADMINISTRADOR
+
+    if not pode_alternar:
+        messages.error(request, 'Você não tem permissão para alternar de painel.')
+        return redirect('home_solicitante')
+
+    area_atual = request.session.get('area_ativa') or user.area or 'producao'
+    nova_area = 'predial' if area_atual == 'producao' else 'producao'
+    request.session['area_ativa'] = nova_area
+
+    if nova_area == 'predial':
+        return redirect('home_predial')
+    return redirect('home_producao')
 
 @login_required
 def cadastrar_usuario(request):

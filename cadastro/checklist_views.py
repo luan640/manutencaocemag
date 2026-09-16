@@ -25,6 +25,7 @@ from cadastro.models import (
 )
 from cadastro.services import execute_daily_autonomous_overview
 from funcionario.models import Funcionario
+from funcionario.decorators import admin_required
 
 
 logger = logging.getLogger(__name__)
@@ -636,7 +637,7 @@ def _create_new_version(formulario, titulo, maquina, questions, user):
     return versao
 
 
-@login_required
+@admin_required
 def checklists_manage_view(request):
     if not _is_management_user(request.user):
         raise Http404
@@ -650,7 +651,7 @@ def checklists_manage_view(request):
     )
 
 
-@login_required
+@admin_required
 def checklists_history_view(request):
     if not _is_management_user(request.user):
         raise Http404
@@ -678,7 +679,7 @@ def checklists_history_view(request):
     )
 
 
-@login_required
+@admin_required
 def checklists_calendar_view(request):
     if not _is_management_user(request.user):
         raise Http404
@@ -692,7 +693,7 @@ def checklists_calendar_view(request):
     )
 
 
-@login_required
+@admin_required
 def checklists_report_recipients_view(request):
     if not _is_report_admin_user(request.user):
         raise Http404

@@ -12,6 +12,7 @@ from .forms import PlanoPreventivaForm, TarefaPreventivaForm, SolicitacaoPrevent
 from cadastro.models import Maquina
 from solicitacao.models import Solicitacao
 from execucao.models import Execucao
+from funcionario.decorators import operador_required, admin_required
 
 from datetime import date, timedelta
 
@@ -85,6 +86,7 @@ def criar_solicitacao_preventiva(request):
         form = SolicitacaoPreventivaForm()
     return render(request, 'sua_template.html', {'form': form})
 
+@admin_required
 def list_preventivas(request):
     area = request.GET.get('area')  # Obtém o parâmetro 'area' da query string
     maquina = request.GET.get('maquina')  # Captura o filtro de Máquina
@@ -310,10 +312,12 @@ def ordens_programadas(request,area):
 
     return JsonResponse(data, safe=False)
 
+@operador_required
 def programacao(request,area):
 
     return render(request, 'visualizacao/calendar.html', {'area':area})
 
+@admin_required
 def planejamento_anual(request):
 
     return render(request, 'plano/52semanas.html')

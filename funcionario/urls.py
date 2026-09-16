@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    alternar_area,
     cadastrar_acesso_operador,
     cadastrar_usuario,
     cadastrar_usuarios_csv,
@@ -18,4 +19,5 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('cadastrar-usuarios-csv/', cadastrar_usuarios_csv, name='cadastrar_usuarios_csv'),
     path('primeiro-acesso/', primeiro_acesso, name='primeiro_acesso'),
+    path('alternar-area/', alternar_area, name='alternar_area'),
 ]

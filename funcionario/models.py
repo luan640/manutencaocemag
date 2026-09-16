@@ -40,6 +40,14 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
         (OPERADOR, 'Operador')
     ]
 
+    # Hierarquia de níveis de acesso: quanto maior o número, mais permissões.
+    # is_staff/is_superuser sempre têm acesso total, independente do tipo_acesso.
+    NIVEIS_ACESSO = {
+        SOLICITANTE: 0,
+        OPERADOR: 1,
+        ADMINISTRADOR: 2,
+    }
+
     AREA_CHOICES = [
         ('producao', 'Produção'),
         ('predial', 'Predial'),
@@ -80,6 +88,16 @@ class Funcionario(AbstractBaseUser, PermissionsMixin):
 
     def is_administrador(self):
         return self.tipo_acesso == self.ADMINISTRADOR
+
+    def nivel_acesso(self):
+        """Nível numérico de acesso do usuário. is_staff/is_superuser sempre têm o nível mais alto."""
+        if self.is_staff or self.is_superuser:
+            return max(self.NIVEIS_ACESSO.values()) + 1
+        return self.NIVEIS_ACESSO.get(self.tipo_acesso, -1)
+
+    def tem_nivel_minimo(self, tipo_acesso_minimo):
+        """Verifica se o usuário tem, no mínimo, o nível do tipo_acesso informado."""
+        return self.nivel_acesso() >= self.NIVEIS_ACESSO.get(tipo_acesso_minimo, 0)
 
     def save(self, *args, **kwargs):
         # Adicionar "55" ao telefone, se necessário

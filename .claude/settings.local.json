@@ -20,7 +20,13 @@
       "Bash(DJANGO_ENV=prod python manage.py showmigrations solicitacao)",
       "Bash(python manage.py collectstatic --noinput)",
       "Bash(python -c ' *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(DJANGO_ENV=prod python manage.py shell)",
+      "Bash(DJANGO_ENV=prod DJANGO_SETTINGS_MODULE=manutencao_project.settings python -c ' *)",
+      "Bash(python -m py_compile funcionario/models.py funcionario/decorators.py funcionario/views.py)",
+      "Bash(python -)",
+      "Bash(python -m py_compile dashboard/views.py solicitacao/views.py preventiva/views.py execucao/views.py cadastro/views.py cadastro/checklist_views.py funcionario/views.py funcionario/models.py funcionario/decorators.py)",
+      "Bash(python -m py_compile funcionario/views.py funcionario/context_processors.py)"
     ]
   }
 }
