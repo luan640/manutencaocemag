@@ -3,14 +3,17 @@
 {% for solicitacao in page_obj %}
 <div class="col-md-12">
     <div class="os-card
-        {% if solicitacao.status_andamento == 'finalizada' %}os-card-accent-success
+        {% if solicitacao.status == 'rejeitar' %}os-card-accent-danger
+        {% elif solicitacao.status_andamento == 'finalizada' %}os-card-accent-success
         {% elif solicitacao.status_andamento == 'em_execucao' %}os-card-accent-info
         {% elif solicitacao.status_andamento == 'aguardando_material' %}os-card-accent-secondary
         {% elif solicitacao.status_andamento == 'em_espera' %}os-card-accent-warning
         {% endif %}">
         <div class="os-card-header">
             <span class="os-card-id">OS #{{ solicitacao.pk }}</span>
-            {% if solicitacao.status_andamento == 'finalizada' %}
+            {% if solicitacao.status == 'rejeitar' %}
+                <span class="pill pill-danger"><i class="bi bi-x-circle-fill"></i> Rejeitada</span>
+            {% elif solicitacao.status_andamento == 'finalizada' %}
                 <span class="pill pill-success">Finalizado</span>
             {% elif solicitacao.status_andamento == 'em_execucao' %}
                 <span class="pill pill-info">Em execução</span>
@@ -38,7 +41,11 @@
                 <span class="pill pill-teal"><i class="bi bi-arrow-repeat"></i> Reprogramada</span>
             {% endif %}
 
-            {% if solicitacao.status_andamento != 'finalizada' %}
+            {% if solicitacao.status == 'rejeitar' %}
+                {% if solicitacao.rejeitado_por %}
+                    <span class="pill pill-muted" title="Rejeitado por">{{ solicitacao.rejeitado_por.nome }}</span>
+                {% endif %}
+            {% elif solicitacao.status_andamento != 'finalizada' %}
                 {% if solicitacao.maq_parada %}
                     <span class="pill pill-danger"><i class="bi bi-exclamation-triangle-fill"></i> Parada</span>
                 {% endif %}
@@ -60,7 +67,7 @@
                     &#x22EE;
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    {% if not solicitacao.status_andamento == 'finalizada' %}
+                    {% if solicitacao.status != 'rejeitar' and not solicitacao.status_andamento == 'finalizada' %}
                         <a id="btnVisualizarOrdem_{{ solicitacao.pk }}" class="dropdown-item visualizarOrdem" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
                             data-bs-target="#executarModal{{ solicitacao.pk }}">
                             {% if request.user.tipo_acesso == 'solicitante' %}
@@ -78,7 +85,7 @@
                         data-bs-target="#maisDetalhesModal{{ solicitacao.pk }}">
                         Detalhes
                     </a>
-                    {% if not solicitacao.status_andamento == 'finalizada' %}
+                    {% if solicitacao.status != 'rejeitar' and not solicitacao.status_andamento == 'finalizada' %}
                         <a id="btnReprogramarOrdem_{{ solicitacao.pk }}" class="dropdown-item" onclick="verificarMaquinaParadaExecucao(this);" href="#" data-bs-toggle="modal"
                         data-bs-target="#reprogramarModal{{ solicitacao.pk }}">
                         Reprogramar</a>
@@ -120,6 +127,14 @@
                     <div class="os-field-value" title="{{ solicitacao.solicitante.nome }}">{{ solicitacao.solicitante.nome|truncatechars:20 }}</div>
                 </div>
             </div>
+            {% if solicitacao.status == 'rejeitar' %}
+            <div class="os-field-grid">
+                <div class="os-field" style="flex: 1 1 100%;">
+                    <div class="os-field-label"><i class="bi bi-x-circle"></i> Motivo da Rejeição</div>
+                    <div class="os-field-value" title="{{ solicitacao.comentario_manutencao }}">{{ solicitacao.comentario_manutencao|default:"Não informado" }}</div>
+                </div>
+            </div>
+            {% endif %}
             <div class="os-field-grid mb-0">
                 <div class="os-field" style="flex: 1 1 100%;">
                     <div class="os-field-label">Motivo</div>

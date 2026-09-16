@@ -52,101 +52,135 @@
 <input type="hidden" name="tipo-usuario" id="tipo-usuario" value="{{request.user.tipo_acesso}}">
 
 <div class="mb-3">
-    <div class="mb-3">
-        <!-- Botão para mostrar/ocultar filtros -->
-        <h2 class="fs-5">
-            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseFiltros" role="button" aria-expanded="false" aria-controls="collapseFiltros">
+    <div class="mt-3 mb-3 d-flex justify-content-end">
+        <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#filtrosOffcanvas" aria-controls="filtrosOffcanvas">
+            <i class="bi bi-sliders"></i> Filtros
+        </button>
+    </div>
+
+    <div class="offcanvas offcanvas-end filters-offcanvas" tabindex="-1" id="filtrosOffcanvas" aria-labelledby="filtrosOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title d-flex align-items-center gap-2" id="filtrosOffcanvasLabel">
+                <span class="icon-badge bg-soft-primary"><i class="bi bi-sliders"></i></span>
                 Filtros
-            </a>
-        </h2>
-    
-        <!-- Collapse para o Formulário de Filtros -->
-        <div class="collapse" id="collapseFiltros">
-            <form method="GET" class="row g-3" id="filter-form">
-                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
-                <div class="col-md-3">
-                    <label for="ordem" class="form-label">#OS</label>
-                    <input type="number" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
-                </div>
-                <div class="col-md-3">
-                    <label for="solicitante" class="form-label">Solicitante</label>
-                    <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
-                </div>
-                <div class="col-md-3">
-                    <label for="setor" class="form-label">Setor</label>
-                    <select class="form-select" id="setor" name="setor">
-                        <option value="">Todos</option>
-                        {% for setor in setores %}
-                        <option value="{{ setor.id }}" {% if setor_id == setor.id|stringformat:"s" %}selected{% endif %}>{{ setor.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% endif %}
-                <div class="col-md-3">
-                    <label for="ultimo_status" class="form-label">Status</label>
-                    <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
-                        <option value="">Todos</option>
-                        <option value="em_espera">Em espera</option>
-                        {% for status in status_choices %}
-                        <option value="{{ status.0 }}" >{{ status.1 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
-                <div class="col-md-3">
-                    <label for="maq_parada" class="form-label">Máquina Parada</label>
-                    <select class="form-select" id="maq_parada" name="maq_parada">
-                        <option value="">Todos</option>
-                        <option value="sim" {% if maq_parada == 'sim' %}selected{% endif %}>Sim</option>
-                        <option value="nao" {% if maq_parada == 'nao' %}selected{% endif %}>Não</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="data_abertura_inicio" class="form-label">Data de Abertura (De)</label>
-                    <input type="date" class="form-control" id="data_abertura_inicio" name="data_abertura_inicio" value="{{ data_abertura_inicio|default_if_none:'' }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="data_abertura_fim" class="form-label">Data de Abertura (Até)</label>
-                    <input type="date" class="form-control" id="data_abertura_fim" name="data_abertura_fim" value="{{ data_abertura_fim|default_if_none:'' }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="responsavel" class="form-label">Responsável</label>
-                    <select class="form-select" id="responsavel" name="responsavel">
-                        <option value="">Todos</option>
-                        {% for operador in operadores %}
-                            <option value="{{operador.pk}}">{{operador.nome}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="maquina" class="form-label">Máquina</label>
-                    <select class="form-select" id="maquina" name="maquina">
-                        <option value="">Selecione a Máquina</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
-                            {% if planejada == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="planejada">Mostrar Apenas Planejadas</label>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <form method="GET" id="filter-form">
+                <div class="filters-scroll">
+                    {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                    <div class="filter-section-title">Identificação</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="ordem">#OS</label>
+                            <input type="number" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
+                        </div>
+                        <div class="filter-field">
+                            <label for="solicitante">Solicitante</label>
+                            <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
+                        </div>
+                        <div class="filter-field">
+                            <label for="setor">Setor</label>
+                            <select class="form-select" id="setor" name="setor">
+                                <option value="">Todos</option>
+                                {% for setor in setores %}
+                                <option value="{{ setor.id }}" {% if setor_id == setor.id|stringformat:"s" %}selected{% endif %}>{{ setor.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="atrasada" name="atrasada" value="1"
-                            {% if atrasada == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="atrasada">Mostrar Apenas Atrasadas</label>
+                    {% endif %}
+
+                    <div class="filter-section-title">Status</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="ultimo_status">Status da ordem</label>
+                            <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
+                                <option value="">Todos</option>
+                                <option value="em_espera">Em espera</option>
+                                {% for status in status_choices %}
+                                <option value="{{ status.0 }}" >{{ status.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                        <div class="filter-field">
+                            <label for="maq_parada">Máquina Parada</label>
+                            <select class="form-select" id="maq_parada" name="maq_parada">
+                                <option value="">Todos</option>
+                                <option value="sim" {% if maq_parada == 'sim' %}selected{% endif %}>Sim</option>
+                                <option value="nao" {% if maq_parada == 'nao' %}selected{% endif %}>Não</option>
+                            </select>
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="reprogramada" name="reprogramada" value="1"
-                            {% if reprogramada == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="reprogramada">Mostrar Apenas Reprogramadas</label>
+                    {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                    <div class="filter-section-title">Período de abertura</div>
+                    <div class="filter-grid filter-grid-2col">
+                        <div class="filter-field">
+                            <label for="data_abertura_inicio">De</label>
+                            <input type="date" class="form-control" id="data_abertura_inicio" name="data_abertura_inicio" value="{{ data_abertura_inicio|default_if_none:'' }}">
+                        </div>
+                        <div class="filter-field">
+                            <label for="data_abertura_fim">Até</label>
+                            <input type="date" class="form-control" id="data_abertura_fim" name="data_abertura_fim" value="{{ data_abertura_fim|default_if_none:'' }}">
+                        </div>
                     </div>
+
+                    <div class="filter-section-title">Responsabilidade</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="responsavel">Responsável</label>
+                            <select class="form-select" id="responsavel" name="responsavel">
+                                <option value="">Todos</option>
+                                {% for operador in operadores %}
+                                    <option value="{{operador.pk}}">{{operador.nome}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="maquina">Máquina</label>
+                            <select class="form-select" id="maquina" name="maquina">
+                                <option value="">Selecione a Máquina</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-section-title">Sinalizações</div>
+                    <div class="filter-chips-grid">
+                        <input class="filter-chip-input" type="checkbox" id="planejada" name="planejada" value="1"
+                            {% if planejada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="planejada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Planejadas
+                        </label>
+
+                        <input class="filter-chip-input" type="checkbox" id="atrasada" name="atrasada" value="1"
+                            {% if atrasada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="atrasada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Atrasadas
+                        </label>
+
+                        <input class="filter-chip-input" type="checkbox" id="reprogramada" name="reprogramada" value="1"
+                            {% if reprogramada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="reprogramada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Reprogramadas
+                        </label>
+
+                        <input class="filter-chip-input" type="checkbox" id="rejeitada" name="rejeitada" value="1"
+                            {% if rejeitada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="rejeitada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Rejeitadas
+                        </label>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-                <div class="col-12 text-end">
-                    <button id="btnFilter" type="submit" class="btn btn-primary">Filtrar</button>
-                    <button id="btnLimparFiltro" type="submit" class="btn btn-secondary">Limpar Filtros</button>
+
+                <div class="filter-actions-bar">
+                    <button id="btnLimparFiltro" type="submit" class="btn btn-link btn-sm text-secondary px-0" data-bs-dismiss="offcanvas">Limpar filtros</button>
+                    <button id="btnFilter" type="submit" class="btn btn-primary btn-sm" data-bs-dismiss="offcanvas">Filtrar</button>
                 </div>
             </form>
         </div>
@@ -205,6 +239,15 @@
                     <div>
                         <p class="stat-tile-label mb-0">Atrasadas</p>
                         <h4 class="stat-tile-value mb-0">{{ quantidade_atrasada|milhar }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="stat-tile">
+                    <div class="stat-tile-icon bg-soft-secondary"><i class="bi bi-x-circle-fill"></i></div>
+                    <div>
+                        <p class="stat-tile-label mb-0">Rejeitadas</p>
+                        <h4 class="stat-tile-value mb-0">{{ quantidade_rejeitada|milhar }}</h4>
                     </div>
                 </div>
             </div>
@@ -568,7 +611,109 @@
                 const campoNivelPrioridade = document.getElementById('prioridade_'+pk)
                 const campoTipoManutencao = document.getElementById('tipo_manutencao_'+pk)
                 const campoAreaManutencao = document.getElementById('area_manutencao_'+pk)
-                
+                const campoComentario = document.getElementById('comentario_manutencao_'+pk)
+                const campoComentarioBlock = document.getElementById('comentarioPcmBlock_'+pk)
+                const campoComentarioRequiredMark = document.getElementById('comentarioRequiredMark_'+pk)
+                const campoOsDuplicada = document.getElementById('osDuplicada_'+pk)
+                const rowOsOrigem = document.getElementById('rowOsOrigem_'+pk)
+                const campoOsOrigem = document.getElementById('osOrigem_'+pk)
+                const campoOsOrigemRequiredMark = document.getElementById('osOrigemRequiredMark_'+pk)
+
+                // Inicializa o Select2 de busca de OS de origem (feito sob demanda, na abertura
+                // do modal, para evitar bug de posicionamento do Select2 em elemento ainda oculto)
+                let osOrigemSelect2Iniciado = false;
+                function initOsOrigemSelect2() {
+                    if (osOrigemSelect2Iniciado || !campoOsOrigem || !window.jQuery) return;
+                    osOrigemSelect2Iniciado = true;
+
+                    $(campoOsOrigem).select2({
+                        placeholder: 'Digite para buscar a OS...',
+                        allowClear: true,
+                        width: '100%',
+                        minimumInputLength: 0,
+                        dropdownParent: $('#rowOsOrigem_' + pk),
+                        ajax: {
+                            url: '{% url "api_ordens_producao" %}',
+                            dataType: 'json',
+                            delay: 250,
+                            data: function (params) {
+                                return {
+                                    search: params.term || '',
+                                    excluir: campoOsOrigem.dataset.excluir || '',
+                                    limit: 25
+                                };
+                            },
+                            processResults: function (data) {
+                                return { results: data.results };
+                            },
+                            cache: true
+                        }
+                    });
+
+                    $(campoOsOrigem).on('change', atualizarComentarioDuplicada);
+                }
+
+                // Preenche o Comentário do PCM com o texto padrão de OS duplicada
+                function atualizarComentarioDuplicada() {
+                    if (!campoComentario || !campoOsOrigem) return;
+                    if (campoOsOrigem.value) {
+                        campoComentario.value = 'OS duplicada. OS origem: ' + campoOsOrigem.value;
+                    } else {
+                        campoComentario.value = '';
+                    }
+                }
+
+                // Função para exibir/ocultar o campo de OS de origem e travar o Comentário do PCM
+                function toggleOsDuplicada() {
+                    if (!campoOsDuplicada) return;
+
+                    if (campoOsDuplicada.checked) {
+                        if (rowOsOrigem) rowOsOrigem.style.display = 'block';
+                        initOsOrigemSelect2();
+                        if (campoOsOrigem) campoOsOrigem.setAttribute('required', 'required');
+                        if (campoOsOrigemRequiredMark) campoOsOrigemRequiredMark.style.display = 'inline';
+
+                        if (campoComentario) {
+                            campoComentario.setAttribute('readonly', 'readonly');
+                            campoComentario.classList.add('bg-light');
+                        }
+                        atualizarComentarioDuplicada();
+
+                        // Uma OS duplicada deve ser sempre rejeitada, e o campo Status trava nessa opção
+                        if (statusSelect.value !== 'rejeitar') {
+                            statusSelect.value = 'rejeitar';
+                            toggleDataProgramacao();
+                        }
+                        statusSelect.setAttribute('disabled', 'disabled');
+                    } else {
+                        if (rowOsOrigem) rowOsOrigem.style.display = 'none';
+                        if (campoOsOrigem) {
+                            campoOsOrigem.removeAttribute('required');
+                            if (window.jQuery) {
+                                $(campoOsOrigem).val(null).trigger('change');
+                            } else {
+                                campoOsOrigem.value = '';
+                            }
+                        }
+                        if (campoOsOrigemRequiredMark) campoOsOrigemRequiredMark.style.display = 'none';
+
+                        if (campoComentario) {
+                            campoComentario.removeAttribute('readonly');
+                            campoComentario.classList.remove('bg-light');
+                            campoComentario.value = '';
+                        }
+
+                        statusSelect.removeAttribute('disabled');
+                    }
+                }
+
+                if (campoOsDuplicada) {
+                    campoOsDuplicada.addEventListener('change', toggleOsDuplicada);
+                }
+                if (campoOsOrigem && !window.jQuery) {
+                    campoOsOrigem.addEventListener('input', atualizarComentarioDuplicada);
+                }
+
                 // Função para verificar e alterar a visibilidade e obrigatoriedade do campo de data
                 function toggleDataProgramacao() {
                     if (statusSelect.value === 'rejeitar') {
@@ -582,6 +727,17 @@
                         campoNivelPrioridade.removeAttribute('required');
                         campoTipoManutencao.removeAttribute('required');
                         campoAreaManutencao.removeAttribute('required');
+
+                        // Motivo da rejeição passa a ser obrigatório
+                        if (campoComentario) {
+                            campoComentario.setAttribute('required', 'required');
+                        }
+                        if (campoComentarioBlock) {
+                            campoComentarioBlock.textContent = 'Obrigatório informar o motivo da rejeição.';
+                        }
+                        if (campoComentarioRequiredMark) {
+                            campoComentarioRequiredMark.style.display = 'inline';
+                        }
                     } else if (statusSelect.value === 'aprovar') {
                         // Exibe o campo de data e torna-o obrigatório
                         campoProgramacao.style.display = 'block';
@@ -592,6 +748,16 @@
                         campoTipoManutencao.setAttribute('required', 'required');
                         campoAreaManutencao.setAttribute('required', 'required');
 
+                        // Comentário do PCM volta a ser opcional
+                        if (campoComentario) {
+                            campoComentario.removeAttribute('required');
+                        }
+                        if (campoComentarioBlock) {
+                            campoComentarioBlock.textContent = 'Campo Opcional.';
+                        }
+                        if (campoComentarioRequiredMark) {
+                            campoComentarioRequiredMark.style.display = 'none';
+                        }
                     }
                 }
 
@@ -820,8 +986,19 @@
                     const url = form.getAttribute('action');
                     const modalId = form.dataset.modalId;
 
+                    // Campos desabilitados (ex.: Status travado por "OS duplicada") não entram no
+                    // FormData por padrão do navegador; reabilita temporariamente para o envio.
+                    const camposDesabilitados = form.querySelectorAll(':disabled');
+                    camposDesabilitados.forEach(function(campo) {
+                        campo.disabled = false;
+                    });
+
                     // Criar um objeto FormData para capturar os dados do formulário
                     const formData = new FormData(form);
+
+                    camposDesabilitados.forEach(function(campo) {
+                        campo.disabled = true;
+                    });
 
                     // Exibe o modal de carregamento
                     Swal.fire({
@@ -846,7 +1023,13 @@
                         if (response.ok) {
                             return response.json();
                         } else {
-                            throw new Error('Erro ao finalizar a ordem.');
+                            return response.json()
+                                .then(errorData => {
+                                    throw new Error(errorData.error || 'Erro ao finalizar a ordem.');
+                                })
+                                .catch(() => {
+                                    throw new Error('Erro ao finalizar a ordem.');
+                                });
                         }
                     })
                     .then(data => {
@@ -854,13 +1037,13 @@
                         if (data.success) {
                             Promise.all([
 
-                            document.getElementById('headingAguardandoPrimeiroAtendimento') 
+                            document.getElementById('headingAguardandoPrimeiroAtendimento')
                                 ? loadSection("aguardando-primeiro-atendimento/", "aguardando-primeiro-atendimento-container", [
                                     attachExecutar1OrdemEventListeners,
                                     attachStatusChangeListeners,
                                     escolherPlanoPreventiva,
                                     attachModalEventListeners,
-                                    
+
                                 ])
                                 : Promise.resolve(),  // Garante que o array de Promises sempre receba um valor
                             
@@ -904,11 +1087,10 @@
                     })
                     .catch(error => {
                         console.error('Erro:', error);
-                        alert('Ocorreu um erro ao executar a ordem. Tente novamente.');
                         Swal.fire({
                             icon: 'error',
                             title: 'Erro',
-                            text: 'Ocorreu um erro ao executar a ordem. Tente novamente.',
+                            text: error.message || 'Ocorreu um erro ao executar a ordem. Tente novamente.',
                             confirmButtonText: 'OK'
                         });
                     });

@@ -26,7 +26,15 @@
       "Bash(python -m py_compile funcionario/models.py funcionario/decorators.py funcionario/views.py)",
       "Bash(python -)",
       "Bash(python -m py_compile dashboard/views.py solicitacao/views.py preventiva/views.py execucao/views.py cadastro/views.py cadastro/checklist_views.py funcionario/views.py funcionario/models.py funcionario/decorators.py)",
-      "Bash(python -m py_compile funcionario/views.py funcionario/context_processors.py)"
+      "Bash(python -m py_compile funcionario/views.py funcionario/context_processors.py)",
+      "Bash(python -m py_compile home/views.py execucao/views.py)",
+      "Bash(python -m py_compile home/views.py)",
+      "Bash(python manage.py makemigrations solicitacao)",
+      "Bash(python -m py_compile home/views.py execucao/views.py solicitacao/models.py)",
+      "Bash(python manage.py migrate solicitacao)",
+      "Bash(python manage.py showmigrations solicitacao)",
+      "Bash(DJANGO_ENV=prod python manage.py migrate solicitacao)",
+      "Bash(python -m py_compile execucao/views.py solicitacao/models.py)"
     ]
   }
 }

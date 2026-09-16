@@ -216,6 +216,26 @@ def editar_solicitacao(request, solicitacao_id):
             data_inicio = data_abertura
             data_fim = data_abertura
             status_inicial = request.POST.get('status_inicial')
+
+            os_duplicada = request.POST.get('os_duplicada') == '1'
+            os_origem_id = request.POST.get('os_origem')
+            solicitacao_origem = None
+
+            if os_duplicada:
+                if not os_origem_id:
+                    raise ValueError('Informe o número da OS de origem.')
+                if str(os_origem_id) == str(solicitacao.pk):
+                    raise ValueError('A OS de origem não pode ser a própria ordem.')
+                try:
+                    solicitacao_origem = Solicitacao.objects.get(pk=os_origem_id)
+                except Solicitacao.DoesNotExist:
+                    raise ValueError(f'OS de origem #{os_origem_id} não encontrada.')
+
+                comentario_pcm = f'OS duplicada. OS origem: {solicitacao_origem.pk}'
+
+            if status_inicial == 'rejeitar' and not (comentario_pcm and comentario_pcm.strip()):
+                raise ValueError('É obrigatório informar o motivo da rejeição.')
+
             nivel_prioridade = request.POST.get('prioridade')
             if not nivel_prioridade:
                 nivel_prioridade = None
@@ -237,6 +257,7 @@ def editar_solicitacao(request, solicitacao_id):
                 if status_inicial == 'rejeitar':
                     solicitacao.status_andamento = 'rejeitado'
                     solicitacao.rejeitado_por = request.user
+                    solicitacao.rejeitado_em = timezone.now()
                 else:
                     InfoSolicitacao.objects.update_or_create(
                         solicitacao=solicitacao,
@@ -277,7 +298,10 @@ def editar_solicitacao(request, solicitacao_id):
                 solicitacao.comentario_manutencao = comentario_pcm
                 solicitacao.data_abertura = data_abertura
                 solicitacao.status = status_inicial
-                solicitacao.status_andamento = 'em_espera'
+                solicitacao.duplicada_de = solicitacao_origem
+
+                if status_inicial != 'rejeitar':
+                    solicitacao.status_andamento = 'em_espera'
 
                 if maquina:
                     solicitacao.maquina = get_object_or_404(Maquina, pk=maquina)

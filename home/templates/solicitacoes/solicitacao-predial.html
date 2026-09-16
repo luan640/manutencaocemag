@@ -44,84 +44,96 @@
 {% block content %}
 
 <div class="mb-3">
-    <div class="mb-3">
-        <!-- Botão para mostrar/ocultar filtros -->
-        <h2 class="fs-5">
-            <a class="btn btn-link" data-bs-toggle="collapse" href="#collapseFiltros" role="button" aria-expanded="false" aria-controls="collapseFiltros">
+    <div class="mt-3 mb-3 d-flex justify-content-end">
+        <button class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#filtrosOffcanvas" aria-controls="filtrosOffcanvas">
+            <i class="bi bi-sliders"></i> Filtros
+        </button>
+    </div>
+
+    <div class="offcanvas offcanvas-end filters-offcanvas" tabindex="-1" id="filtrosOffcanvas" aria-labelledby="filtrosOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title d-flex align-items-center gap-2" id="filtrosOffcanvasLabel">
+                <span class="icon-badge bg-soft-primary"><i class="bi bi-sliders"></i></span>
                 Filtros
-            </a>
-        </h2>
-    
-        <!-- Collapse para o Formulário de Filtros -->
-        <div class="collapse" id="collapseFiltros">
-            <form method="GET" class="row g-3" id="filter-form">
-                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
-                <div class="col-md-3">
-                    <label for="ordem" class="form-label">#OS</label>
-                    <input type="number" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
-                </div>
-                <div class="col-md-3">
-                    <label for="solicitante" class="form-label">Solicitante</label>
-                    <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
-                </div>
-                <div class="col-md-3">
-                    <label for="setor" class="form-label">Setor</label>
-                    <select class="form-select" id="setor" name="setor">
-                        <option value="">Todos</option>
-                        {% for setor in setores %}
-                        <option value="{{ setor.id }}" {% if setor_id == setor.id|stringformat:"s" %}selected{% endif %}>{{ setor.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% endif %}
-                <div class="col-md-3">
-                    <label for="ultimo_status" class="form-label">Status</label>
-                    <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
-                        <option value="">Todos</option>
-                        <option value="em_espera">Em espera</option>
-                        {% for status in status_choices %}
-                        <option value="{{ status.0 }}" >{{ status.1 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
-                <!-- <div class="col-md-3">
-                    <label for="maq_parada" class="form-label">Máquina Parada</label>
-                    <select class="form-select" id="maq_parada" name="maq_parada">
-                        <option value="">Todos</option>
-                        <option value="sim" {% if maq_parada == 'sim' %}selected{% endif %}>Sim</option>
-                        <option value="nao" {% if maq_parada == 'nao' %}selected{% endif %}>Não</option>
-                    </select>
-                </div> -->
-                <div class="col-md-3">
-                    <label for="data_abertura" class="form-label">Data de Abertura</label>
-                    <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <form method="GET" id="filter-form">
+                <div class="filters-scroll">
+                    {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                    <div class="filter-section-title">Identificação</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="ordem">#OS</label>
+                            <input type="number" class="form-control" id="ordem" name="ordem" value="{{ ordem|default_if_none:'' }}" placeholder="Número da ordem">
+                        </div>
+                        <div class="filter-field">
+                            <label for="solicitante">Solicitante</label>
+                            <input type="text" class="form-control" id="solicitante" name="solicitante" value="{{ solicitante|default_if_none:'' }}" placeholder="Nome do Solicitante">
+                        </div>
+                        <div class="filter-field">
+                            <label for="setor">Setor</label>
+                            <select class="form-select" id="setor" name="setor">
+                                <option value="">Todos</option>
+                                {% for setor in setores %}
+                                <option value="{{ setor.id }}" {% if setor_id == setor.id|stringformat:"s" %}selected{% endif %}>{{ setor.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="filter-section-title">Status</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="ultimo_status">Status da ordem</label>
+                            <select class="form-select" id="ultimo_status" name="ultimo_status" multiple="multiple">
+                                <option value="">Todos</option>
+                                <option value="em_espera">Em espera</option>
+                                {% for status in status_choices %}
+                                <option value="{{ status.0 }}" >{{ status.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if request.user.tipo_acesso == 'administrador' or request.user.tipo_acesso == 'operador' %}
+                    <div class="filter-section-title">Detalhes</div>
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="data_abertura">Data de Abertura</label>
+                            <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="{{ data_abertura|default_if_none:'' }}">
+                        </div>
+                        <div class="filter-field">
+                            <label for="atividadeRotina">Atividade de Rotina</label>
+                            <select class="form-select" id="atividadeRotina" name="atividadeRotina">
+                                <option value="">Selecione a Atividade</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-section-title">Sinalizações</div>
+                    <div class="filter-chips-grid">
+                        <input class="filter-chip-input" type="checkbox" id="planejada" name="planejada" value="1"
+                            {% if planejada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="planejada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Planejadas
+                        </label>
+
+                        <input class="filter-chip-input" type="checkbox" id="atrasada" name="atrasada" value="1"
+                            {% if atrasada == '1' %}checked{% endif %}>
+                        <label class="filter-chip" for="atrasada">
+                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Atrasadas
+                        </label>
+                    </div>
+                    {% endif %}
                 </div>
 
-                <div class="col-md-3">
-                    <label for="atividadeRotina" class="form-label">Atividade de Rotina</label>
-                    <select class="form-select" id="atividadeRotina" name="atividadeRotina">
-                        <option value="">Selecione a Atividade</option>
-                    </select>
-                </div>
-                <!-- Filtro de Planejadas -->
-                <div class="col-md-3">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="planejada" name="planejada" value="1"
-                            {% if planejada == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="planejada">Mostrar Apenas Planejadas</label>
-                    </div>
-                
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="atrasada" name="atrasada" value="1"
-                            {% if atrasada == '1' %}checked{% endif %}>
-                        <label class="form-check-label" for="atrasada">Mostrar Apenas Atrasadas</label>
-                    </div>
-                </div>
-                {% endif %}
-                <div class="col-12 text-end">
-                    <button id="btnFilter" type="submit" class="btn btn-primary">Filtrar</button>
-                    <button id="btnLimparFiltro" type="submit" class="btn btn-secondary">Limpar Filtros</button>
+                <div class="filter-actions-bar">
+                    <button id="btnLimparFiltro" type="submit" class="btn btn-link btn-sm text-secondary px-0" data-bs-dismiss="offcanvas">Limpar filtros</button>
+                    <button id="btnFilter" type="submit" class="btn btn-primary btn-sm" data-bs-dismiss="offcanvas">Filtrar</button>
                 </div>
             </form>
         </div>

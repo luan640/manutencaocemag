@@ -94,6 +94,7 @@
 .bg-soft-purple  { background: #efe7fd; color: #7b3fe4; }
 .bg-soft-success { background: #e0f9e6; color: #12a150; }
 .bg-soft-danger  { background: #fde3e3; color: #e0392f; }
+.bg-soft-secondary { background: #eef0f4; color: #667085; }
 
 .section-panel {
     background: #fff;
@@ -335,4 +336,196 @@
     margin-top: .3rem;
     font-size: .72rem;
     color: #98a2b3;
+}
+
+/* ==== Painel de filtros ==== */
+
+.filter-panel-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.filter-panel-header .chevron {
+    transition: transform .2s ease;
+    color: #98a2b3;
+}
+
+.filter-panel-header[aria-expanded="true"] .chevron {
+    transform: rotate(180deg);
+}
+
+.filter-panel-body {
+    padding: 1.1rem;
+    border-top: 1px solid #f2f3f7;
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: .9rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.filter-field label {
+    display: block;
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #98a2b3;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.filter-field .form-control,
+.filter-field .form-select {
+    border-radius: 10px;
+    border-color: #e4e7ec;
+    font-size: .85rem;
+    padding-top: .45rem;
+    padding-bottom: .45rem;
+}
+
+.filter-field .form-control:focus,
+.filter-field .form-select:focus {
+    border-color: #4353ff;
+    box-shadow: 0 0 0 .2rem rgb(67 83 255 / 12%);
+}
+
+.filter-chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    padding-top: .9rem;
+    margin-bottom: 1.1rem;
+    border-top: 1px solid #f2f3f7;
+}
+
+.filter-chip-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .85rem;
+    border-radius: 999px;
+    border: 1px solid #e4e7ec;
+    background: #fff;
+    font-size: .78rem;
+    font-weight: 600;
+    color: #475467;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.filter-chip:hover {
+    border-color: #c7cad1;
+}
+
+.filter-chip-input:checked + .filter-chip {
+    background: #e7ecff;
+    border-color: #4353ff;
+    color: #4353ff;
+}
+
+.filter-chip-input:focus-visible + .filter-chip {
+    outline: 2px solid #4353ff;
+    outline-offset: 2px;
+}
+
+.filter-chip .bi-check-circle-fill {
+    display: none;
+    font-size: .8rem;
+}
+
+.filter-chip-input:checked + .filter-chip .bi-check-circle-fill {
+    display: inline-block;
+}
+
+.filter-chip-input:checked + .filter-chip .bi-circle {
+    display: none;
+}
+
+.filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+}
+
+.filters-offcanvas {
+    width: min(92vw, 400px);
+}
+
+.filters-offcanvas .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+}
+
+.filters-offcanvas #filter-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.filters-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: .2rem;
+    margin-right: -.2rem;
+}
+
+.filter-section-title {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-weight: 700;
+    color: #98a2b3;
+    margin: 1.25rem 0 .6rem;
+}
+
+.filter-section-title:first-child {
+    margin-top: 0;
+}
+
+.filters-offcanvas .filter-grid {
+    grid-template-columns: 1fr;
+    gap: .75rem;
+    margin-bottom: 0;
+}
+
+.filter-grid-2col {
+    grid-template-columns: 1fr 1fr !important;
+}
+
+.filter-chips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+}
+
+.filter-chips-grid .filter-chip {
+    width: 100%;
+    justify-content: center;
+}
+
+.filter-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding-top: 1rem;
+    margin-top: .75rem;
+    border-top: 1px solid #f2f3f7;
+}
+
+.filter-actions-bar .btn-primary {
+    flex: 1;
 }

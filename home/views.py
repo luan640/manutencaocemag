@@ -79,6 +79,11 @@ def home_producao(request):
         + context['quantidade_finalizada']
     )
 
+    rejeitada_filters = Q(area='producao') & Q(status='rejeitar')
+    if request.user.tipo_acesso == 'solicitante':
+        rejeitada_filters &= Q(solicitante=request.user)
+    context['quantidade_rejeitada'] = Solicitacao.objects.filter(rejeitada_filters).count()
+
     return render(request, 'solicitacoes/solicitacao-producao.html', context)
 
 @login_required
@@ -156,10 +161,11 @@ def solicitacoes_producao(request):
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
     reprogramada = request.GET.get('reprogramada')
+    rejeitada = request.GET.get('rejeitada')
     responsavel = request.GET.get('responsavel')
     maquina = request.GET.get('maquina')
 
-    base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='producao')
+    base_filters = (Q(status__isnull=True) | Q(status='aprovar') | Q(status='rejeitar')) & Q(area='producao')
 
     # Se o usuário for solicitante, adicionar filtro adicional
     if request.user.tipo_acesso == 'solicitante':
@@ -170,7 +176,7 @@ def solicitacoes_producao(request):
         Solicitacao.objects
         .filter(base_filters)
         .exclude(status_andamento='aguardando_atendimento')
-        .select_related('solicitante', 'setor')  # Join nos campos ForeignKey
+        .select_related('solicitante', 'setor', 'rejeitado_por')  # Join nos campos ForeignKey
         .prefetch_related('fotos')  # Prefetch nos relacionamentos ManyToMany ou reverse FK
     )
 
@@ -191,7 +197,7 @@ def solicitacoes_producao(request):
         ultima_atualizacao=Subquery(ultima_execucao_subquery.values('ultima_atualizacao')[:1]),
         executor_nomes=Subquery(ultima_execucao_operadores_subquery, output_field=CharField()),
         foi_reprogramada=Exists(Reprogramacao.objects.filter(solicitacao=OuterRef('pk')))
-    ).order_by('-ultima_atualizacao')
+    ).order_by(F('ultima_atualizacao').desc(nulls_last=True))
 
     if numero_ordem:
         solicitacoes = solicitacoes.filter(pk=numero_ordem)
@@ -224,6 +230,9 @@ def solicitacoes_producao(request):
 
     if reprogramada:
         solicitacoes = solicitacoes.filter(foi_reprogramada=True)
+
+    if rejeitada:
+        solicitacoes = solicitacoes.filter(status='rejeitar').order_by('-pk')
 
     if responsavel:
         solicitacoes = solicitacoes.filter(atribuido_id=responsavel)
@@ -721,6 +730,47 @@ def alterar_responsavel_producao(request, pk):
         return JsonResponse({'success': True, 'novo_responsavel': operador.nome})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@login_required
+def api_ordens_producao(request):
+    """API para buscar ordens de produção (usada no Select2 de OS de origem)."""
+    search = request.GET.get('search', '')
+    limit = int(request.GET.get('limit', 25))
+    excluir = request.GET.get('excluir')
+
+    qs = (
+        Solicitacao.objects
+        .filter(area='producao')
+        .select_related('setor', 'maquina')
+        .order_by('-pk')
+    )
+
+    if excluir:
+        qs = qs.exclude(pk=excluir)
+
+    if search:
+        qs = qs.filter(
+            Q(pk__icontains=search) |
+            Q(descricao__icontains=search) |
+            Q(setor__nome__icontains=search) |
+            Q(maquina__codigo__icontains=search) |
+            Q(maquina__descricao__icontains=search)
+        )
+
+    resultados = []
+    for solicitacao in qs[:limit]:
+        if solicitacao.maquina:
+            local = f'{solicitacao.maquina.codigo} - {solicitacao.maquina.descricao}'
+        elif solicitacao.setor:
+            local = solicitacao.setor.nome
+        else:
+            local = ''
+        resultados.append({
+            'id': solicitacao.pk,
+            'text': f'OS #{solicitacao.pk} - {local}',
+        })
+
+    return JsonResponse({'results': resultados})
 
 def editar_execucao(request, pk):
     if request.method == "POST":

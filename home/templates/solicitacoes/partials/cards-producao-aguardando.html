@@ -387,11 +387,25 @@
                                 <textarea rows="4" class="form-control" name="descricao_usuario" id="descricao_usuario" readonly disabled>{{solicitacao.descricao}}</textarea>
                             </div>
                             <div class="col-sm-6">
-                                <label for="comentario_manutencao">Comentário do PCM</label>
-                                <textarea rows="4" class="form-control" name="comentario_manutencao" id="comentario_manutencao"></textarea>
-                                <div id="comentarioPcmBlock" class="form-text">
+                                <label for="comentario_manutencao_{{solicitacao.pk}}">Comentário do PCM <span class="required" id="comentarioRequiredMark_{{solicitacao.pk}}" style="display:none;">*</span></label>
+                                <textarea rows="4" class="form-control" name="comentario_manutencao" id="comentario_manutencao_{{solicitacao.pk}}"></textarea>
+                                <div id="comentarioPcmBlock_{{solicitacao.pk}}" class="form-text">
                                     Campo Opcional.
                                 </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="osDuplicada_{{solicitacao.pk}}" name="os_duplicada" value="1">
+                                    <label class="form-check-label" for="osDuplicada_{{solicitacao.pk}}">OS duplicada</label>
+                                </div>
+                            </div>
+                            <div class="col-sm-6" id="rowOsOrigem_{{solicitacao.pk}}" style="display: none;">
+                                <label for="osOrigem_{{solicitacao.pk}}">OS de origem <span class="required" id="osOrigemRequiredMark_{{solicitacao.pk}}" style="display:none;">*</span></label>
+                                <select class="form-control select2_os_origem" id="osOrigem_{{solicitacao.pk}}" name="os_origem" data-excluir="{{ solicitacao.pk }}">
+                                    <option value="">Digite para buscar a OS...</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row mb-3">
