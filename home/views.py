@@ -79,11 +79,6 @@ def home_producao(request):
         + context['quantidade_finalizada']
     )
 
-    rejeitada_filters = Q(area='producao') & Q(status='rejeitar')
-    if request.user.tipo_acesso == 'solicitante':
-        rejeitada_filters &= Q(solicitante=request.user)
-    context['quantidade_rejeitada'] = Solicitacao.objects.filter(rejeitada_filters).count()
-
     return render(request, 'solicitacoes/solicitacao-producao.html', context)
 
 @login_required
@@ -161,11 +156,10 @@ def solicitacoes_producao(request):
     planejada = request.GET.get('planejada')
     atrasada = request.GET.get('atrasada')
     reprogramada = request.GET.get('reprogramada')
-    rejeitada = request.GET.get('rejeitada')
     responsavel = request.GET.get('responsavel')
     maquina = request.GET.get('maquina')
 
-    base_filters = (Q(status__isnull=True) | Q(status='aprovar') | Q(status='rejeitar')) & Q(area='producao')
+    base_filters = (Q(status__isnull=True) | Q(status='aprovar')) & Q(area='producao')
 
     # Se o usuário for solicitante, adicionar filtro adicional
     if request.user.tipo_acesso == 'solicitante':
@@ -230,9 +224,6 @@ def solicitacoes_producao(request):
 
     if reprogramada:
         solicitacoes = solicitacoes.filter(foi_reprogramada=True)
-
-    if rejeitada:
-        solicitacoes = solicitacoes.filter(status='rejeitar').order_by('-pk')
 
     if responsavel:
         solicitacoes = solicitacoes.filter(atribuido_id=responsavel)

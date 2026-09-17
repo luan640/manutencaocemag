@@ -168,12 +168,6 @@
                         <label class="filter-chip" for="reprogramada">
                             <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Reprogramadas
                         </label>
-
-                        <input class="filter-chip-input" type="checkbox" id="rejeitada" name="rejeitada" value="1"
-                            {% if rejeitada == '1' %}checked{% endif %}>
-                        <label class="filter-chip" for="rejeitada">
-                            <i class="bi bi-circle"></i><i class="bi bi-check-circle-fill"></i> Rejeitadas
-                        </label>
                     </div>
                     {% endif %}
                 </div>
@@ -239,15 +233,6 @@
                     <div>
                         <p class="stat-tile-label mb-0">Atrasadas</p>
                         <h4 class="stat-tile-value mb-0">{{ quantidade_atrasada|milhar }}</h4>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="stat-tile">
-                    <div class="stat-tile-icon bg-soft-secondary"><i class="bi bi-x-circle-fill"></i></div>
-                    <div>
-                        <p class="stat-tile-label mb-0">Rejeitadas</p>
-                        <h4 class="stat-tile-value mb-0">{{ quantidade_rejeitada|milhar }}</h4>
                     </div>
                 </div>
             </div>
