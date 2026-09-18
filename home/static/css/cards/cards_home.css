@@ -463,6 +463,7 @@
 }
 
 .filters-offcanvas .offcanvas-body {
+    position: relative;
     display: flex;
     flex-direction: column;
     padding: 1rem 1.25rem;

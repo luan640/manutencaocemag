@@ -2776,55 +2776,72 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Inicializa Select2 para lookup de máquinas
-        $('#maquina').select2({
-            language: 'pt-BR',
-            placeholder: 'Buscar máquina por código ou descrição...',
-            minimumInputLength: 0,   // <-- permite abrir e buscar sem digitar nada
-            allowClear: true,
-            ajax: {
-                url: '/api/maquinas/', // ajuste se sua rota for diferente
-                dataType: 'json',
-                delay: 250, // debounce
-                data: function (params) {
-                    return {
-                        search: params.term || '', // <-- se não digitou nada, manda string vazia
-                        limit: 25                  // bate com o backend (ou altere se quiser)
-                    };
+        let filtrosSelect2Iniciado = false;
+
+        // Inicializa o Select2 dos campos do filtro sob demanda, quando o drawer é
+        // exibido (inicializar com o offcanvas ainda fechado/oculto faz o Select2
+        // calcular posição e tamanho errados e o campo de busca não responde).
+        function initFiltrosSelect2() {
+            if (filtrosSelect2Iniciado) return;
+            filtrosSelect2Iniciado = true;
+
+            // Inicializa Select2 para lookup de máquinas
+            $('#maquina').select2({
+                language: 'pt-BR',
+                placeholder: 'Buscar máquina por código ou descrição...',
+                minimumInputLength: 0,   // <-- permite abrir e buscar sem digitar nada
+                allowClear: true,
+                dropdownParent: $('#filtrosOffcanvas .offcanvas-body'),
+                ajax: {
+                    url: '/api/maquinas/', // ajuste se sua rota for diferente
+                    dataType: 'json',
+                    delay: 250, // debounce
+                    data: function (params) {
+                        return {
+                            search: params.term || '', // <-- se não digitou nada, manda string vazia
+                            limit: 25                  // bate com o backend (ou altere se quiser)
+                        };
+                    },
+                    processResults: function (data /*, params */) {
+                        const results = (data.maquinas || []).map(m => ({
+                            id: m.id,
+                            text: `${m.codigo} - ${m.descricao || ''}`
+                        }));
+                        return {
+                            results: results
+                            // se implementar paginação, retornar também pagination: { more: <boolean> }
+                        };
+                    },
+                    cache: true
                 },
-                processResults: function (data /*, params */) {
-                    const results = (data.maquinas || []).map(m => ({
-                        id: m.id,
-                        text: `${m.codigo} - ${m.descricao || ''}`
-                    }));
-                    return {
-                        results: results
-                        // se implementar paginação, retornar também pagination: { more: <boolean> }
-                    };
+                templateResult: function (item) {
+                    if (!item.id) { return item.text; } // placeholder/loading
+                    return $('<span>').text(item.text);
                 },
-                cache: true
-            },
-            templateResult: function (item) {
-                if (!item.id) { return item.text; } // placeholder/loading
-                return $('<span>').text(item.text);
-            },
-            templateSelection: function (item) {
-                return item.text || item.id;
-            },
-            escapeMarkup: function (m) { return m; },
-            width: '100%'
-        });
+                templateSelection: function (item) {
+                    return item.text || item.id;
+                },
+                escapeMarkup: function (m) { return m; },
+                width: '100%'
+            });
 
-        // Aplicando Select2 para multiplo select de status no filtro
-        $('#ultimo_status').select2({
-            placeholder: 'Selecione status',
-            allowClear: true,
-            width: '100%',
-            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
-        });
+            // Aplicando Select2 para multiplo select de status no filtro
+            $('#ultimo_status').select2({
+                placeholder: 'Selecione status',
+                allowClear: true,
+                width: '100%',
+                closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+                dropdownParent: $('#filtrosOffcanvas .offcanvas-body'),
+            });
+        }
 
-
-        
+        const filtrosOffcanvasEl = document.getElementById('filtrosOffcanvas');
+        if (filtrosOffcanvasEl) {
+            $(filtrosOffcanvasEl).on('shown.bs.offcanvas', initFiltrosSelect2);
+        } else {
+            // Fallback: painel de filtros não é um offcanvas nesta tela
+            initFiltrosSelect2();
+        }
     });
 </script>
 

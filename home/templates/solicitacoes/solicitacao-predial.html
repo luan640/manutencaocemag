@@ -1519,58 +1519,76 @@
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Aplicando Select2 para multiplo select de status no filtro
-        $('#ultimo_status').select2({
-            placeholder: 'Selecione status',
-            allowClear: true,
-            width: '100%',
-            closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
-        });
-    }); 
+        let filtrosSelect2Iniciado = false;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Aplicando Select2 para multiplo select de status no filtro
-        $('#atividadeRotina').select2({
-            language: 'pt-BR',
-            placeholder: 'Buscar atividade de rotina...',
-            minimumInputLength: 1,
-            allowClear: true,
-            ajax: {
-                url: '/api/tarefa-rotina/', // ajuste se sua rota for diferente
-                dataType: 'json',
-                delay: 250, // debounce
-                data: function (params) {
-                // params.term = texto digitado
-                return {
-                    search: params.term,    // nossa API usa 'search'
-                    limit: 25               // quantos resultados queremos (padrão do backend)
-                    // se mais tarde implementar paginação: enviar page: params.page
-                };
+        // Inicializa o Select2 dos campos do filtro sob demanda, quando o drawer é
+        // exibido (inicializar com o offcanvas ainda fechado/oculto faz o campo de
+        // busca não responder, por causa do focus trap do Bootstrap no offcanvas).
+        function initFiltrosSelect2() {
+            if (filtrosSelect2Iniciado) return;
+            filtrosSelect2Iniciado = true;
+
+            // Aplicando Select2 para multiplo select de status no filtro
+            $('#ultimo_status').select2({
+                placeholder: 'Selecione status',
+                allowClear: true,
+                width: '100%',
+                closeOnSelect: false,   // <--- essencial: não fecha ao selecionar
+                dropdownParent: $('#filtrosOffcanvas .offcanvas-body'),
+            });
+
+            // Aplicando Select2 para busca de atividade de rotina
+            $('#atividadeRotina').select2({
+                language: 'pt-BR',
+                placeholder: 'Buscar atividade de rotina...',
+                minimumInputLength: 0,  // <-- permite abrir e já listar sem precisar digitar
+                allowClear: true,
+                dropdownParent: $('#filtrosOffcanvas .offcanvas-body'),
+                ajax: {
+                    url: '/api/tarefa-rotina/', // ajuste se sua rota for diferente
+                    dataType: 'json',
+                    delay: 250, // debounce
+                    data: function (params) {
+                    // params.term = texto digitado
+                    return {
+                        search: params.term || '',    // <-- se não digitou nada, manda string vazia
+                        limit: 25               // quantos resultados queremos (padrão do backend)
+                        // se mais tarde implementar paginação: enviar page: params.page
+                    };
+                    },
+                    processResults: function (data /*, params */) {
+                    // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
+                    const results = (data.tarefasRotina || []).map(m => ({
+                        id: m.id,
+                        text: `${m.id} - ${m.nome || ''}`
+                    }));
+                    return {
+                        results: results
+                        // se implementar paginação, retornar também pagination: { more: <boolean> }
+                    };
+                    },
+                    cache: true
                 },
-                processResults: function (data /*, params */) {
-                // sua API retorna data.maquinas = [{id, codigo, descricao}, ...]
-                const results = (data.tarefasRotina || []).map(m => ({
-                    id: m.id,
-                    text: `${m.id} - ${m.nome || ''}`
-                }));
-                return {
-                    results: results
-                    // se implementar paginação, retornar também pagination: { more: <boolean> }
-                };
+                templateResult: function (item) {
+                    if (!item.id) { return item.text; } // placeholder/loading
+                    return $('<span>').text(item.text);
                 },
-                cache: true
-            },
-            templateResult: function (item) {
-                if (!item.id) { return item.text; } // placeholder/loading
-                return $('<span>').text(item.text);
-            },
-            templateSelection: function (item) {
-                return item.text || item.id;
-            },
-            escapeMarkup: function (m) { return m; },
-            width: '100%'
-        });
-    }); 
+                templateSelection: function (item) {
+                    return item.text || item.id;
+                },
+                escapeMarkup: function (m) { return m; },
+                width: '100%'
+            });
+        }
+
+        const filtrosOffcanvasEl = document.getElementById('filtrosOffcanvas');
+        if (filtrosOffcanvasEl) {
+            $(filtrosOffcanvasEl).on('shown.bs.offcanvas', initFiltrosSelect2);
+        } else {
+            // Fallback: painel de filtros não é um offcanvas nesta tela
+            initFiltrosSelect2();
+        }
+    });
 </script>
 
 {% endblock %}

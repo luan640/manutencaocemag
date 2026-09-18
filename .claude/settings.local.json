@@ -34,7 +34,9 @@
       "Bash(python manage.py migrate solicitacao)",
       "Bash(python manage.py showmigrations solicitacao)",
       "Bash(DJANGO_ENV=prod python manage.py migrate solicitacao)",
-      "Bash(python -m py_compile execucao/views.py solicitacao/models.py)"
+      "Bash(python -m py_compile execucao/views.py solicitacao/models.py)",
+      "Bash(grep -n \"\\\\$\\('#maquina'\\)\" home/templates/solicitacoes/solicitacao-producao.html)",
+      "Bash(grep -n \"dropdownParent: \\\\$\\('#filtrosOffcanvas'\\)\" home/templates/solicitacoes/solicitacao-producao.html)"
     ]
   }
 }

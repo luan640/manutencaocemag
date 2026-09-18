@@ -392,13 +392,14 @@ def api_status_execucao(request):
 def api_tarefa_rotina(request):
     """Endpoint para retornar a lista de tarefas de rotina em formato JSON."""
     search = request.GET.get('search', '')
+    limit = int(request.GET.get('limit', 25))
 
-    qs = TipoTarefas.objects.filter(status=True).values()
+    qs = TipoTarefas.objects.filter(status=True).values().order_by('nome')
 
     if search:
         qs = qs.filter(nome__icontains=search)
 
-    tarefas_rotina = list(qs)   
+    tarefas_rotina = list(qs[:limit])
 
     return JsonResponse({'message':'success','tarefasRotina': tarefas_rotina})
 
