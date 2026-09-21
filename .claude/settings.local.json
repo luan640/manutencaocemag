@@ -36,7 +36,10 @@
       "Bash(DJANGO_ENV=prod python manage.py migrate solicitacao)",
       "Bash(python -m py_compile execucao/views.py solicitacao/models.py)",
       "Bash(grep -n \"\\\\$\\('#maquina'\\)\" home/templates/solicitacoes/solicitacao-producao.html)",
-      "Bash(grep -n \"dropdownParent: \\\\$\\('#filtrosOffcanvas'\\)\" home/templates/solicitacoes/solicitacao-producao.html)"
+      "Bash(grep -n \"dropdownParent: \\\\$\\('#filtrosOffcanvas'\\)\" home/templates/solicitacoes/solicitacao-producao.html)",
+      "Bash(DJANGO_SETTINGS_MODULE=manutencao_project.settings python \"C:\\\\Users\\\\pcp2\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-pcp2-manutencao-manutencao-v2-projeto-exec\\\\10b1268f-26a8-4567-8a99-017214f4e81a\\\\scratchpad\\\\testar_api_publica.py\")",
+      "Bash(PYTHONPATH=. DJANGO_SETTINGS_MODULE=manutencao_project.settings python \"C:\\\\Users\\\\pcp2\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-pcp2-manutencao-manutencao-v2-projeto-exec\\\\10b1268f-26a8-4567-8a99-017214f4e81a\\\\scratchpad\\\\testar_api_publica.py\")",
+      "Bash(DJANGO_ENV=prod PYTHONPATH=. DJANGO_SETTINGS_MODULE=manutencao_project.settings python -c ' *)"
     ]
   }
 }

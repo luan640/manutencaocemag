@@ -19,8 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from solicitacao import api_publica
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/public/maquinas/', api_publica.listar_maquinas, name='api_publica_maquinas'),
+    path('api/public/ordens/', api_publica.criar_ordem, name='api_publica_criar_ordem'),
     path('solicitacao/', include('solicitacao.urls')),
     path('home/', include('home.urls')),
     path('', include('funcionario.urls')),
