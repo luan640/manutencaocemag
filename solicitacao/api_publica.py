@@ -140,13 +140,26 @@ def criar_ordem(request):
 
     Formulario = SolicitacaoForm if area == 'producao' else SolicitacaoPredialForm
     campos = [campo for campo in Formulario.Meta.fields if campo not in ('video', 'descricao')]
-    form = Formulario({**{campo: dados[campo] for campo in campos if campo in dados}, 'descricao': descricao})
+    entrada = {campo: dados[campo] for campo in campos if campo in dados}
+    entrada['descricao'] = descricao
+
+    setor_vazio = entrada.get('setor') in (None, '')
+    if setor_vazio and entrada.get('maquina') not in (None, ''):
+        try:
+            setor_da_maquina = Maquina.objects.filter(pk=entrada['maquina']).values_list('setor_id', flat=True).first()
+        except (ValueError, TypeError):
+            setor_da_maquina = None
+        if setor_da_maquina:
+            entrada['setor'] = setor_da_maquina
+            setor_vazio = False
+
+    form = Formulario(entrada)
 
     if not form.is_valid():
-        return JsonResponse(
-            {'errors': {campo: [str(erro) for erro in lista] for campo, lista in form.errors.items()}},
-            status=400,
-        )
+        erros = {campo: [str(erro) for erro in lista] for campo, lista in form.errors.items()}
+        if setor_vazio and 'setor' in erros:
+            erros['setor'] = ['Informe o setor ou uma máquina válida para que ele seja calculado.']
+        return JsonResponse({'errors': erros}, status=400)
 
     maquina = form.cleaned_data.get('maquina')
     if maquina and maquina.area != area:
