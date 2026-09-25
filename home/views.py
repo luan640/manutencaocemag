@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.utils.timezone import now, is_naive, make_naive, make_aware
 from django.urls import reverse
@@ -26,6 +27,7 @@ import json
 
 ordem_service = OrdemServiceWpp()
 
+@never_cache
 @login_required
 def home_producao(request):
     # Definir filtros iniciais
@@ -81,6 +83,7 @@ def home_producao(request):
 
     return render(request, 'solicitacoes/solicitacao-producao.html', context)
 
+@never_cache
 @login_required
 def home_predial(request):
     # Definir filtros iniciais

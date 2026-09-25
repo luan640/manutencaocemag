@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 from django.template.loader import render_to_string
 
 from .forms import (
@@ -52,6 +53,7 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+@never_cache
 @login_required
 def alternar_area(request):
     user = request.user

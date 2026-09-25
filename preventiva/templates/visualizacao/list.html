@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-<input id="area" name="area" type="hidden" value="{{request.user.area}}">
+<input id="area" name="area" type="hidden" value="{{area_ativa|default:request.user.area}}">
 <div class="mt-5">
     <div class="row mb-3">
         <div class="col-sm-12">

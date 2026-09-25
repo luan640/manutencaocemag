@@ -178,6 +178,7 @@ def get_maquinas_preventiva(request):
 
     # Obtém os parâmetros da requisição
     search = request.GET.get('search', '').strip()  # Termo de busca
+    area = request.GET.get('area')  # Área ativa (producao/predial)
     page = int(request.GET.get('page', 1))  # Página atual (padrão é 1)
     per_page = int(request.GET.get('per_page', 10))  # Itens por página (padrão é 10)
 
@@ -185,6 +186,9 @@ def get_maquinas_preventiva(request):
     maquinas_query = Maquina.objects.filter(
         planos_preventiva__ativo=True  # Apenas máquinas com planos de preventiva ativos
     ).distinct()  # Remove duplicatas caso uma máquina esteja associada a múltiplos planos
+
+    if area:
+        maquinas_query = maquinas_query.filter(area=area)
 
     # Aplica o filtro de busca, se necessário
     if search:
@@ -641,6 +645,7 @@ def historico_preventivas(request):
         draw = int(request.GET.get('draw', 0))
         start = int(request.GET.get('start', 0))
         length = int(request.GET.get('length', 10))
+        area = request.GET.get('area', None)  # Obtém o parâmetro 'area' da query string
         maquina_filtro = request.GET.get('maquina', None)  # Obtém o filtro de máquina
         plano = request.GET.get('plano', None)  # Captura o filtro de Plano ---- nome do plano
 
@@ -655,6 +660,9 @@ def historico_preventivas(request):
             status='finalizada',
             ordem__planejada=True,
         ).exclude(ordem__maquina__codigo='ETE').select_related('ordem', 'ordem__maquina', 'ordem__tarefa').order_by('-data_fim')
+
+        if area:
+            execucoes_finalizadas = execucoes_finalizadas.filter(ordem__area=area)
 
         # Se um filtro de máquina foi fornecido, aplicamos o filtro
         if maquina_filtro:
@@ -713,17 +721,21 @@ def maquina_critica(request):
 
 def api_buscar_planos(request):
     """
-        Retorna uma lista de planos de preventiva ativos na área de produção.
+        Retorna uma lista de planos de preventiva ativos, filtrados pela área informada.
     """
     # Obtém os parâmetros da requisição
     search = request.GET.get('search', '').strip()  # Termo de busca
+    area = request.GET.get('area')  # Área ativa (producao/predial)
     page = int(request.GET.get('page', 1))  # Página atual (padrão é 1)
     per_page = int(request.GET.get('per_page', 10))  # Itens por página (padrão é 10)
 
     # Filtra os planos de preventiva ativos
-    planos_query = PlanoPreventiva.objects.filter(
-       ativo=True, area='producao'  # Apenas máquinas com planos de preventiva ativos
-    ).annotate(
+    planos_query = PlanoPreventiva.objects.filter(ativo=True)
+
+    if area:
+        planos_query = planos_query.filter(area=area)
+
+    planos_query = planos_query.annotate(
         nome_lower=Lower('nome')
     ).values('nome_lower').distinct()  # Remove duplicatas caso uma máquina esteja associada a múltiplos planos
 

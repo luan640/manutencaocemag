@@ -85,6 +85,7 @@ $(document).ready(function () {
         data: function (params) {
             return {
                 search: params.term || '',
+                area: area,
                 page: params.page || 1,
                 per_page: 10
             };
@@ -117,6 +118,7 @@ $(document).ready(function () {
         data: function (params) {
             return {
                 search: params.term || '',
+                area: area,
                 page: params.page || 1,
                 per_page: 10
             };
