@@ -12,6 +12,7 @@ from .models import Maquina, Operador, Setor, PedidoCompra
 from execucao.models import InfoSolicitacao, Execucao
 from cadastro.models import TipoTarefas
 from funcionario.decorators import admin_required
+from funcionario.context_processors import get_area_ativa
 import psycopg2
 from psycopg2 import errors
 
@@ -23,9 +24,9 @@ def criar_maquina(request):
         form = MaquinaForm(request.POST, request.FILES)
         try:
             if form.is_valid():
-                maquina = form.save(commit=False)  
-                maquina.area = request.user.area 
-                maquina.save()  
+                maquina = form.save(commit=False)
+                maquina.area = get_area_ativa(request)
+                maquina.save()
                 
                 return redirect('list_maquina')
         except IntegrityError as e:
@@ -124,8 +125,9 @@ def processar_maquina(request):
     filtro_maquina_critica = request.POST.get('maquina_critica', '')
     filtro_setor = request.POST.get('setor', '')
 
-    if request.user.area in ['producao', 'predial']:
-        maquinas = Maquina.objects.filter(area=request.user.area)
+    area_ativa = get_area_ativa(request)
+    if area_ativa in ['producao', 'predial']:
+        maquinas = Maquina.objects.filter(area=area_ativa)
     else:
         maquinas = Maquina.objects.all()
 
@@ -329,8 +331,9 @@ def api_maquinas_list(request):
     search = request.GET.get('search', '')
     limit = int(request.GET.get('limit', 500))
 
-    if request.user.area in ['producao', 'predial']:
-        qs = Maquina.objects.filter(area=request.user.area)
+    area_ativa = get_area_ativa(request)
+    if area_ativa in ['producao', 'predial']:
+        qs = Maquina.objects.filter(area=area_ativa)
     else:
         qs = Maquina.objects.all()
 

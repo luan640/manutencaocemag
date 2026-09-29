@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <input id="user-area" type="text" value="{{request.user.area}}" style="display: none;">
+    <input id="user-area" type="text" value="{{area_ativa|default:request.user.area}}" style="display: none;">
 
     <!-- Campo de busca e botão de adicionar -->
     <div class="d-flex justify-content-between align-items-center search-container my-3">
