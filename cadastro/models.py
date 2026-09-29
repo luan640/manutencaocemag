@@ -15,7 +15,8 @@ class Maquina(models.Model):
     AREA_CHOICES = (('predial','Predial'),
                     ('producao','Produção'))
 
-    CRITICIDADE_CHOICES = (('a','A'),
+    CRITICIDADE_CHOICES = (('na','N/A'),
+                           ('a','A'),
                            ('b','B'),
                            ('c','C'))
 
@@ -27,7 +28,7 @@ class Maquina(models.Model):
     setor = models.ForeignKey(Setor, on_delete=models.CASCADE, related_name='maquina_setor')
     tombamento = models.CharField(max_length=40, blank=True, null=True)
     area = models.CharField(max_length=20,choices=AREA_CHOICES)
-    criticidade = models.CharField(max_length=2, choices=CRITICIDADE_CHOICES)
+    criticidade = models.CharField(max_length=2, choices=CRITICIDADE_CHOICES, default='na', blank=True)
     foto = models.ImageField(upload_to='fotos/', null=True, blank=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, blank=True, null=True)
     maquina_critica = models.BooleanField(default=False)

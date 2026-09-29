@@ -46,6 +46,7 @@
             <label for="filterCriticidade" class="form-label">Criticidade</label>
             <select id="filterCriticidade" class="form-select">
                 <option value="">Todas</option>
+                <option value="na">N/A</option>
                 <option value="a">A</option>
                 <option value="b">B</option>
                 <option value="c">C</option>
@@ -158,8 +159,8 @@
 
                     <div class="mb-3">
                         <label for="id_criticidade" class="form-label">Criticidade</label>
-                        <select id="id_criticidade" name="criticidade" class="form-select" required>
-                            <option value="" selected>---------</option>
+                        <select id="id_criticidade" name="criticidade" class="form-select">
+                            <option value="na" selected>N/A</option>
                             <option value="a">A</option>
                             <option value="b">B</option>
                             <option value="c">C</option>
