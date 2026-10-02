@@ -16,6 +16,7 @@
                 <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Nome autonoma</th>
                 <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Data hora</th>
                 <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Quem respondeu</th>
+                <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left; background: #f3f4f6;">Observação</th>
             </tr>
         </thead>
         <tbody>
@@ -24,6 +25,7 @@
                 <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.autonomous_name }}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.created_at|date:"d/m/Y H:i" }}</td>
                 <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.employee_name }}</td>
+                <td style="border: 1px solid #d1d5db; padding: 8px;">{{ row.observacoes|default:"-" }}</td>
             </tr>
             {% endfor %}
         </tbody>

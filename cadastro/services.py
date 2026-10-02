@@ -27,6 +27,7 @@ def build_daily_autonomous_overview(report_date):
             'autonomous_name': response.versao.titulo,
             'created_at': response.criado_em,
             'employee_name': response.funcionario.nome,
+            'observacoes': response.observacoes,
         }
         for response in responses
     ]
